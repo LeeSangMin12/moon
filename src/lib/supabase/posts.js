@@ -1,0 +1,66 @@
+export const create_posts_api = (supabase) => ({
+	select_infinite_scroll: async (last_post_id, community_id) => {
+		let query = supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title), post_votes(vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.order('created_at', { ascending: false }) // 최신순 정렬
+			.limit(10);
+
+		if (community_id !== '') {
+			query = query.eq('community_id', community_id);
+		}
+
+		if (last_post_id !== '') {
+			query = query.lt('id', last_post_id);
+		}
+
+		let { data: posts, error } = await query;
+
+		if (error)
+			throw new Error(`Failed to select_infinite_scroll: ${error.message}`);
+
+		return posts;
+	},
+	select_by_id: async (post_id) => {
+		const { data, error } = await supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title), post_votes(vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.eq('id', post_id)
+			.single();
+
+		if (error) throw new Error(`Failed to select_by_id: ${error.message}`);
+
+		return data;
+	},
+	insert: async (post_data) => {
+		const { data, error } = await supabase
+			.from('posts')
+			.insert(post_data)
+			.select('id')
+			.single();
+
+		if (error) {
+			throw new Error(`게시글 생성 실패: ${error.message}`);
+		}
+
+		return data;
+	},
+	update: async (post_id, post_data) => {
+		const { data, error } = await supabase
+			.from('posts')
+			.update(post_data)
+			.eq('id', post_id)
+			.select()
+			.single();
+
+		if (error) {
+			throw new Error(`게시글 업데이트 실패: ${error.message}`);
+		}
+
+		return data;
+	},
+});
