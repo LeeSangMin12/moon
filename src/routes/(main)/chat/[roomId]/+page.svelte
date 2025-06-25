@@ -1,4 +1,5 @@
 <script>
+	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiRemixiconFill } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -9,13 +10,13 @@
 
 	const TITLE = '채팅방';
 
-	let is_menu_modal_open = true;
+	let is_menu_modal_open = false;
 	// const roomId = $page.params.roomId;
 </script>
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => goto('/')}>
+		<button class="flex items-center" onclick={() => goto('/chat')}>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>

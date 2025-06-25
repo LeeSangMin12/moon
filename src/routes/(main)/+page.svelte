@@ -11,6 +11,8 @@
 
 	import colors from '$lib/js/colors';
 	import { api_store } from '$lib/store/api_store';
+	import { update_global_store } from '$lib/store/global_store.js';
+	import { user_store } from '$lib/store/user_store';
 
 	const TITLE = '문';
 
@@ -115,7 +117,11 @@
 	>
 		<button
 			class="rounded-full bg-blue-500 p-3 text-white shadow-lg hover:bg-blue-600"
-			onclick={() => goto('/regi/post')}
+			onclick={() => {
+				$user_store.handle === '비회원'
+					? update_global_store('is_login_prompt_modal', true)
+					: goto('/regi/post');
+			}}
 		>
 			<RiAddLine size={20} color={colors.white} />
 		</button>

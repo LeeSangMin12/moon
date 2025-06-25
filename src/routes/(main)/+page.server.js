@@ -6,7 +6,7 @@ export const load = async ({ parent, locals: { supabase } }) => {
 
 	const posts = await api.posts.select_infinite_scroll('', '');
 
-	if (user.id) {
+	if (user?.id) {
 		const joined_communities = await api.community_members.select_by_user_id(
 			user.id,
 		);

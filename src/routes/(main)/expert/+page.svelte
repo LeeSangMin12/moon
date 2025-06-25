@@ -1,5 +1,4 @@
 <script>
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiHeartFill } from 'svelte-remixicon';
 
@@ -8,12 +7,16 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 
 	import colors from '$lib/js/colors';
+	import { comma } from '$lib/js/common';
 
 	const TITLE = '전문가';
+
+	let { data } = $props();
+	let { services } = $derived(data);
 </script>
 
 <Header>
-	<h1 slot="left" class="text-xl font-bold">{TITLE}</h1>
+	<h1 slot="center" class="font-semibold">{TITLE}</h1>
 </Header>
 
 <main>
@@ -32,40 +35,49 @@
 
 	<section>
 		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
-			<!-- 서비스 카드 1 -->
-			<div
-				class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
-			>
-				<div class="relative">
-					<img
-						src="https://readdy.ai/api/search-image?query=professional%2520web%2520developer%2520working%2520on%2520React%2520code%252C%2520modern%2520workspace%252C%2520clean%2520desk%2520setup%252C%2520multiple%2520monitors%2520showing%2520code%252C%2520high-quality%2520detailed%2520photo%252C%2520soft%2520lighting&width=400&height=225&seq=101&orientation=landscape"
-						alt="React 컴포넌트 최적화"
-						class="h-28 w-full object-cover"
-					/>
-				</div>
-				<div class="px-2 py-2">
-					<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">
-						React 컴포넌트 최적화 코드 리뷰
-					</h3>
+			{#each services as service}
+				<!-- 서비스 카드 1 -->
 
-					<div class="mt-1 flex items-center">
-						<div class="flex items-center">
-							<Icon attribute="star" size={12} color={colors.primary} />
+				<a
+					href={`/expert/${service.id}`}
+					class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
+				>
+					<div class="relative">
+						<img
+							src={service.images[0].uri ||
+								'https://img.daisyui.com/images/stock/photo-1625726411847-8cbb60cc71e6.webp'}
+							alt={service.title}
+							class="h-28 w-full object-cover"
+						/>
+					</div>
+					<div class="px-2 py-2">
+						<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">
+							{service.title}
+						</h3>
+
+						<div class="mt-1 flex items-center">
+							<div class="flex items-center">
+								<Icon attribute="star" size={12} color={colors.primary} />
+							</div>
+
+							<span class="text-xs font-medium">{service.rating}</span>
+							<span class="ml-1 text-xs text-gray-500">
+								({service.rating_count})
+							</span>
 						</div>
 
-						<span class="text-xs font-medium">4.9</span>
-						<span class="ml-1 text-xs text-gray-500">(327)</span>
-					</div>
+						<div class="mt-1.5 flex items-center justify-between">
+							<span class="font-semibold text-gray-900">
+								₩{comma(service.price)}
+							</span>
 
-					<div class="mt-1.5 flex items-center justify-between">
-						<span class="font-semibold text-gray-900">₩50,000</span>
-
-						<button>
-							<RiHeartFill size={18} color={colors.gray[400]} />
-						</button>
+							<button>
+								<RiHeartFill size={18} color={colors.gray[400]} />
+							</button>
+						</div>
 					</div>
-				</div>
-			</div>
+				</a>
+			{/each}
 		</div>
 	</section>
 </main>

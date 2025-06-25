@@ -128,7 +128,7 @@
 						form_data.avatar_url,
 					);
 
-					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/community_avatars/${file_path}`;
+					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
 					await $api_store.communities.update(form_data.id, {
 						avatar_url: img_url,
 					});
@@ -155,7 +155,7 @@
 						form_data.avatar_url,
 					);
 
-					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/community_avatars/${file_path}`;
+					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
 					await $api_store.communities.update(new_community.id, {
 						avatar_url: img_url,
 					});

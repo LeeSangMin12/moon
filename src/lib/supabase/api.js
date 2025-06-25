@@ -8,9 +8,12 @@ import { create_community_topics_api } from '$lib/supabase/community_topics';
 import { create_post_bookmarks_api } from '$lib/supabase/post_bookmarks';
 import { create_post_comment_votes_api } from '$lib/supabase/post_comment_votes';
 import { create_post_comments_api } from '$lib/supabase/post_comments';
+import { create_post_reports_api } from '$lib/supabase/post_reports';
 import { create_post_votes_api } from '$lib/supabase/post_votes';
 import { create_posts_api } from '$lib/supabase/posts';
+import { create_services_api } from '$lib/supabase/services';
 import { create_topics_api } from '$lib/supabase/topics';
+import { create_user_follows_api } from '$lib/supabase/user_follows';
 import { create_users_api } from '$lib/supabase/users';
 
 export const create_api = (supabase) => ({
@@ -21,9 +24,12 @@ export const create_api = (supabase) => ({
 	post_bookmarks: create_post_bookmarks_api(supabase),
 	post_comment_votes: create_post_comment_votes_api(supabase),
 	post_comments: create_post_comments_api(supabase),
+	post_reports: create_post_reports_api(supabase),
 	post_votes: create_post_votes_api(supabase),
 	posts: create_posts_api(supabase),
+	services: create_services_api(supabase),
 	topics: create_topics_api(supabase),
+	user_follows: create_user_follows_api(supabase),
 	users: create_users_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),

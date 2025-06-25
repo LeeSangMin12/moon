@@ -9,7 +9,7 @@
 	import { api_store } from '$lib/store/api_store';
 	import { update_user_store, user_store } from '$lib/store/user_store';
 
-	let { is_modal_open, receiver_id, receiver_name } = $props();
+	let { is_modal_open, receiver_id, receiver_name, post_id } = $props();
 
 	const dispatch = createEventDispatcher();
 
@@ -30,11 +30,11 @@
 				gift_moon_point,
 			);
 
-			dispatch('giftsuccess', {
+			dispatch('gift_success', {
 				gift_content,
 				gift_moon_point,
+				post_id,
 			});
-
 			update_user_store({
 				moon_point: $user_store.moon_point - gift_moon_point,
 			});

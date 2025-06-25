@@ -52,29 +52,6 @@
 			alert('로그인이 필요합니다.');
 		}
 	};
-
-	async function handle_new_gift_comment(event) {
-		const { gift_content, gift_moon_point } = event.detail;
-
-		const new_comment = await $api_store.post_comments.insert({
-			post_id: post.id,
-			user_id: $user_store.id,
-			content: gift_content,
-			gift_moon_point,
-		});
-
-		new_comment.post_comment_votes = [];
-		new_comment.upvotes = 0;
-		new_comment.downvotes = 0;
-		new_comment.user_vote = 0;
-		new_comment.replies = [];
-		new_comment.users = {
-			name: $user_store.name,
-			avatar_url: $user_store.avatar_url,
-		};
-
-		comments = [...comments, new_comment];
-	}
 </script>
 
 <Header>
@@ -89,7 +66,7 @@
 	</button>
 </Header>
 
-<Post {post} on:newgiftcomment={handle_new_gift_comment} />
+<Post {post} />
 
 <main class="space-y-4 p-4">
 	{#each comments as comment (comment.id)}

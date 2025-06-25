@@ -1,6 +1,6 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import profile_png from '$lib/img/common/user/profile.png';
+	import logo_png from '$lib/img/logo.png';
 
 	import { show_toast } from '$lib/js/common';
 	import { update_global_store } from '$lib/store/global_store.js';
@@ -36,7 +36,7 @@
 								alt="community_profile_png"
 							/>
 						{:else}
-							<img src={profile_png} alt="community_profile_png" />
+							<img src={logo_png} alt="community_profile_png" />
 						{/if}
 					</div>
 

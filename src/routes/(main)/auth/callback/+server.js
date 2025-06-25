@@ -17,12 +17,13 @@ export const GET = async (event) => {
 
 		if (!error && session_data.session) {
 			const user_id = session_data.session.user.id;
+
 			const user = await api.users.select(user_id);
 
-			if (user.handle !== null) {
-				throw redirect(303, '/');
-			} else {
+			if (user.handle === null) {
 				throw redirect(303, '/sign-up');
+			} else {
+				throw redirect(303, `/${next.slice(1)}`);
 			}
 		}
 	}

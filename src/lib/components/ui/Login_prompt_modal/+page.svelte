@@ -7,7 +7,8 @@
 	export let is_modal_open = false;
 
 	const go_to_login = () => {
-		goto('/see_more/login');
+		goto('/login');
+		is_modal_open = false;
 	};
 </script>
 

@@ -3,7 +3,7 @@ export const create_posts_api = (supabase) => ({
 		let query = supabase
 			.from('posts')
 			.select(
-				'*, users:author_id(id, handle, name, avatar_url), communities(id, title), post_votes(vote), post_bookmarks(user_id), post_comments(count)',
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
 			)
 			.order('created_at', { ascending: false }) // 최신순 정렬
 			.limit(10);
@@ -27,12 +27,25 @@ export const create_posts_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('posts')
 			.select(
-				'*, users:author_id(id, handle, name, avatar_url), communities(id, title), post_votes(vote), post_bookmarks(user_id), post_comments(count)',
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
 			)
 			.eq('id', post_id)
 			.single();
 
 		if (error) throw new Error(`Failed to select_by_id: ${error.message}`);
+
+		return data;
+	},
+	select_by_community_id: async (community_id) => {
+		const { data, error } = await supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.eq('community_id', community_id);
+
+		if (error)
+			throw new Error(`Failed to select_by_community_id: ${error.message}`);
 
 		return data;
 	},

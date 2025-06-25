@@ -15,6 +15,9 @@
 	import Set_basic from './Set_basic/+page.svelte';
 	import Set_personal from './Set_personal/+page.svelte';
 
+	let { data } = $props();
+	let { session } = $derived(data);
+
 	const TITLE = '회원가입';
 
 	let page_count = $state(1);
@@ -71,7 +74,9 @@
 					sign_up_form_data.handle,
 				);
 
-			if (handle_check_duplicate.handle) {
+			console.log('handle_check_duplicate', handle_check_duplicate);
+
+			if (handle_check_duplicate?.handle) {
 				show_toast('error', '중복된 사용자 이름입니다.');
 				return;
 			}
@@ -86,7 +91,7 @@
 		update_global_store('loading', true);
 
 		try {
-			await $api_store.users.update($user_store.id, {
+			await $api_store.users.update(session.user.id, {
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,

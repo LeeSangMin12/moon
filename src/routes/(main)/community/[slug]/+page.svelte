@@ -29,7 +29,7 @@
 	];
 
 	let { data } = $props();
-	let { community, community_members } = $derived(data);
+	let { community, community_members, posts } = $derived(data);
 	let community_members_state = $state(data.community_members);
 
 	let is_menu_modal_open = $state(false);
@@ -166,7 +166,11 @@
 
 	<hr class="my-2 border-gray-200" />
 
-	<Post />
+	{#each posts as post}
+		<div class="mt-4">
+			<Post {post} />
+		</div>
+	{/each}
 </main>
 
 <Modal bind:is_modal_open={is_menu_modal_open} modal_position="bottom">

@@ -20,7 +20,7 @@
 
 			await $api_store.user_avatars.upload(file_path, selected_img);
 
-			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/user_avatars/${file_path}`;
+			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/avatars/${file_path}`;
 			await $api_store.users.update($user_store.id, {
 				avatar_url: img_url,
 			});

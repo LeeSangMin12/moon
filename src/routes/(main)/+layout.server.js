@@ -4,8 +4,14 @@ export const load = async ({ locals: { get_user, supabase }, cookies }) => {
 	const { auth_user } = await get_user();
 	const api = create_api(supabase);
 
-	const user = await api.users.select(auth_user?.id);
+	if (!auth_user?.id) {
+		return {
+			user: null,
+			cookies: cookies.getAll(),
+		};
+	}
 
+	const user = await api.users.select(auth_user?.id);
 	return {
 		user,
 		cookies: cookies.getAll(),

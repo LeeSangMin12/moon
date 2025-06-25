@@ -21,7 +21,7 @@
 </Header>
 
 <main class="px-4">
-	<section class="cursor-pointer py-3">
+	<a href="/chat/1" class="cursor-pointer py-3">
 		<div class="flex items-start">
 			<div class="mr-3 h-12 w-12 flex-shrink-0 overflow-hidden rounded-full">
 				<img
@@ -49,7 +49,7 @@
 				</p>
 			</div>
 		</div>
-	</section>
+	</a>
 </main>
 
 <Bottom_nav />

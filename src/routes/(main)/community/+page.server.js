@@ -6,9 +6,12 @@ export async function load({ params, parent, locals: { supabase } }) {
 	const api = create_api(supabase);
 
 	const communities = await api.communities.select_infinite_scroll('');
-	const community_members = await api.community_members.select_by_user_id(
-		user.id,
-	);
+
+	let community_members = [];
+
+	if (user) {
+		community_members = await api.community_members.select_by_user_id(user.id);
+	}
 
 	return {
 		communities,

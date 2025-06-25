@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import {
 		RiArrowLeftSLine,
+		RiHeartFill,
 		RiRemixiconFill,
 		RiShareLine,
 	} from 'svelte-remixicon';
@@ -19,14 +20,10 @@
 	const TITLE = '문';
 
 	let { data } = $props();
-	let { user } = $derived(data);
+	let { user, follower_count, following_count } = $derived(data);
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
-
-	onMount(() => {
-		console.log('user', user);
-	});
 </script>
 
 <Header>
@@ -66,18 +63,20 @@
 					</div>
 
 					<span class="text-sm font-medium">{user.rating}</span>
-					<span class="ml-1 text-sm text-gray-500">({user.rating_count})</span>
+					<span class="ml-1 text-sm text-gray-500">
+						({user.rating_count || 0})
+					</span>
 				</div>
 			</div>
 		</div>
 		<!-- 팔로워/팔로잉 정보 -->
 		<div class="mt-4 flex space-x-4">
 			<div class="cursor-pointer">
-				<span class="font-medium">299</span>
+				<span class="font-medium">{follower_count}</span>
 				<span class="text-sm text-gray-500"> 팔로워</span>
 			</div>
 			<div class="cursor-pointer">
-				<span class="font-medium">102</span>
+				<span class="font-medium">{following_count}</span>
 				<span class="text-sm text-gray-500"> 팔로잉</span>
 			</div>
 		</div>
@@ -108,6 +107,47 @@
 	<div class="mt-4">
 		<TabSelector {tabs} bind:selected />
 	</div>
+
+	{#if selected === 2}
+		<section>
+			<div class="mt-4 grid grid-cols-2 gap-4 px-4">
+				<!-- 서비스 카드 1 -->
+				<div
+					class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
+				>
+					<div class="relative">
+						<img
+							src="https://readdy.ai/api/search-image?query=professional%2520web%2520developer%2520working%2520on%2520React%2520code%252C%2520modern%2520workspace%252C%2520clean%2520desk%2520setup%252C%2520multiple%2520monitors%2520showing%2520code%252C%2520high-quality%2520detailed%2520photo%252C%2520soft%2520lighting&width=400&height=225&seq=101&orientation=landscape"
+							alt="React 컴포넌트 최적화"
+							class="h-28 w-full object-cover"
+						/>
+					</div>
+					<div class="px-2 py-2">
+						<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">
+							React 컴포넌트 최적화 코드 리뷰
+						</h3>
+
+						<div class="mt-1 flex items-center">
+							<div class="flex items-center">
+								<Icon attribute="star" size={12} color={colors.primary} />
+							</div>
+
+							<span class="text-xs font-medium">4.9</span>
+							<span class="ml-1 text-xs text-gray-500">(327)</span>
+						</div>
+
+						<div class="mt-1.5 flex items-center justify-between">
+							<span class="font-semibold text-gray-900">₩50,000</span>
+
+							<button>
+								<RiHeartFill size={18} color={colors.gray[400]} />
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	{/if}
 
 	<!-- 탭 컨텐츠 -->
 	<section>

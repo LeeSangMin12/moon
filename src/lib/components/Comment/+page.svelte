@@ -103,7 +103,7 @@
 	bind:is_modal_open={is_gift_modal_open}
 	receiver_id={comment.users.id}
 	receiver_name={comment.users.name}
-	on:giftsuccess={handle_gift_success}
+	on:gift_success={handle_gift_success}
 />
 
 <div class="flex items-start justify-between">
@@ -124,7 +124,7 @@
 			<div class="text-sm text-gray-800">
 				{#if comment.gift_moon_point}
 					<div
-						class="bg-primary mr-2 flex inline-block flex-col rounded rounded-full px-2 py-0.5 text-xs text-white"
+						class="bg-primary mr-2 inline-block flex-col rounded px-2 py-0.5 text-xs text-white"
 					>
 						<span class="mr-1"> 🌙 </span>
 

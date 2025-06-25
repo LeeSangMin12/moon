@@ -1,5 +1,12 @@
 <script>
-	import { RiCloseLine, RiHeartLine, RiShareLine } from 'svelte-remixicon';
+	import profile_png from '$lib/img/common/user/profile.png';
+	import { goto } from '$app/navigation';
+	import {
+		RiArrowLeftSLine,
+		RiCloseLine,
+		RiHeartLine,
+		RiShareLine,
+	} from 'svelte-remixicon';
 
 	import CustomCarousel from '$lib/components/ui/Carousel/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -8,6 +15,9 @@
 
 	import colors from '$lib/js/colors';
 	import { comma } from '$lib/js/common';
+
+	let { data } = $props();
+	let { service } = $derived(data);
 
 	const TITLE = '전문가';
 
@@ -24,35 +34,36 @@
 		'https://rukminim3.flixcart.com/image/850/1000/kwgpz0w0/paper/0/k/q/black-1-coloured-paper-sharma-business-original-imag94z6y4smhcz7.jpeg?q=20&crop=false',
 	];
 
-	let is_buy_modal_open = true;
+	let is_buy_modal_open = $state(false);
 
 	let explanation = '';
 	let textareaEl;
 </script>
 
 <Header>
-	<h1 slot="center" class="text-xl font-bold">
-		React 컴포넌트 최적화 코드 리뷰
-	</h1>
+	<button slot="left" onclick={() => goto('/expert')}>
+		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
+	</button>
+	<h1 slot="center" class="font-semibold">{service.title}</h1>
 </Header>
 
 <main>
 	<figure>
-		<CustomCarousel {images} />
+		<CustomCarousel images={service.images.map((image) => image.uri)} />
 	</figure>
 
 	<div class="mx-4 mt-6">
 		<div class="flex items-center">
 			<img
-				src="https://randomuser.me/api/portraits/men/32.jpg"
-				alt="devsangmin32"
+				src={service.users.avatar_url || profile_png}
+				alt={service.users.name}
 				class="mr-2 h-8 w-8 rounded-full"
 			/>
-			<p class="pr-4 text-sm font-medium">이상민</p>
+			<p class="pr-4 text-sm font-medium">{service.users.name}</p>
 		</div>
 
 		<div class="mt-2">
-			<h1 class="text-lg font-semibold">React 컴포넌트 최적화 코드 리뷰</h1>
+			<h1 class="text-lg font-semibold">{service.title}</h1>
 		</div>
 
 		<div class=" flex items-center">
@@ -60,22 +71,18 @@
 				<Icon attribute="star" size={16} color={colors.primary} />
 			</div>
 
-			<span class="text-sm font-medium">4.9</span>
-			<span class="ml-1 text-sm text-gray-500">(327)</span>
+			<span class="text-sm font-medium">{service.rating}</span>
+			<span class="ml-1 text-sm text-gray-500">({service.rating_count})</span>
 		</div>
 
-		<p class="text-primary mt-6 text-xl font-bold">{comma(11000)}원</p>
+		<p class="text-primary mt-6 text-xl font-bold">
+			₩{comma(service.price)}
+		</p>
 
 		<div class="mt-4">
 			<div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
 				<div class="text-sm whitespace-pre-wrap">
-					Lorem ipsum, dolor sit amet consectetur adipisicing elit. Fugit vel
-					consequuntur eos cum veritatis ex dolorem cumque, dolore nam eum ullam
-					repellendus molestiae doloribus, eligendi debitis natus laboriosam et
-					iusto. Lorem ipsum dolor sit amet consectetur adipisicing elit. Ut
-					quis doloremque laborum asperiores aut. Dolorem numquam laborum
-					voluptatem, doloremque nostrum asperiores. Reprehenderit a ab aliquam
-					quidem totam hic soluta praesentium?
+					{service.description}
 				</div>
 			</div>
 		</div>
@@ -85,6 +92,7 @@
 		<div class="pb-safe flex space-x-2">
 			<button
 				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
+				onclick={() => (is_buy_modal_open = true)}
 			>
 				구매하기
 			</button>
@@ -105,8 +113,8 @@
 <Modal bind:is_modal_open={is_buy_modal_open} modal_position="center">
 	<div class="p-4">
 		<div class="flex justify-between">
-			<h3 class="font-semibold">React 컴포넌트 최적화 코드 리뷰 구매하기</h3>
-			<button onclick={() => (is_gift_modal_open = false)}>
+			<h3 class="font-semibold">{service.title}</h3>
+			<button onclick={() => (is_buy_modal_open = false)}>
 				<RiCloseLine size={24} color={colors.gray[400]} />
 			</button>
 		</div>
@@ -126,7 +134,9 @@
 		<div>
 			<div class="flex justify-between">
 				<p class="font-semibold">총 결제 금액</p>
-				<p class="text-primary text-lg font-bold">{comma(11000)}원</p>
+				<p class="text-primary text-lg font-bold">
+					₩{comma(service.price)}
+				</p>
 			</div>
 		</div>
 
