@@ -9,6 +9,7 @@
 	const TITLE = '문';
 
 	let { data } = $props();
+
 	let { supabase, session } = $state(data);
 
 	const sign_in_with_kakao = async () => {
