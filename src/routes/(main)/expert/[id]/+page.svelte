@@ -38,6 +38,13 @@
 
 	let explanation = '';
 	let textareaEl;
+
+	function autoResize() {
+		if (textareaEl) {
+			textareaEl.style.height = 'auto';
+			textareaEl.style.height = textareaEl.scrollHeight + 'px';
+		}
+	}
 </script>
 
 <Header>

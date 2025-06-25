@@ -28,10 +28,6 @@
 	let { data } = $props();
 	let { post, comments } = $derived(data);
 
-	onMount(() => {
-		console.log($api_store);
-	});
-
 	const handle_submit_comment = async (event) => {
 		const { content } = event.detail;
 		if ($user_store.id) {
@@ -74,4 +70,4 @@
 	{/each}
 </main>
 
-<CommentInput on:submit={handleSubmitComment} />
+<CommentInput on:submit={handle_submit_comment} />
