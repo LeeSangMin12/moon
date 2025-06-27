@@ -23,6 +23,24 @@ export const create_user_follows_api = (supabase) => ({
 		if (error) throw new Error(error.message);
 		return data?.length > 0 ? true : false;
 	},
+	select_user_follows: async (user_id) => {
+		const { data, error } = await supabase
+			.from('user_follows')
+			.select('following_id')
+			.eq('follower_id', user_id);
+		if (error) throw new Error(error.message);
+
+		return data;
+	},
+	select_user_followers: async (user_id) => {
+		const { data, error } = await supabase
+			.from('user_follows')
+			.select('follower_id')
+			.eq('following_id', user_id);
+		if (error) throw new Error(error.message);
+
+		return data;
+	},
 	get_follower_count: async (user_id) => {
 		const { count } = await supabase
 			.from('user_follows')

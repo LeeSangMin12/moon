@@ -1,4 +1,17 @@
 export const create_posts_api = (supabase) => ({
+	select_by_search: async (search_text) => {
+		const { data: posts, error } = await supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.ilike('title', `%${search_text}%`) // 변경된 부분
+			.order('created_at', { ascending: false });
+
+		if (error) throw new Error(`Failed to select_by_search: ${error.message}`);
+
+		return posts;
+	},
 	select_infinite_scroll: async (last_post_id, community_id) => {
 		let query = supabase
 			.from('posts')

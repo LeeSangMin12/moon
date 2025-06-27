@@ -1,4 +1,15 @@
 export const create_communities_api = (supabase) => ({
+	select_by_search: async (search_text) => {
+		const { data: communities, error } = await supabase
+			.from('communities')
+			.select('*, community_members(count)')
+			.ilike('title', `%${search_text}%`)
+			.order('created_at', { ascending: false });
+
+		if (error) throw new Error(`Failed to select_by_search: ${error.message}`);
+
+		return communities;
+	},
 	select_infinite_scroll: async (last_community_id) => {
 		let query = supabase
 			.from('communities')

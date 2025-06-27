@@ -25,6 +25,14 @@
 			const user = await $api_store.users.select(session.user.id);
 			if (user.handle !== null) {
 				await update_user_store(user);
+				await update_user_store({
+					user_follows: await $api_store.user_follows.select_user_follows(
+						user.id,
+					),
+					user_followers: await $api_store.user_follows.select_user_followers(
+						user.id,
+					),
+				});
 			}
 		}
 

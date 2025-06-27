@@ -1,6 +1,12 @@
 <script>
 	export let tabs = [];
 	export let selected = 0;
+	export let on_change = () => {};
+
+	const handle_change = (i) => {
+		selected = i;
+		on_change();
+	};
 </script>
 
 <div
@@ -10,7 +16,7 @@
 		<button
 			class="relative flex-shrink-0 px-8 pb-2 text-center text-sm transition-colors duration-200
         {selected === i ? 'text-black' : 'text-gray-400'}"
-			onclick={() => (selected = i)}
+			onclick={() => handle_change(i)}
 			type="button"
 		>
 			{tab}

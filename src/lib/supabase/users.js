@@ -32,6 +32,16 @@ export const create_users_api = (supabase) => ({
 		if (error) throw new Error(`Failed to select_by_handle: ${error.message}`);
 		return data || null;
 	},
+	select_by_search: async (search_text) => {
+		let { data, error } = await supabase
+			.from('users')
+			.select('*')
+			.or(`handle.ilike.%${search_text}%,name.ilike.%${search_text}%`)
+			.order('created_at', { ascending: false });
+
+		if (error) throw new Error(`Failed to select_by_search: ${error.message}`);
+		return data || null;
+	},
 	update: async (user_id, data) => {
 		let { error } = await supabase.from('users').update(data).eq('id', user_id);
 
