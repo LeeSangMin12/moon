@@ -1,9 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Community from '$lib/components/Community/+page.svelte';
@@ -15,13 +12,8 @@
 	import { api_store } from '$lib/store/api_store';
 	import { user_store } from '$lib/store/user_store';
 
-	const TITLE = '검색';
-
-	let { data } = $props();
-	let { posts = [] } = $state(data);
-
 	let search_text = $state('');
-	let serarch_data = $state({
+	let search_data = $state({
 		posts: [],
 		communities: [],
 		community_members: [],
@@ -33,32 +25,24 @@
 	let tabs = ['게시글', '커뮤니티', '서비스', '프로필'];
 	let selected = $state(0);
 
-	// $effect(() => {
-
-	// 	selected;
-	// 	handle_search();
-	// });
-
 	const handle_search = async () => {
 		if (search_text === '') return;
 
 		if (selected === 0) {
-			serarch_data.posts = await $api_store.posts.select_by_search(search_text);
+			search_data.posts = await $api_store.posts.select_by_search(search_text);
 		} else if (selected === 1) {
-			serarch_data.communities =
+			search_data.communities =
 				await $api_store.communities.select_by_search(search_text);
-			serarch_data.community_members =
+			search_data.community_members =
 				await $api_store.community_members.select_by_user_id($user_store.id);
 		} else if (selected === 2) {
-			serarch_data.services =
+			search_data.services =
 				await $api_store.services.select_by_search(search_text);
-			serarch_data.service_likes =
+			search_data.service_likes =
 				await $api_store.service_likes.select_by_user_id($user_store.id);
 		} else if (selected === 3) {
-			serarch_data.profiles =
+			search_data.profiles =
 				await $api_store.users.select_by_search(search_text);
-
-			console.log(serarch_data.profiles);
 		}
 	};
 </script>
@@ -99,30 +83,30 @@
 	<div class="mt-4">
 		<TabSelector {tabs} bind:selected on_change={handle_search} />
 	</div>
-	{#if selected === 0 && serarch_data.posts.length > 0}
-		{#each serarch_data.posts as post}
+	{#if selected === 0 && search_data.posts.length > 0}
+		{#each search_data.posts as post}
 			<div class="mt-4">
 				<Post {post} />
 			</div>
 		{/each}
-	{:else if selected === 1 && serarch_data.communities.length > 0}
-		{#each serarch_data.communities as community}
+	{:else if selected === 1 && search_data.communities.length > 0}
+		{#each search_data.communities as community}
 			<div class="mt-4">
 				<Community
 					{community}
-					community_members={serarch_data.community_members}
+					community_members={search_data.community_members}
 				/>
 			</div>
 		{/each}
-	{:else if selected === 2 && serarch_data.services.length > 0}
+	{:else if selected === 2 && search_data.services.length > 0}
 		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
-			{#each serarch_data.services as service}
-				<Service {service} service_likes={serarch_data.service_likes} />
+			{#each search_data.services as service}
+				<Service {service} service_likes={search_data.service_likes} />
 			{/each}
 		</div>
-	{:else if selected === 3 && serarch_data.profiles.length > 0}
+	{:else if selected === 3 && search_data.profiles.length > 0}
 		<div class="mt-4">
-			{#each serarch_data.profiles as profile}
+			{#each search_data.profiles as profile}
 				<UserCard {profile} />
 			{/each}
 		</div>

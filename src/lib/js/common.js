@@ -1,6 +1,10 @@
 import { toast } from '@zerodevx/svelte-toast';
+import { get } from 'svelte/store';
 
 import Toast from '$lib/components/ui/Toast/+page.svelte';
+
+import { update_global_store } from '$lib/store/global_store';
+import { user_store } from '$lib/store/user_store';
 
 /**
  * 숫자 1000단위 마다 컴마 추가
@@ -268,4 +272,17 @@ export const get_time_past = (date) => {
 		return Math.floor(interval) + '분 전';
 	}
 	return '방금 전';
+};
+
+export const has_invalid_args = (args) => {
+	return args.some((v) => !v || typeof v !== 'string' || v.trim() === '');
+};
+
+export const require_login_or = (fn) => {
+	const user = get(user_store);
+	if (user.handle === '비회원') {
+		update_global_store('is_login_prompt_modal', true);
+	} else {
+		fn();
+	}
 };

@@ -1,5 +1,7 @@
 export const create_community_members_api = (supabase) => ({
 	select_by_user_id: async (user_id) => {
+		if (!user_id) return [];
+
 		let { data: community_members, error } = await supabase
 			.from('community_members')
 			.select('*, communities(*)')

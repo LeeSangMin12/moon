@@ -37,14 +37,6 @@
 	let is_buy_modal_open = $state(false);
 
 	let explanation = '';
-	let textareaEl;
-
-	function autoResize() {
-		if (textareaEl) {
-			textareaEl.style.height = 'auto';
-			textareaEl.style.height = textareaEl.scrollHeight + 'px';
-		}
-	}
 </script>
 
 <Header>
@@ -120,21 +112,35 @@
 <Modal bind:is_modal_open={is_buy_modal_open} modal_position="center">
 	<div class="p-4">
 		<div class="flex justify-between">
-			<h3 class="font-semibold">{service.title}</h3>
+			<h3 class="font-semibold">{service.title}구매하기</h3>
 			<button onclick={() => (is_buy_modal_open = false)}>
 				<RiCloseLine size={24} color={colors.gray[400]} />
 			</button>
 		</div>
 
-		<textarea
-			bind:this={textareaEl}
-			bind:value={explanation}
-			rows="1"
-			placeholder="입금자 명을 입력하세요"
-			class="mt-6 w-full resize-none rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
-			oninput={autoResize}
-			style="overflow-y: hidden;"
-		></textarea>
+		<div class="mt-6">
+			<p class="text-sm font-medium">입금자명</p>
+			<input
+				type="text"
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
+		</div>
+
+		<div class="mt-4">
+			<p class="text-sm font-medium">은행</p>
+			<input
+				type="text"
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
+		</div>
+
+		<div class="mt-4">
+			<p class="text-sm font-medium">계좌번호</p>
+			<input
+				type="text"
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
+		</div>
 
 		<div class="my-4 h-px bg-gray-200"></div>
 
