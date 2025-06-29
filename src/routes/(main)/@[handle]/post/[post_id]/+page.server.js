@@ -2,11 +2,11 @@ import { create_api } from '$lib/supabase/api';
 
 export const load = async ({ params, parent, locals: { supabase } }) => {
 	const { post_id } = params;
-	const { user_id } = await parent();
+	const { user } = await parent();
 	const api = create_api(supabase);
 
 	const post = await api.posts.select_by_id(post_id);
-	const comments = await api.post_comments.select_by_post_id(post_id, user_id);
+	const comments = await api.post_comments.select_by_post_id(post_id, user.id);
 
 	return { post, comments };
 };

@@ -3,7 +3,7 @@ export const create_post_comments_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('post_comments')
 			.select(
-				'*, users:users!user_id(id, handle, name, avatar_url), post_comment_votes(vote, user_id)',
+				'*, users:user_id(id, handle, name, avatar_url), post_comment_votes(vote, user_id)',
 			)
 			.eq('post_id', post_id)
 			.order('created_at', { ascending: true });

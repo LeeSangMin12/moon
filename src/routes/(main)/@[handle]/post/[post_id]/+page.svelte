@@ -25,28 +25,33 @@
 
 	const TITLE = '게시글';
 
+	onMount(() => {
+		console.log('comments', comments);
+	});
+
 	let { data } = $props();
-	let { post, comments } = $derived(data);
+	let { post, comments } = $state(data);
 
-	const handle_submit_comment = async (event) => {
+	const leave_post_comment = async (event) => {
 		const { content } = event.detail;
-		if ($user_store.id) {
-			const new_comment = await $api_store.post_comments.insert({
-				post_id: post.id,
-				user_id: $user_store.id,
-				content,
-			});
+		const new_comment = await $api_store.post_comments.insert({
+			post_id: post.id,
+			user_id: $user_store.id,
+			content: content.trim(),
+		});
 
-			new_comment.post_comment_votes = [];
-			new_comment.upvotes = 0;
-			new_comment.downvotes = 0;
-			new_comment.user_vote = 0;
-			new_comment.replies = [];
+		new_comment.post_comment_votes = [];
+		new_comment.upvotes = 0;
+		new_comment.downvotes = 0;
+		new_comment.user_vote = 0;
+		new_comment.replies = [];
+		new_comment.users = {
+			id: $user_store.id,
+			handle: $user_store.handle,
+			avatar_url: $user_store.avatar_url,
+		};
 
-			comments = [...comments, new_comment];
-		} else if (!$user_store.id) {
-			alert('로그인이 필요합니다.');
-		}
+		comments = [...comments, new_comment];
 	};
 </script>
 
@@ -64,10 +69,12 @@
 
 <Post {post} />
 
-<main class="space-y-4 p-4">
-	{#each comments as comment (comment.id)}
-		<Comment post_id={post.id} {comment} />
-	{/each}
+<main>
+	<div class="space-y-4 p-4">
+		{#each comments as comment, i (comment.id)}
+			<Comment post_id={post.id} bind:comment={comments[i]} />
+		{/each}
+	</div>
 </main>
 
-<CommentInput on:submit={handle_submit_comment} />
+<CommentInput on:leave_comment={leave_post_comment} />

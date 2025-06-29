@@ -10,7 +10,7 @@ export const user_store = writable({
 	banner_url: '',
 	gender: '남',
 	birth_date: '2000-01-01',
-	self_introduction: '비회원입니다',
+	self_introduction: '비회원입니다.',
 	moon_point: 0,
 	rating: 0,
 	user_follows: [], // 팔로잉 목록
