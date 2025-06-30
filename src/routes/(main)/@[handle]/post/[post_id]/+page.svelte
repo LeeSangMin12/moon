@@ -89,6 +89,63 @@
 		comments = [...comments, new_comment];
 	};
 
+	const handle_reply_added = (event) => {
+		const { parent_comment_id, new_reply } = event.detail;
+
+		// 댓글 배열에서 해당 부모 댓글을 찾아서 답글 추가
+		const update_comment_replies = (commentList) => {
+			return commentList.map((comment) => {
+				if (comment.id === parent_comment_id) {
+					return {
+						...comment,
+						replies: [...(comment.replies || []), new_reply],
+					};
+				} else if (comment.replies && comment.replies.length > 0) {
+					return {
+						...comment,
+						replies: update_comment_replies(comment.replies),
+					};
+				}
+				return comment;
+			});
+		};
+
+		comments = update_comment_replies(comments);
+	};
+
+	const handle_gift_comment_added = async (event) => {
+		const { gift_content, gift_moon_point, parent_comment_id } = event.detail;
+
+		const new_comment = await $api_store.post_comments.insert({
+			post_id: post.id,
+			user_id: $user_store.id,
+			content: gift_content,
+			parent_comment_id,
+			gift_moon_point,
+		});
+
+		new_comment.post_comment_votes = [];
+		new_comment.upvotes = 0;
+		new_comment.downvotes = 0;
+		new_comment.user_vote = 0;
+		new_comment.replies = [];
+		new_comment.users = {
+			id: $user_store.id,
+			handle: $user_store.handle,
+			avatar_url: $user_store.avatar_url,
+		};
+
+		if (parent_comment_id) {
+			// 답글인 경우 해당 댓글의 replies 배열에 추가
+			handle_reply_added({
+				detail: { parent_comment_id, new_reply: new_comment },
+			});
+		} else {
+			// 일반 댓글인 경우 comments 배열에 추가
+			comments = [...comments, new_comment];
+		}
+	};
+
 	const toggle_bookmark = async () => {
 		if (is_bookmarked) {
 			await $api_store.post_bookmarks.delete(post.id, $user_store.id);
@@ -161,12 +218,17 @@
 	</button>
 </Header>
 
-<Post {post} />
+<Post {post} on:gift_comment_added={handle_gift_comment_added} />
 
 <main>
 	<div class="space-y-4 p-4">
-		{#each comments as comment, i (comment.id)}
-			<Comment post_id={post.id} bind:comment={comments[i]} />
+		{#each comments as comment (comment.id)}
+			<Comment
+				post_id={post.id}
+				{comment}
+				on:reply_added={handle_reply_added}
+				on:gift_comment_added={handle_gift_comment_added}
+			/>
 		{/each}
 	</div>
 </main>

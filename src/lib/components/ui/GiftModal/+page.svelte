@@ -30,11 +30,13 @@
 				gift_moon_point,
 			);
 
+			// 이벤트로 상위 컴포넌트에 알림
 			dispatch('gift_success', {
 				gift_content,
 				gift_moon_point,
 				post_id,
 			});
+
 			update_user_store({
 				moon_point: $user_store.moon_point - gift_moon_point,
 			});

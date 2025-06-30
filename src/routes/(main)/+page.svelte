@@ -83,6 +83,23 @@
 			last_post_id = available_post.at(-1)?.id ?? '';
 		}
 	};
+
+	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
+	const handle_gift_comment_added = async (event) => {
+		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
+			event.detail;
+
+		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
+		await $api_store.post_comments.insert({
+			post_id,
+			user_id: $user_store.id,
+			content: gift_content,
+			parent_comment_id,
+			gift_moon_point,
+		});
+
+		console.log('Gift comment added successfully');
+	};
 </script>
 
 <Header>
@@ -98,7 +115,7 @@
 
 	{#each posts as post}
 		<div class="mt-4">
-			<Post {post} />
+			<Post {post} on:gift_comment_added={handle_gift_comment_added} />
 		</div>
 	{/each}
 

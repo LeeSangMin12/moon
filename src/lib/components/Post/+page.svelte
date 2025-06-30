@@ -150,15 +150,17 @@
 	};
 
 	async function handle_gift_success(event) {
-		const { gift_content, gift_moon_point, post_id } = event.detail;
+		const { gift_content, gift_moon_point } = event.detail;
 
-		const new_reply = await $api_store.post_comments.insert({
-			post_id,
-			user_id: $user_store.id,
-			content: gift_content,
-			parent_comment_id: null, // 댓글 대상 없음
+		// 상위 컴포넌트에 gift 댓글 추가 알림 (일반 댓글로 추가)
+		dispatch('gift_comment_added', {
+			gift_content,
 			gift_moon_point,
+			parent_comment_id: null, // 포스트에 대한 일반 댓글
+			post_id: post.id, // post_id 추가
 		});
+
+		modal.gift = false;
 	}
 </script>
 
