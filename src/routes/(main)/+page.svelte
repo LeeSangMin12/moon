@@ -105,9 +105,9 @@
 <Header>
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 
-	<button onclick={() => goto('/search')} slot="right">
+	<!-- <button onclick={() => goto('/search')} slot="right">
 		<Icon attribute="search" size={24} color={colors.gray[600]} />
-	</button>
+	</button> -->
 </Header>
 
 <main>
@@ -131,7 +131,7 @@
 
 	<!-- floating right button -->
 	<div
-		class="fixed bottom-18 mx-auto flex w-full max-w-screen-md justify-end pr-4"
+		class="fixed bottom-18 z-10 mx-auto flex w-full max-w-screen-md justify-end pr-4"
 	>
 		<button
 			class="rounded-full bg-blue-500 p-3 text-white shadow-lg hover:bg-blue-600"

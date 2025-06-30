@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 
+	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Community from '$lib/components/Community/+page.svelte';
@@ -116,3 +117,5 @@
 		</div>
 	{/if}
 </main>
+
+<Bottom_nav />

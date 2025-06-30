@@ -5,13 +5,20 @@
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import { comma, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
 	import { update_user_store, user_store } from '$lib/store/user_store';
 
 	let { is_modal_open, receiver_id, receiver_name, post_id } = $props();
 
 	const dispatch = createEventDispatcher();
+
+	let charge_moon_form_data = $state({
+		point: 10,
+		bank: '',
+		account_number: '',
+		account_holder: '',
+	});
 
 	let gift_moon_point = $state(10);
 	let gift_content = $state('');
@@ -46,6 +53,59 @@
 			gift_content = '';
 
 			show_toast('success', '성공적으로 선물을 보냈습니다.');
+		} catch (e) {
+			show_toast('error', e.message);
+			console.error(e);
+		}
+	};
+
+	const handle_charge_moon = async () => {
+		// 입력 값 검증
+		if (!charge_moon_form_data.point || charge_moon_form_data.point <= 0) {
+			show_toast('error', '충전할 문 개수를 입력해주세요.');
+			return;
+		}
+
+		if (!charge_moon_form_data.account_holder.trim()) {
+			show_toast('error', '입금자명을 입력해주세요.');
+			return;
+		}
+
+		if (!charge_moon_form_data.bank.trim()) {
+			show_toast('error', '은행명을 입력해주세요.');
+			return;
+		}
+
+		if (!charge_moon_form_data.account_number.trim()) {
+			show_toast('error', '계좌번호를 입력해주세요.');
+			return;
+		}
+
+		try {
+			const charge_amount = Math.floor(charge_moon_form_data.point * 100 * 1.1);
+
+			await $api_store.moon_charges.create_charge_request({
+				user_id: $user_store.id,
+				point: charge_moon_form_data.point,
+				amount: charge_amount,
+				bank: charge_moon_form_data.bank,
+				account_number: charge_moon_form_data.account_number,
+				account_holder: charge_moon_form_data.account_holder,
+			});
+
+			// 폼 초기화
+			charge_moon_form_data = {
+				point: 10,
+				bank: '',
+				account_number: '',
+				account_holder: '',
+			};
+
+			is_buy_moon_modal_open = false;
+			show_toast(
+				'success',
+				'충전 요청이 완료되었습니다. 관리자 승인 후 문이 충전됩니다.',
+			);
 		} catch (e) {
 			show_toast('error', e.message);
 			console.error(e);
@@ -153,16 +213,70 @@
 			</p>
 			<input
 				type="number"
+				bind:value={charge_moon_form_data.point}
+				min={1}
 				defaultValue={10}
 				class="input mt-4 w-full border-none bg-gray-100 text-sm focus:outline-none"
 			/>
 			<div class="mt-2 flex gap-2">
-				<button class="btn btn-sm rounded-full">+1</button>
-				<button class="btn btn-sm rounded-full">+10</button>
-				<button class="btn btn-sm rounded-full">+100</button>
-				<button class="btn btn-sm rounded-full">+1,000</button>
-				<button class="btn btn-sm rounded-full">+10,000</button>
+				<button
+					class="btn btn-sm rounded-full"
+					onclick={() =>
+						(charge_moon_form_data.point = charge_moon_form_data.point + 1)}
+					>+1</button
+				>
+				<button
+					class="btn btn-sm rounded-full"
+					onclick={() =>
+						(charge_moon_form_data.point = charge_moon_form_data.point + 10)}
+					>+10</button
+				>
+				<button
+					class="btn btn-sm rounded-full"
+					onclick={() =>
+						(charge_moon_form_data.point = charge_moon_form_data.point + 100)}
+					>+100</button
+				>
+				<button
+					class="btn btn-sm rounded-full"
+					onclick={() =>
+						(charge_moon_form_data.point = charge_moon_form_data.point + 1000)}
+					>+1,000</button
+				>
+				<button
+					class="btn btn-sm rounded-full"
+					onclick={() =>
+						(charge_moon_form_data.point = charge_moon_form_data.point + 10000)}
+					>+10,000</button
+				>
 			</div>
+		</div>
+
+		<div class="mt-6">
+			<p class="text-sm font-medium">입금자명</p>
+			<input
+				type="text"
+				bind:value={charge_moon_form_data.account_holder}
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
+		</div>
+
+		<div class="mt-4">
+			<p class="text-sm font-medium">은행</p>
+			<input
+				type="text"
+				bind:value={charge_moon_form_data.bank}
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
+		</div>
+
+		<div class="mt-4">
+			<p class="text-sm font-medium">계좌번호</p>
+			<input
+				type="text"
+				bind:value={charge_moon_form_data.account_number}
+				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
+			/>
 		</div>
 
 		<div class="my-4 h-px bg-gray-200"></div>
@@ -170,7 +284,9 @@
 		<div>
 			<div class="flex justify-between">
 				<p class="font-semibold">총 결제 금액</p>
-				<p class="text-primary text-lg font-bold">11,000원</p>
+				<p class="text-primary text-lg font-bold">
+					{comma(Math.floor(charge_moon_form_data.point * 100 * 1.1))}원
+				</p>
 			</div>
 		</div>
 
@@ -183,6 +299,11 @@
 			</p>
 		</div>
 
-		<button class="btn btn-primary mt-4 w-full rounded-lg">문 충전하기</button>
+		<button
+			class="btn btn-primary mt-4 w-full rounded-lg"
+			onclick={handle_charge_moon}
+		>
+			문 충전하기
+		</button>
 	</div>
 </Modal>

@@ -146,6 +146,37 @@
 		}
 	};
 
+	const handle_comment_deleted = (event) => {
+		const { comment_id, parent_comment_id } = event.detail;
+
+		if (parent_comment_id) {
+			// 답글 삭제 - 중첩된 구조에서 해당 답글 제거
+			const remove_reply_from_comments = (commentList) => {
+				return commentList.map((comment) => {
+					if (comment.id === parent_comment_id) {
+						return {
+							...comment,
+							replies: comment.replies.filter(
+								(reply) => reply.id !== comment_id,
+							),
+						};
+					} else if (comment.replies && comment.replies.length > 0) {
+						return {
+							...comment,
+							replies: remove_reply_from_comments(comment.replies),
+						};
+					}
+					return comment;
+				});
+			};
+
+			comments = remove_reply_from_comments(comments);
+		} else {
+			// 일반 댓글 삭제 - comments 배열에서 직접 제거
+			comments = comments.filter((comment) => comment.id !== comment_id);
+		}
+	};
+
 	const toggle_bookmark = async () => {
 		if (is_bookmarked) {
 			await $api_store.post_bookmarks.delete(post.id, $user_store.id);
@@ -228,6 +259,7 @@
 				{comment}
 				on:reply_added={handle_reply_added}
 				on:gift_comment_added={handle_gift_comment_added}
+				on:comment_deleted={handle_comment_deleted}
 			/>
 		{/each}
 	</div>

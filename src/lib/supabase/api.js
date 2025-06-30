@@ -5,6 +5,7 @@ import { create_communities_api } from '$lib/supabase/communities';
 import { create_community_members_api } from '$lib/supabase/community_members';
 import { create_community_reports_api } from '$lib/supabase/community_reports';
 import { create_community_topics_api } from '$lib/supabase/community_topics';
+import { create_moon_charges_api } from '$lib/supabase/moon_charges';
 import { create_post_bookmarks_api } from '$lib/supabase/post_bookmarks';
 import { create_post_comment_votes_api } from '$lib/supabase/post_comment_votes';
 import { create_post_comments_api } from '$lib/supabase/post_comments';
@@ -22,6 +23,7 @@ export const create_api = (supabase) => ({
 	community_members: create_community_members_api(supabase),
 	community_reports: create_community_reports_api(supabase),
 	community_topics: create_community_topics_api(supabase),
+	moon_charges: create_moon_charges_api(supabase),
 	post_bookmarks: create_post_bookmarks_api(supabase),
 	post_comment_votes: create_post_comment_votes_api(supabase),
 	post_comments: create_post_comments_api(supabase),

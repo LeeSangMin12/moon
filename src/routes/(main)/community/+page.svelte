@@ -99,11 +99,11 @@
 
 <Header>
 	<h1 slot="left" class="font-semibold">커뮤니티</h1>
-	<div slot="right" class="flex items-center gap-3">
+	<!-- <div slot="right" class="flex items-center gap-3">
 		<button onclick={() => goto('/search')}>
 			<Icon attribute="search" size={24} color={colors.gray[800]} />
 		</button>
-	</div>
+	</div> -->
 </Header>
 
 <main>

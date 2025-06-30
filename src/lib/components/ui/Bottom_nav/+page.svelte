@@ -53,6 +53,30 @@
 	</button>
 
 	<button
+		on:click={() => goto('/search')}
+		class="flex flex-col items-center gap-0.5"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			height="20px"
+			viewBox="0 -960 960 960"
+			width="20px"
+			fill={$page.url.pathname === '/search'
+				? colors.gray[700]
+				: colors.gray[400]}
+			><path
+				d="M380-320q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l224 224q11 11 11 28t-11 28q-11 11-28 11t-28-11L532-372q-30 24-69 38t-83 14Zm0-80q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+			/>
+		</svg>
+
+		<p
+			class={`${$page.url.pathname === '/search' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
+		>
+			검색
+		</p>
+	</button>
+
+	<button
 		on:click={() => goto('/expert')}
 		class="flex flex-col items-center gap-0.5"
 	>
@@ -73,30 +97,6 @@
 			class={`${$page.url.pathname === '/expert' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
 		>
 			전문가
-		</p>
-	</button>
-
-	<button
-		on:click={() => goto('/chat')}
-		class="flex flex-col items-center gap-0.5"
-	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			height="20px"
-			viewBox="0 -960 960 960"
-			width="20px"
-			fill={$page.url.pathname === '/chat'
-				? colors.gray[700]
-				: colors.gray[400]}
-			><path
-				d="m240-240-92 92q-19 19-43.5 8.5T80-177v-623q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240Zm80-280q17 0 28.5-11.5T360-560q0-17-11.5-28.5T320-600q-17 0-28.5 11.5T280-560q0 17 11.5 28.5T320-520Zm160 0q17 0 28.5-11.5T520-560q0-17-11.5-28.5T480-600q-17 0-28.5 11.5T440-560q0 17 11.5 28.5T480-520Zm160 0q17 0 28.5-11.5T680-560q0-17-11.5-28.5T640-600q-17 0-28.5 11.5T600-560q0 17 11.5 28.5T640-520Z"
-			/>
-		</svg>
-
-		<p
-			class={`${$page.url.pathname === '/chat' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
-		>
-			채팅
 		</p>
 	</button>
 
