@@ -9,7 +9,7 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store';
@@ -98,7 +98,7 @@
 </script>
 
 <Header>
-	<h1 slot="left" class="text-xl font-bold">커뮤니티</h1>
+	<h1 slot="left" class="font-semibold">커뮤니티</h1>
 	<div slot="right" class="flex items-center gap-3">
 		<button onclick={() => goto('/search')}>
 			<Icon attribute="search" size={24} color={colors.gray[800]} />
@@ -137,9 +137,9 @@
 				{:else}
 					<button
 						onclick={() => {
-							$user_store.handle === '비회원'
-								? update_global_store('is_login_prompt_modal', true)
-								: handle_join(community.id);
+							if (!check_login()) return;
+
+							handle_join(community.id);
 						}}
 						class="btn btn-primary btn-sm h-7"
 					>
@@ -171,7 +171,11 @@
 	>
 		<button
 			class="rounded-full bg-blue-500 p-3 text-white shadow-lg hover:bg-blue-600"
-			onclick={() => goto('/community/regi')}
+			onclick={() => {
+				if (!check_login()) return;
+
+				goto('/community/regi');
+			}}
 		>
 			<RiAddLine size={20} color={colors.white} />
 		</button>

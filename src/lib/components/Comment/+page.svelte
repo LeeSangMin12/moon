@@ -14,7 +14,7 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { get_time_past } from '$lib/js/common';
+	import { check_login, get_time_past } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
 	import { user_store } from '$lib/store/user_store';
 
@@ -30,6 +30,8 @@
 	let textarea_ref = $state(null);
 
 	const handle_vote = async (vote) => {
+		if (!check_login()) return;
+
 		await $api_store.post_comment_votes.upsert({
 			comment_id: comment.id,
 			user_id: $user_store.id,

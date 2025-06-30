@@ -278,11 +278,11 @@ export const has_invalid_args = (args) => {
 	return args.some((v) => !v || typeof v !== 'string' || v.trim() === '');
 };
 
-export const require_login_or = (fn) => {
+export const check_login = () => {
 	const user = get(user_store);
 	if (user.handle === '비회원') {
 		update_global_store('is_login_prompt_modal', true);
-	} else {
-		fn();
+		return false;
 	}
+	return true;
 };

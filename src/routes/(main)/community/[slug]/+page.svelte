@@ -14,7 +14,7 @@
 	import Post from '$lib/components/Post/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { copy_to_clipboard, show_toast } from '$lib/js/common';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
 	import { user_store } from '$lib/store/user_store';
 
@@ -103,7 +103,11 @@
 	<div slot="right">
 		<button
 			class="flex items-center"
-			onclick={() => (is_menu_modal_open = true)}
+			onclick={() => {
+				if (!check_login()) return;
+
+				is_menu_modal_open = true;
+			}}
 		>
 			<Icon attribute="menu" size={24} color={colors.gray[600]} />
 		</button>
@@ -140,14 +144,22 @@
 		<div class="mt-4 flex space-x-2">
 			{#if is_user_member(community)}
 				<button
-					onclick={() => handle_leave(community.id)}
+					onclick={() => {
+						if (!check_login()) return;
+
+						handle_leave(community.id);
+					}}
 					class="btn btn-soft flex flex-1"
 				>
 					참여중
 				</button>
 			{:else}
 				<button
-					onclick={() => handle_join(community.id)}
+					onclick={() => {
+						if (!check_login()) return;
+
+						handle_join(community.id);
+					}}
 					class="btn btn-primary flex flex-1"
 				>
 					참여하기

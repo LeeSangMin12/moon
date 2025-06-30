@@ -24,6 +24,7 @@
 
 	import colors from '$lib/js/colors';
 	import {
+		check_login,
 		comma,
 		copy_to_clipboard,
 		format_date,
@@ -94,6 +95,8 @@
 	};
 
 	const toggle_bookmark = async () => {
+		if (!check_login()) return;
+
 		if (is_bookmarked) {
 			await $api_store.post_bookmarks.delete(post.id, $user_store.id);
 		} else {
@@ -104,13 +107,21 @@
 	};
 
 	const toggle_follow = async () => {
+		if (!check_login()) return;
+
 		if (is_following) {
 			await $api_store.user_follows.unfollow($user_store.id, post.users.id);
-			is_following = false;
+			$user_store.user_follows = $user_store.user_follows.filter(
+				(follow) => follow.following_id !== post.users.id,
+			);
 		} else {
 			await $api_store.user_follows.follow($user_store.id, post.users.id);
-			is_following = true;
+			$user_store.user_follows.push({
+				following_id: post.users.id,
+			});
 		}
+
+		is_following = !is_following;
 	};
 
 	const handle_report_submit = async () => {
@@ -163,17 +174,28 @@
 			<p class="pr-3 text-sm font-medium">{post.users.name}</p>
 			<p class="mt-0.5 text-xs text-gray-400">{format_date(post.created_at)}</p>
 		</a>
-		<button
-			onclick={() => {
-				$user_store.handle === '비회원'
-					? update_global_store('is_login_prompt_modal', true)
-					: (modal.post_config = true);
-			}}
-		>
-			<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
-		</button>
 
-		<!-- <button class="btn btn-sm btn-primary h-6">팔로우</button> -->
+		{#if window.location.pathname.startsWith('/@')}
+			{#if post.users.id !== $user_store.id}
+				{#if is_following}
+					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>
+				{:else}
+					<button class="btn btn-sm btn-primary h-6" onclick={toggle_follow}
+						>팔로우</button
+					>
+				{/if}
+			{/if}
+		{:else}
+			<button
+				onclick={() => {
+					if (!check_login()) return;
+
+					modal.post_config = true;
+				}}
+			>
+				<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
+			</button>
+		{/if}
 	</div>
 
 	<!-- 제목 -->
@@ -217,9 +239,9 @@
 			<button
 				class="mr-3 flex items-center gap-1"
 				onclick={() => {
-					$user_store.handle === '비회원'
-						? update_global_store('is_login_prompt_modal', true)
-						: on_vote(1);
+					if (!check_login()) return;
+
+					on_vote(1);
 				}}
 			>
 				{#if user_vote === 1}
@@ -233,9 +255,9 @@
 			<button
 				class="mr-4 flex items-center gap-1"
 				onclick={() => {
-					$user_store.handle === '비회원'
-						? update_global_store('is_login_prompt_modal', true)
-						: on_vote(-1);
+					if (!check_login()) return;
+
+					on_vote(-1);
 				}}
 			>
 				{#if user_vote === -1}
@@ -257,9 +279,9 @@
 			<button
 				class="flex items-center gap-1"
 				onclick={() => {
-					$user_store.handle === '비회원'
-						? update_global_store('is_login_prompt_modal', true)
-						: (modal.gift = true);
+					if (!check_login()) return;
+
+					modal.gift = true;
 				}}
 			>
 				<Icon attribute="gift" size={16} color={colors.gray[400]} />
@@ -272,14 +294,7 @@
 				<p>10</p>
 			</button> -->
 
-		<button
-			class="flex items-center gap-1"
-			onclick={() => {
-				$user_store.handle === '비회원'
-					? update_global_store('is_login_prompt_modal', true)
-					: toggle_bookmark();
-			}}
-		>
+		<button class="flex items-center gap-1" onclick={toggle_bookmark}>
 			{#if is_bookmarked}
 				<RiBookmarkFill size={16} color={colors.primary} />
 			{:else}

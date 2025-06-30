@@ -4,9 +4,8 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
-	import { update_global_store } from '$lib/store/global_store';
 	import { user_store } from '$lib/store/user_store';
 
 	let { community = [], community_members = [] } = $props();
@@ -72,9 +71,9 @@
 		{:else}
 			<button
 				onclick={() => {
-					$user_store.handle === '비회원'
-						? update_global_store('is_login_prompt_modal', true)
-						: handle_join(community.id);
+					if (!check_login()) return;
+
+					handle_join(community.id);
 				}}
 				class="btn btn-primary btn-sm h-7"
 			>
