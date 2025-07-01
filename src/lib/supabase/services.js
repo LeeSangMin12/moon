@@ -53,7 +53,7 @@ export const create_services_api = (supabase) => ({
 	select_by_id: async (id) => {
 		const { data, error } = await supabase
 			.from('services')
-			.select('*, users:author_id(id, name, avatar_url)')
+			.select('*, users:author_id(id, name, avatar_url, handle)')
 			.eq('id', id);
 
 		if (error)

@@ -5,7 +5,7 @@
 
 	const handle_change = (i) => {
 		selected = i;
-		on_change();
+		on_change(i);
 	};
 </script>
 

@@ -13,33 +13,121 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Modal from '$lib/components/ui/Modal/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Post from '$lib/components/Post/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { copy_to_clipboard } from '$lib/js/common';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
+	import { api_store } from '$lib/store/api_store';
+	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store';
 
 	const TITLE = '문';
+
+	const REPORT_REASONS = [
+		'스팸/광고성 유저입니다.',
+		'욕설/혐오 발언을 사용했습니다.',
+		'선정적인 내용을 포함하고 있습니다.',
+		'잘못된 정보를 포함하고 있습니다.',
+		'기타',
+	];
 
 	let { data } = $props();
 	let { user, follower_count, following_count } = $derived(data);
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
+
+	let is_following = $state(false);
+
+	let user_report_form_data = $state({
+		reason: '',
+		details: '',
+	});
+
+	let modal = $state({
+		user_config: false,
+		report: false,
+	});
+
+	onMount(async () => {
+		if ($user_store?.id) {
+			is_following = await $api_store.user_follows.is_following(
+				$user_store.id,
+				user.id,
+			);
+		}
+	});
+
+	const toggle_follow = async () => {
+		if (!check_login()) return;
+
+		if (is_following) {
+			await $api_store.user_follows.unfollow($user_store.id, user.id);
+			$user_store.user_follows = $user_store.user_follows.filter(
+				(follow) => follow.following_id !== user.id,
+			);
+		} else {
+			await $api_store.user_follows.follow($user_store.id, user.id);
+			$user_store.user_follows.push({
+				following_id: user.id,
+			});
+		}
+
+		is_following = !is_following;
+		show_toast('success', '팔로잉 상태가 변경되었습니다.');
+	};
+
+	const handle_report_submit = async () => {
+		if (user_report_form_data.reason === '') {
+			show_toast('error', '신고 사유를 선택해주세요.');
+			return;
+		}
+
+		try {
+			await $api_store.user_reports.insert({
+				reporter_id: $user_store.id,
+				user_id: user.id,
+				reason: user_report_form_data.reason,
+				details: user_report_form_data.details,
+			});
+
+			show_toast('success', '신고가 정상적으로 접수되었습니다.');
+		} catch (error) {
+			console.error('Failed to submit report:', error);
+			show_toast('error', '신고 접수 중 오류가 발생했습니다.');
+		} finally {
+			modal.report = false;
+			modal.user_config = false;
+			user_report_form_data.reason = '';
+			user_report_form_data.details = '';
+		}
+	};
 </script>
 
 <Header>
 	<div slot="left">
-		{#if !$page.url.pathname.startsWith('/@')}
-			<button class="flex items-center" onclick={() => goback}>
+		{#if $page.params.handle !== $user_store.handle}
+			<button class="flex items-center" onclick={() => history.back()}>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
 		{/if}
 	</div>
 
 	<div slot="right">
-		<button>
+		<button
+			class="flex items-center"
+			onclick={() => {
+				if (!check_login()) return;
+
+				if ($page.params.handle !== $user_store.handle) {
+					modal.user_config = true;
+				} else {
+					goto(`/@${$user_store.handle}/accounts`);
+				}
+			}}
+		>
 			<Icon attribute="menu" size={24} color={colors.gray[600]} />
 		</button>
 	</div>
@@ -114,17 +202,41 @@
 			</div>
 		{:else}
 			<div class="mt-4 flex space-x-2">
+				<!-- {#if is_following}
+					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>
+				{:else}
+					<button class="btn btn-sm btn-primary h-6" onclick={toggle_follow}
+						>팔로우</button
+					>
+				{/if} -->
+				{#if is_following}
+					<button
+						class="btn flex h-9 flex-1 items-center justify-center"
+						onclick={toggle_follow}
+					>
+						팔로잉
+					</button>
+				{:else}
+					<button
+						class="btn btn-primary flex h-9 flex-1 items-center justify-center"
+						onclick={toggle_follow}
+					>
+						팔로우
+					</button>
+				{/if}
 				<button
-					class="btn btn-primary flex h-9 flex-1 items-center justify-center"
-				>
-					팔로우
-				</button>
-				<button
+					onclick={() => show_toast('success', '메시지 기능은 준비중입니다.')}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 				>
 					메시지
 				</button>
 				<button
+					onclick={() => {
+						copy_to_clipboard(
+							`${window.location.origin}/@${user.handle}`,
+							'링크가 복사되었습니다.',
+						);
+					}}
 					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"
 				>
 					<RiShareLine />
@@ -133,7 +245,7 @@
 		{/if}
 	</section>
 
-	<div class="mt-4">
+	<div class="mt-6">
 		<TabSelector {tabs} bind:selected />
 	</div>
 
@@ -582,4 +694,65 @@
 	<!-- <Post /> -->
 </main>
 
-<Bottom_nav />
+{#if $page.params.handle === $user_store.handle}
+	<Bottom_nav />
+{/if}
+
+<Modal bind:is_modal_open={modal.user_config} modal_position="bottom">
+	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
+		<button
+			onclick={() => (modal.report = true)}
+			class="flex w-full flex-col items-center rounded-lg bg-white"
+		>
+			<div class="flex w-full items-center gap-2 p-3">
+				<Icon attribute="exclamation" size={24} color={colors.warning} />
+				<p class="text-red-500">신고하기</p>
+			</div>
+		</button>
+	</div>
+</Modal>
+
+<Modal bind:is_modal_open={modal.report} modal_position="center">
+	<div class="p-4">
+		<h2 class="text-lg font-bold">무엇을 신고하시나요?</h2>
+		<p class="mt-1 text-sm text-gray-500">
+			커뮤니티 가이드라인에 어긋나는 내용을 알려주세요.
+		</p>
+
+		<div class="mt-4 space-y-2">
+			{#each REPORT_REASONS as reason}
+				<label class="flex items-center">
+					<input
+						type="radio"
+						name="report_reason"
+						value={reason}
+						bind:group={user_report_form_data.reason}
+						class="radio radio-primary radio-xs"
+					/>
+					<span class="ml-2">{reason}</span>
+				</label>
+			{/each}
+		</div>
+
+		<textarea
+			bind:value={user_report_form_data.details}
+			class="textarea textarea-bordered focus:border-primary mt-4 w-full focus:outline-none"
+			placeholder="상세 내용을 입력해주세요. (선택 사항)"
+			rows="3"
+		></textarea>
+	</div>
+	<div class="flex">
+		<button
+			onclick={() => (modal.report = false)}
+			class="btn w-1/3 rounded-none"
+		>
+			취소
+		</button>
+		<button
+			onclick={handle_report_submit}
+			class="btn btn-primary w-2/3 rounded-none"
+		>
+			제출
+		</button>
+	</div>
+</Modal>

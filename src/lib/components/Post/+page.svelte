@@ -62,6 +62,12 @@
 		details: '',
 	});
 
+	let modal = $state({
+		post_config: false,
+		gift: false,
+		report: false,
+	});
+
 	onMount(async () => {
 		if ($user_store?.id) {
 			is_following = await $api_store.user_follows.is_following(
@@ -69,12 +75,6 @@
 				post.users.id,
 			);
 		}
-	});
-
-	let modal = $state({
-		post_config: false,
-		gift: false,
-		report: false,
 	});
 
 	const on_vote = async (new_vote) => {
