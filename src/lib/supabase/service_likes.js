@@ -6,7 +6,7 @@ export const create_service_likes_api = (supabase) => ({
 
 		const { data, error } = await supabase
 			.from('service_likes')
-			.select('*')
+			.select('service_id')
 			.eq('user_id', user_id);
 		if (error) throw new Error(`Failed to select: ${error.message}`);
 

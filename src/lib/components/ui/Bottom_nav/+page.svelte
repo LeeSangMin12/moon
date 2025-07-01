@@ -77,7 +77,7 @@
 	</button>
 
 	<button
-		on:click={() => goto('/expert')}
+		on:click={() => goto('/service')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -85,7 +85,7 @@
 			height="20px"
 			viewBox="0 -960 960 960"
 			width="20px"
-			fill={$page.url.pathname === '/expert'
+			fill={$page.url.pathname === '/service'
 				? colors.gray[700]
 				: colors.gray[400]}
 			><path
@@ -94,9 +94,9 @@
 		>
 
 		<p
-			class={`${$page.url.pathname === '/expert' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
+			class={`${$page.url.pathname === '/service' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
 		>
-			전문가
+			서비스
 		</p>
 	</button>
 
@@ -115,7 +115,7 @@
 			height="20px"
 			viewBox="0 -960 960 960"
 			width="20px"
-			fill={$page.url.pathname === '/profile'
+			fill={$page.url.pathname === `/@${$user_store.handle}`
 				? colors.gray[700]
 				: colors.gray[400]}
 			><path

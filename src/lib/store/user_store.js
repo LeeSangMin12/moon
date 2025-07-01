@@ -13,6 +13,7 @@ export const user_store = writable({
 	self_introduction: '비회원입니다.',
 	moon_point: 0,
 	rating: 0,
+	website_url: '',
 	user_follows: [], // 팔로잉 목록
 	user_followers: [], // 팔로워 목록
 });

@@ -68,18 +68,20 @@
 	</div>
 
 	<!-- 좌우 버튼 -->
-	<button
-		on:click={prev}
-		class="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-	>
-		<Icon attribute="arrow_left" size={20} color={colors.white} />
-	</button>
-	<button
-		on:click={next}
-		class="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-	>
-		<Icon attribute="arrow_right" size={20} color={colors.white} />
-	</button>
+	{#if images.length > 1}
+		<button
+			on:click={prev}
+			class="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+		>
+			<Icon attribute="arrow_left" size={20} color={colors.white} />
+		</button>
+		<button
+			on:click={next}
+			class="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+		>
+			<Icon attribute="arrow_right" size={20} color={colors.white} />
+		</button>
+	{/if}
 
 	<!-- dot 영역 -->
 	<div

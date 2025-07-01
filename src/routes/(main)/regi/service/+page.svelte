@@ -13,28 +13,14 @@
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
 
-	const TITLE = '게시글 작성';
+	const TITLE = '서비스 등록';
 
 	let { data } = $props();
-	let { community_members } = $derived(data);
 
-	const community_select_options = $derived([
-		{ value: null, label: '모두에게', group: '대상' },
-		...(community_members || []).map((item) => ({
-			value: item.communities.id,
-			label: item.communities.title,
-			group: '커뮤니티',
-		})),
-	]);
-	let community_select_value = $state({
-		value: null,
-		label: '모두에게',
-		group: '대상',
-	});
-
-	let post_form_data = $state({
+	let service_form_data = $state({
 		title: '',
 		content: '',
+		price: 0,
 		images: [],
 	});
 
@@ -43,7 +29,7 @@
 	 */
 	const add_img = (event) => {
 		const selected_images = event.target.files; //input요소 선택한 파일
-		let images_copy = [...post_form_data.images]; //선택된 이미지의 복사본
+		let images_copy = [...service_form_data.images]; //선택된 이미지의 복사본
 
 		//미리보기용 이미지 uri 생성후 복사본에 추가
 		for (let i = 0; i < selected_images.length; i++) {
@@ -59,54 +45,54 @@
 		}
 
 		// 이미지 상태 업데이트
-		post_form_data.images = images_copy;
+		service_form_data.images = images_copy;
 	};
 
 	/**
 	 * 이미지 삭제
 	 */
 	const delete_img = (idx) => {
-		const update_images = [...post_form_data.images];
+		const update_images = [...service_form_data.images];
 		update_images.splice(idx, 1);
-		post_form_data.images = update_images;
+		service_form_data.images = update_images;
 	};
 
-	const save_post = async () => {
+	const save_service = async () => {
 		update_global_store('loading', true);
 		try {
-			const new_post = await $api_store.posts.insert({
-				community_id: community_select_value?.value || null,
-				title: post_form_data.title,
-				content: post_form_data.content,
+			const new_service = await $api_store.services.insert({
 				author_id: $user_store.id,
+				title: service_form_data.title,
+				content: service_form_data.content,
+				price: service_form_data.price,
 			});
 
-			if (post_form_data.images.length > 0) {
+			if (service_form_data.images.length > 0) {
 				const uploaded_images = await upload_images(
-					new_post.id,
-					post_form_data.images,
+					new_service.id,
+					service_form_data.images,
 				);
-				await $api_store.posts.update(new_post.id, {
+				await $api_store.services.update(new_service.id, {
 					images: uploaded_images,
 				});
 			}
 
-			show_toast('success', '게시글이 저장되었습니다.');
-			goto('/');
+			show_toast('success', '서비스가 저장되었습니다.');
+			goto('/service');
 		} finally {
 			update_global_store('loading', false);
 		}
 	};
 
-	const upload_images = async (post_id, images) => {
+	const upload_images = async (service_id, images) => {
 		return Promise.all(
 			images.map(async (img_file, i) => {
 				const file_ext = img_file.name.split('.').pop();
-				const file_path = `${post_id}/${Date.now()}-${i}.${file_ext}`;
+				const file_path = `${service_id}/${Date.now()}-${i}.${file_ext}`;
 
-				await $api_store.post_images.upload(file_path, img_file);
+				await $api_store.service_images.upload(file_path, img_file);
 				return {
-					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/posts/images/${file_path}`,
+					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/services/images/${file_path}`,
 				};
 			}),
 		);
@@ -114,7 +100,11 @@
 </script>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={() => goto('/')}>
+	<button
+		slot="left"
+		class="flex items-center"
+		onclick={() => goto('/service')}
+	>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 
@@ -122,17 +112,8 @@
 </Header>
 
 <main class="mx-4">
-	<div class="rounded-lg border border-gray-200">
-		<Select
-			items={community_select_options}
-			bind:value={community_select_value}
-			groupBy={(item) => item.group}
-			clearable={false}
-		/>
-	</div>
-
-	<div class="mt-6">
-		<span class="ml-1 text-sm font-medium">안내이미지 (선택)</span>
+	<div class="">
+		<span class="ml-1 text-sm font-medium">서비스 이미지</span>
 
 		<div class="mt-2 flex overflow-x-auto">
 			<label for="input-file">
@@ -161,13 +142,13 @@
 					</svg>
 
 					<span class="text-xs text-gray-900"
-						>{post_form_data.images.length}/7</span
+						>{service_form_data.images.length}/7</span
 					>
 				</div>
 			</label>
 
 			<div class="flex flex-row">
-				{#each post_form_data.images as img, idx}
+				{#each service_form_data.images as img, idx}
 					<div class="relative min-w-max">
 						<img
 							key={idx}
@@ -194,39 +175,54 @@
 		</div>
 	</div>
 
-	<div class="mt-8">
-		<p class="ml-1 text-sm font-medium">글 제목</p>
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">서비스 제목</p>
 
 		<div class="mt-2">
 			<input
-				bind:value={post_form_data.title}
+				bind:value={service_form_data.title}
 				type="text"
 				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 			/>
 		</div>
 	</div>
 
-	<div class="mt-8 flex flex-col">
-		<p class="ml-1 text-sm font-medium">글 내용</p>
+	<div class="mt-4 flex flex-col">
+		<p class="ml-1 text-sm font-medium">서비스 내용</p>
 
 		<div class="mt-2">
 			<textarea
-				bind:value={post_form_data.content}
+				bind:value={service_form_data.content}
 				type="text"
 				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
 			></textarea>
 		</div>
 	</div>
+
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">서비스 가격</p>
+
+		<div class="mt-2">
+			<input
+				bind:value={service_form_data.price}
+				type="number"
+				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+			/>
+		</div>
+	</div>
 </main>
+
 <div class="fixed bottom-0 w-full max-w-screen-md bg-white px-5 py-3.5">
 	<div class="pb-safe flex space-x-2">
 		<button
-			disabled={post_form_data.title.length === 0 ||
-				post_form_data.content.length === 0}
+			disabled={service_form_data.title.length === 0 ||
+				service_form_data.content.length === 0 ||
+				service_form_data.price === 0 ||
+				service_form_data.images.length === 0}
 			class="btn btn-primary flex flex-1 items-center justify-center"
-			onclick={save_post}
+			onclick={save_service}
 		>
-			게시하기
+			등록하기
 		</button>
 	</div>
 </div>

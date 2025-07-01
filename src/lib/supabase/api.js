@@ -1,5 +1,6 @@
 import { create_community_avatars_api } from '$lib/supabase/bucket/communities/avatars';
 import { create_post_images_api } from '$lib/supabase/bucket/posts/images';
+import { create_service_images_api } from '$lib/supabase/bucket/services/images';
 import { create_user_avatars_api } from '$lib/supabase/bucket/users/avatars';
 import { create_communities_api } from '$lib/supabase/communities';
 import { create_community_members_api } from '$lib/supabase/community_members';
@@ -39,4 +40,5 @@ export const create_api = (supabase) => ({
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),
 	post_images: create_post_images_api(supabase),
+	service_images: create_service_images_api(supabase),
 });

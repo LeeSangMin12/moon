@@ -1,6 +1,7 @@
 <script>
 	import profile_png from '$lib/img/common/user/profile.png';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import {
 		RiArrowLeftSLine,
@@ -16,6 +17,8 @@
 	import Post from '$lib/components/Post/+page.svelte';
 
 	import colors from '$lib/js/colors';
+	import { copy_to_clipboard } from '$lib/js/common';
+	import { user_store } from '$lib/store/user_store';
 
 	const TITLE = '문';
 
@@ -28,9 +31,11 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => goto('/')}>
-			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
-		</button>
+		{#if !$page.url.pathname.startsWith('/@')}
+			<button class="flex items-center" onclick={() => goback}>
+				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
+			</button>
+		{/if}
 	</div>
 
 	<div slot="right">
@@ -42,7 +47,7 @@
 
 <main>
 	<!-- 프로필 섹션 -->
-	<section class="px-4 py-4">
+	<section class="px-4">
 		<div class="flex items-start">
 			<!-- 프로필 이미지 -->
 			<div class="mr-4">
@@ -69,8 +74,9 @@
 				</div>
 			</div>
 		</div>
+
 		<!-- 팔로워/팔로잉 정보 -->
-		<div class="mt-4 flex space-x-4">
+		<div class="mt-4 flex items-center space-x-4">
 			<div class="cursor-pointer">
 				<span class="font-medium">{follower_count}</span>
 				<span class="text-sm text-gray-500"> 팔로워</span>
@@ -80,28 +86,51 @@
 				<span class="text-sm text-gray-500"> 팔로잉</span>
 			</div>
 		</div>
+
 		<!-- 소개글 -->
 		<p class="mt-4 text-sm">
 			{user.self_introduction}
 		</p>
-		<!-- 메시지와 팔로우 버튼 -->
-		<div class="mt-4 flex space-x-2">
-			<button
-				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
-			>
-				팔로우
-			</button>
-			<button
-				class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
-			>
-				메시지
-			</button>
-			<button
-				class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"
-			>
-				<RiShareLine />
-			</button>
-		</div>
+
+		{#if $page.params.handle === $user_store.handle}
+			<!-- 메시지와 팔로우 버튼 -->
+			<div class="mt-4 flex space-x-2">
+				<button
+					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+				>
+					프로필 편집
+				</button>
+				<button
+					onclick={() => {
+						copy_to_clipboard(
+							`${window.location.origin}/@${user.handle}`,
+							'링크가 복사되었습니다.',
+						);
+					}}
+					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+				>
+					프로필 공유
+				</button>
+			</div>
+		{:else}
+			<div class="mt-4 flex space-x-2">
+				<button
+					class="btn btn-primary flex h-9 flex-1 items-center justify-center"
+				>
+					팔로우
+				</button>
+				<button
+					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+				>
+					메시지
+				</button>
+				<button
+					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"
+				>
+					<RiShareLine />
+				</button>
+			</div>
+		{/if}
 	</section>
 
 	<div class="mt-4">

@@ -140,7 +140,7 @@
 		<pre class="mt-4 line-clamp-6 text-sm">
 {community.content}
 		</pre>
-		<!-- 메시지와 팔로우 버튼 -->
+
 		<div class="mt-4 flex space-x-2">
 			{#if is_user_member(community)}
 				<button

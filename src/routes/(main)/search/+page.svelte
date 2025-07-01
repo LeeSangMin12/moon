@@ -51,11 +51,11 @@
 <header class="sticky top-0 z-50 bg-white whitespace-nowrap">
 	<nav class="pt-safe">
 		<div class="z-10 flex h-[56px] w-full items-center">
-			<button onclick={() => goto('/')}>
+			<!-- <button onclick={() => goto('/')}>
 				<Icon attribute="arrow_left" size={28} color={colors.gray[600]} />
-			</button>
+			</button> -->
 
-			<div class="relative w-full pr-2">
+			<div class="relative w-full px-2">
 				<input
 					type="text"
 					placeholder="검색어를 입력하세요"
