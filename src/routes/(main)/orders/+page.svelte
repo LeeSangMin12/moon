@@ -194,6 +194,16 @@
 											주문 취소
 										</button>
 									{/if}
+
+									{#if order.status === 'completed'}
+										<button
+											onclick={() =>
+												goto(`/service/${order.service_id}#reviews`)}
+											class="bg-primary hover:bg-primary-dark rounded-md px-3 py-1.5 text-sm text-white"
+										>
+											리뷰 작성
+										</button>
+									{/if}
 								</div>
 							</div>
 						</div>

@@ -15,6 +15,7 @@ import { create_post_votes_api } from '$lib/supabase/post_votes';
 import { create_posts_api } from '$lib/supabase/posts';
 import { create_service_likes_api } from '$lib/supabase/service_likes';
 import { create_service_orders_api } from '$lib/supabase/service_orders';
+import { create_service_reviews_api } from '$lib/supabase/service_reviews';
 import { create_services_api } from '$lib/supabase/services';
 import { create_topics_api } from '$lib/supabase/topics';
 import { create_user_follows_api } from '$lib/supabase/user_follows';
@@ -36,6 +37,7 @@ export const create_api = (supabase) => ({
 	services: create_services_api(supabase),
 	service_likes: create_service_likes_api(supabase),
 	service_orders: create_service_orders_api(supabase),
+	service_reviews: create_service_reviews_api(supabase),
 	topics: create_topics_api(supabase),
 	user_follows: create_user_follows_api(supabase),
 	users: create_users_api(supabase),

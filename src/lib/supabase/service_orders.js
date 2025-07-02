@@ -67,7 +67,7 @@ export const create_service_orders_api = (supabase) => ({
 
 	// 구매자 ID로 주문 조회
 	select_by_buyer_id: async (buyer_id) => {
-		if (has_invalid_args([buyer_id])) return [];
+		// if (has_invalid_args([buyer_id])) return [];
 
 		const { data, error } = await supabase
 			.from('service_orders')
@@ -89,7 +89,7 @@ export const create_service_orders_api = (supabase) => ({
 
 	// 판매자 ID로 주문 조회
 	select_by_seller_id: async (seller_id) => {
-		if (has_invalid_args([seller_id])) return [];
+		// if (has_invalid_args([seller_id])) return [];
 
 		const { data, error } = await supabase
 			.from('service_orders')
@@ -111,7 +111,7 @@ export const create_service_orders_api = (supabase) => ({
 
 	// 서비스 ID로 주문 조회
 	select_by_service_id: async (service_id) => {
-		if (has_invalid_args([service_id])) return [];
+		// if (has_invalid_args([service_id])) return [];
 
 		const { data, error } = await supabase
 			.from('service_orders')

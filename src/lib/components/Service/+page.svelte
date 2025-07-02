@@ -2,6 +2,7 @@
 	import { RiHeartFill, RiStarFill } from 'svelte-remixicon';
 
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, comma, show_toast } from '$lib/js/common';
@@ -50,13 +51,13 @@
 		</h3>
 
 		<div class="mt-1 flex items-center">
-			<div class="flex items-center">
-				<Icon attribute="star" size={12} color={colors.primary} />
-			</div>
+			<RiStarFill size={12} color={colors.primary} />
+			<span class="ml-0.5 text-xs text-gray-500">
+				{service.rating || 0}
+			</span>
 
-			<span class="text-xs font-medium">{service.rating}</span>
 			<span class="ml-1 text-xs text-gray-500">
-				({service.rating_count})
+				({service.rating_count || 0})
 			</span>
 		</div>
 
