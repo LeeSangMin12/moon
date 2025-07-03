@@ -263,15 +263,19 @@
 <div class="flex flex-col">
 	<div class="flex w-full items-start justify-between">
 		<div class="flex gap-3">
-			<img
-				src={comment_state.users.avatar_url ?? profile_png}
-				alt="프로필"
-				class="h-8 w-8 rounded-full object-cover"
-			/>
+			<a class="h-8 w-8 flex-shrink-0" href={`/@${comment_state.users.handle}`}>
+				<img
+					src={comment_state.users.avatar_url ?? profile_png}
+					alt="프로필"
+					class="h-full w-full rounded-full object-cover"
+				/>
+			</a>
 			<div class="w-full">
 				<div class="mb-0.5 flex items-center gap-2">
-					<span class="text-sm font-medium text-black"
-						>@{comment_state.users.handle}</span
+					<a
+						class="text-sm font-medium text-black"
+						href={`/@${comment_state.users.handle}`}
+						>@{comment_state.users.handle}</a
 					>
 					<span class="text-xs text-gray-400"
 						>{get_time_past(new Date(comment_state.created_at))}</span

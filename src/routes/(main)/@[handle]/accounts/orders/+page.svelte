@@ -176,6 +176,9 @@
 									<p>입금자명: {order.depositor_name}</p>
 									<p>은행: {order.bank}</p>
 									<p>계좌번호: {order.account_number}</p>
+									{#if order.buyer_contact}
+										<p>연락처: {order.buyer_contact}</p>
+									{/if}
 								</div>
 
 								<div class="mt-3 flex gap-2">
@@ -257,6 +260,9 @@
 									<p>입금자명: {order.depositor_name}</p>
 									<p>은행: {order.bank}</p>
 									<p>계좌번호: {order.account_number}</p>
+									{#if order.buyer_contact}
+										<p>구매자 연락처: {order.buyer_contact}</p>
+									{/if}
 								</div>
 
 								<div class="mt-3 flex gap-2">

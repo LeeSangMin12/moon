@@ -72,4 +72,15 @@ export const create_communities_api = (supabase) => ({
 		if (error)
 			throw new Error(`Failed to update_communities: ${error.message}`);
 	},
+
+	select_by_user_id: async (user_id) => {
+		const { data, error } = await supabase
+			.from('communities')
+			.select('*, community_members(count)')
+			.order('created_at', { ascending: false }) // 최신순 정렬
+			.eq('creator_id', user_id);
+
+		if (error) throw new Error(`Failed to select_by_user_id: ${error.message}`);
+		return data;
+	},
 });

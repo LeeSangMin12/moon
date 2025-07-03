@@ -62,6 +62,18 @@ export const create_posts_api = (supabase) => ({
 
 		return data;
 	},
+	select_by_user_id: async (user_id) => {
+		const { data, error } = await supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.eq('author_id', user_id);
+
+		if (error) throw new Error(`Failed to select_by_user_id: ${error.message}`);
+
+		return data;
+	},
 	insert: async (post_data) => {
 		const { data, error } = await supabase
 			.from('posts')

@@ -41,6 +41,7 @@
 		depositor_name: '',
 		bank: '',
 		account_number: '',
+		buyer_contact: '',
 		special_request: '',
 	});
 
@@ -72,6 +73,7 @@
 			depositor_name: '',
 			bank: '',
 			account_number: '',
+			buyer_contact: '',
 			special_request: '',
 		};
 	};
@@ -96,6 +98,10 @@
 		}
 		if (!order_form_data.account_number.trim()) {
 			show_toast('error', '계좌번호를 입력해주세요.');
+			return false;
+		}
+		if (!order_form_data.buyer_contact.trim()) {
+			show_toast('error', '연락처를 입력해주세요.');
 			return false;
 		}
 		return true;
@@ -162,6 +168,7 @@
 				depositor_name: order_form_data.depositor_name.trim(),
 				bank: order_form_data.bank.trim(),
 				account_number: order_form_data.account_number.trim(),
+				buyer_contact: order_form_data.buyer_contact.trim(),
 				special_request: order_form_data.special_request.trim(),
 			};
 
@@ -260,7 +267,8 @@
 	const is_order_form_valid = $derived(
 		order_form_data.depositor_name.trim() &&
 			order_form_data.bank.trim() &&
-			order_form_data.account_number.trim(),
+			order_form_data.account_number.trim() &&
+			order_form_data.buyer_contact.trim(),
 	);
 
 	const is_review_form_valid = $derived(
@@ -395,7 +403,10 @@
 		<div class="pb-safe flex space-x-2">
 			<button
 				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
-				onclick={() => (is_buy_modal_open = true)}
+				onclick={() => {
+					if (!check_login()) return;
+					is_buy_modal_open = true;
+				}}
 			>
 				구매하기
 			</button>
@@ -426,7 +437,7 @@
 </main>
 
 <!-- Purchase Modal -->
-<Modal bind:is_modal_open={is_buy_modal_open} modal_position="center">
+<Modal bind:is_modal_open={is_buy_modal_open} modal_position="bottom">
 	<div class="p-4">
 		<div class="flex justify-between">
 			<h3 class="font-semibold">{service.title} 구매하기</h3>
@@ -467,6 +478,16 @@
 			</div>
 
 			<div>
+				<p class="text-sm font-medium">연락처</p>
+				<input
+					bind:value={order_form_data.buyer_contact}
+					type="text"
+					placeholder="전화번호 또는 인스타등 연락받을 연락처를 입력해주세요"
+					class={INPUT_CLASS}
+				/>
+			</div>
+
+			<div>
 				<p class="text-sm font-medium">특별 요청사항 (선택)</p>
 				<textarea
 					bind:value={order_form_data.special_request}
@@ -482,6 +503,16 @@
 		<div class="flex justify-between">
 			<p class="font-semibold">총 결제 금액</p>
 			<p class="text-primary text-lg font-bold">₩{comma(service.price)}</p>
+		</div>
+
+		<!-- 입금 계좌 안내 박스 -->
+		<div
+			class="mt-4 mb-6 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900"
+		>
+			<span class="font-bold">💡 입금 계좌 안내</span><br />
+			은행: <span class="font-semibold">국민은행</span><br />
+			예금주: <span class="font-semibold">이상민</span><br />
+			계좌번호: <span class="font-semibold">939302-00-616198</span>
 		</div>
 
 		<div

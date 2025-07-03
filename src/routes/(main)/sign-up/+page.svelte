@@ -33,7 +33,7 @@
 		avatar_url: '',
 	});
 
-	let handle_error = $state(false); //사용자이름 유효성 체크
+	let handle_error = $state(false); //id 유효성 체크
 
 	/**
 	 * 회원 가입 이전페이지 이동

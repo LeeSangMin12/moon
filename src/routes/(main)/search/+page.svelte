@@ -46,6 +46,20 @@
 				await $api_store.users.select_by_search(search_text);
 		}
 	};
+
+	const handle_gift_comment_added = async (event) => {
+		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
+			event.detail;
+
+		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
+		await $api_store.post_comments.insert({
+			post_id,
+			user_id: $user_store.id,
+			content: gift_content,
+			parent_comment_id,
+			gift_moon_point,
+		});
+	};
 </script>
 
 <header class="sticky top-0 z-50 bg-white whitespace-nowrap">
@@ -87,7 +101,7 @@
 	{#if selected === 0 && search_data.posts.length > 0}
 		{#each search_data.posts as post}
 			<div class="mt-4">
-				<Post {post} />
+				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
 			</div>
 		{/each}
 	{:else if selected === 1 && search_data.communities.length > 0}

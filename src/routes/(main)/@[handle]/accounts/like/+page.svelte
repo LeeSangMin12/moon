@@ -1,0 +1,39 @@
+<script>
+	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { RiAddLine, RiArrowLeftSLine, RiHeartFill } from 'svelte-remixicon';
+
+	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
+	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Service from '$lib/components/Service/+page.svelte';
+
+	import colors from '$lib/js/colors';
+	import { check_login, comma, show_toast } from '$lib/js/common';
+	import { api_store } from '$lib/store/api_store';
+	import { user_store } from '$lib/store/user_store';
+
+	const TITLE = '좋아요한 서비스';
+
+	let { data } = $props();
+	let { services, service_likes } = $state(data);
+</script>
+
+<Header>
+	<div slot="left">
+		<button onclick={() => goto(`/@${$user_store.handle}/accounts`)}>
+			<RiArrowLeftSLine size={24} color={colors.gray[800]} />
+		</button>
+	</div>
+	<h1 slot="center" class="font-semibold">{TITLE}</h1>
+</Header>
+
+<main>
+	<div class="mt-4 grid grid-cols-2 gap-4 px-4">
+		{#each services as service}
+			{#if service.services}
+				<Service service={service.services} {service_likes} />
+			{/if}
+		{/each}
+	</div>
+</main>

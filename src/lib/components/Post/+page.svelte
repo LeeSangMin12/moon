@@ -1,5 +1,6 @@
 <script>
 	import profile_png from '$lib/img/common/user/profile.png';
+	import { page } from '$app/stores';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import {
 		RiBookmarkFill,
@@ -177,7 +178,7 @@
 			<p class="mt-0.5 text-xs text-gray-400">{format_date(post.created_at)}</p>
 		</a>
 
-		{#if window.location.pathname.startsWith('/@')}
+		{#if $page.params.post_id}
 			{#if post.users.id !== $user_store.id}
 				{#if is_following}
 					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>

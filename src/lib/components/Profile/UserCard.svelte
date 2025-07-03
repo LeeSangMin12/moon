@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	import { api_store } from '$lib/store/api_store';
 	import { user_store } from '$lib/store/user_store';
@@ -29,7 +29,7 @@
 </script>
 
 <article class="my-3 flex items-center justify-between px-4">
-	<a href={`/@${profile.handle}`} class="flex items-center">
+	<a href={`/@${profile.handle}`} class="flex cursor-pointer items-center">
 		<img
 			src={profile.avatar_url}
 			alt={profile.handle}

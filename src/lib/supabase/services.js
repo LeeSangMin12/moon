@@ -60,4 +60,19 @@ export const create_services_api = (supabase) => ({
 			throw new Error(`Failed to select service by id: ${error.message}`);
 		return data[0];
 	},
+
+	// 특정 사용자가 작성한 서비스 조회
+	select_by_user_id: async (user_id) => {
+		const { data, error } = await supabase
+			.from('services')
+			.select('*, users:author_id(id, name, avatar_url, handle)')
+			.eq('author_id', user_id)
+			.order('created_at', { ascending: false });
+
+		if (error) {
+			throw new Error(`Failed to select services by user_id: ${error.message}`);
+		}
+
+		return data;
+	},
 });

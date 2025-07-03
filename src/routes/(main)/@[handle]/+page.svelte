@@ -16,6 +16,8 @@
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Post from '$lib/components/Post/+page.svelte';
+	import UserCard from '$lib/components/Profile/UserCard.svelte';
+	import Service from '$lib/components/Service/+page.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
@@ -34,10 +36,17 @@
 	];
 
 	let { data } = $props();
-	let { user, follower_count, following_count } = $derived(data);
+	let { user, posts, follower_count, following_count } = $state(data);
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
+	let selected_data = $state({
+		posts: posts || [],
+		post_comments: [],
+		services: [],
+		service_likes: [],
+		service_reviews: [],
+	});
 
 	let is_following = $state(false);
 
@@ -50,6 +59,10 @@
 		user_config: false,
 		report: false,
 	});
+
+	let is_follow_modal_open = $state(false);
+	let follow_modal_type = $state('followers'); // 'followers' or 'followings'
+	let follow_modal_users = $state([]);
 
 	onMount(async () => {
 		if ($user_store?.id) {
@@ -104,6 +117,91 @@
 			user_report_form_data.details = '';
 		}
 	};
+
+	const load_tab_data = async (tab_index) => {
+		if (tab_index === 0) {
+			// 게시글 탭
+			selected_data.posts = await $api_store.posts.select_by_user_id(user.id);
+		} else if (tab_index === 1) {
+			// 댓글 탭
+			selected_data.post_comments =
+				await $api_store.post_comments.select_by_user_id(user.id);
+		} else if (tab_index === 2) {
+			// 서비스 탭
+			selected_data.services = await $api_store.services.select_by_user_id(
+				user.id,
+			);
+			selected_data.service_likes =
+				await $api_store.service_likes.select_by_user_id(user.id);
+		} else if (tab_index === 3) {
+			// 받은리뷰 탭
+			selected_data.service_reviews =
+				await $api_store.service_reviews.select_by_service_author_id(user.id);
+		}
+	};
+
+	// 탭 변경 시 데이터 로드
+	$effect(() => {
+		load_tab_data(selected);
+	});
+
+	const handle_gift_comment_added = async (event) => {
+		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
+			event.detail;
+
+		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
+		await $api_store.post_comments.insert({
+			post_id,
+			user_id: $user_store.id,
+			content: gift_content,
+			parent_comment_id,
+			gift_moon_point,
+		});
+	};
+
+	const open_follow_modal = async (type) => {
+		follow_modal_type = type;
+		is_follow_modal_open = true;
+		if (type === 'followers') {
+			follow_modal_users = await $api_store.user_follows.select_followers(
+				user.id,
+			);
+		} else {
+			follow_modal_users = await $api_store.user_follows.select_followings(
+				user.id,
+			);
+		}
+	};
+
+	$effect(async () => {
+		const handle = $page.params.handle;
+		if (!handle || !$api_store.users) return;
+
+		const new_user = await $api_store.users.select_by_handle(handle);
+		const new_posts = await $api_store.posts.select_by_user_id(new_user.id);
+		const new_follower_count = await $api_store.user_follows.get_follower_count(
+			new_user.id,
+		);
+		const new_following_count =
+			await $api_store.user_follows.get_following_count(new_user.id);
+
+		user = new_user;
+		posts = new_posts;
+		follower_count = new_follower_count;
+		following_count = new_following_count;
+
+		if ($user_store?.id) {
+			is_following = await $api_store.user_follows.is_following(
+				$user_store.id,
+				new_user.id,
+			);
+		}
+
+		// 탭 데이터도 새로고침
+		await load_tab_data(selected);
+
+		is_follow_modal_open = false;
+	});
 </script>
 
 <Header>
@@ -150,7 +248,7 @@
 				<h2 class="text-sm text-gray-500">@{user.handle}</h2>
 				<h1 class="text-xl font-bold">{user.name}</h1>
 				<!-- 별점 -->
-				<div class="mt-1 flex items-center">
+				<!-- <div class="mt-1 flex items-center">
 					<div class="flex items-center text-yellow-500">
 						<Icon attribute="star" size={16} color={colors.primary} />
 					</div>
@@ -159,20 +257,26 @@
 					<span class="ml-1 text-sm text-gray-500">
 						({user.rating_count || 0})
 					</span>
-				</div>
+				</div> -->
 			</div>
 		</div>
 
 		<!-- 팔로워/팔로잉 정보 -->
 		<div class="mt-4 flex items-center space-x-4">
-			<div class="cursor-pointer">
+			<button
+				class="cursor-pointer"
+				onclick={() => open_follow_modal('followers')}
+			>
 				<span class="font-medium">{follower_count}</span>
 				<span class="text-sm text-gray-500"> 팔로워</span>
-			</div>
-			<div class="cursor-pointer">
+			</button>
+			<button
+				class="cursor-pointer"
+				onclick={() => open_follow_modal('followings')}
+			>
 				<span class="font-medium">{following_count}</span>
 				<span class="text-sm text-gray-500"> 팔로잉</span>
-			</div>
+			</button>
 		</div>
 
 		<!-- 소개글 -->
@@ -202,13 +306,6 @@
 			</div>
 		{:else}
 			<div class="mt-4 flex space-x-2">
-				<!-- {#if is_following}
-					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>
-				{:else}
-					<button class="btn btn-sm btn-primary h-6" onclick={toggle_follow}
-						>팔로우</button
-					>
-				{/if} -->
 				{#if is_following}
 					<button
 						class="btn flex h-9 flex-1 items-center justify-center"
@@ -248,450 +345,175 @@
 	<div class="mt-6">
 		<TabSelector {tabs} bind:selected />
 	</div>
+	{#if selected === 0 && selected_data.posts.length > 0}
+		{#each selected_data.posts as post}
+			<div class="mt-4">
+				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+			</div>
+		{/each}
+	{:else if selected === 1 && selected_data.post_comments.length > 0}
+		<!-- 댓글 탭 -->
+		<div class="mx-4 mt-4 space-y-3">
+			{#each selected_data.post_comments as comment}
+				<div class="rounded-lg border border-gray-200 bg-white p-4">
+					<!-- 댓글이 달린 게시글 정보 -->
+					{#if comment.post}
+						<div class="mb-3 rounded bg-gray-50 p-3">
+							<p class="mb-1 text-xs text-gray-500">댓글을 남긴 게시글</p>
+							<p
+								class="line-clamp-2 overflow-hidden text-sm font-medium text-ellipsis"
+								style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;"
+							>
+								{comment.post.title || comment.post.content}
+							</p>
+							{#if comment.post?.users?.handle}
+								<button
+									onclick={() =>
+										goto(
+											`/@${comment.post.users.handle}/post/${comment.post.id}`,
+										)}
+									class="mt-1 text-xs text-blue-600 hover:underline"
+								>
+									게시글 보기 →
+								</button>
+							{/if}
+						</div>
+					{/if}
 
-	{#if selected === 2}
-		<section>
-			<div class="mt-4 grid grid-cols-2 gap-4 px-4">
-				<!-- 서비스 카드 1 -->
-				<div
-					class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
-				>
-					<div class="relative">
+					<!-- 댓글 내용 -->
+					<div class="flex items-start space-x-3">
 						<img
-							src="https://readdy.ai/api/search-image?query=professional%2520web%2520developer%2520working%2520on%2520React%2520code%252C%2520modern%2520workspace%252C%2520clean%2520desk%2520setup%252C%2520multiple%2520monitors%2520showing%2520code%252C%2520high-quality%2520detailed%2520photo%252C%2520soft%2520lighting&width=400&height=225&seq=101&orientation=landscape"
-							alt="React 컴포넌트 최적화"
-							class="h-28 w-full object-cover"
+							src={user.avatar_url || profile_png}
+							alt={user.name}
+							class="h-8 w-8 rounded-full"
 						/>
-					</div>
-					<div class="px-2 py-2">
-						<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">
-							React 컴포넌트 최적화 코드 리뷰
-						</h3>
-
-						<div class="mt-1 flex items-center">
-							<div class="flex items-center">
-								<Icon attribute="star" size={12} color={colors.primary} />
+						<div class="flex-1">
+							<div class="flex items-center space-x-2">
+								<p class="text-sm font-medium">@{user.handle}</p>
+								<span class="text-xs text-gray-500">
+									{new Date(comment.created_at).toLocaleDateString('ko-KR')}
+								</span>
 							</div>
 
-							<span class="text-xs font-medium">4.9</span>
-							<span class="ml-1 text-xs text-gray-500">(327)</span>
+							<!-- 부모 댓글이 있는 경우 -->
+							{#if comment.parent_comment}
+								<div class="mt-2 ml-4 border-l-2 border-gray-200 pl-3">
+									<p class="mb-1 text-xs text-gray-500">답글:</p>
+									<p class="text-sm text-gray-600">
+										@{comment.parent_comment.users?.handle || 'unknown'}:
+										{comment.parent_comment.content}
+									</p>
+								</div>
+							{/if}
+
+							<p class="mt-2 text-sm whitespace-pre-wrap">{comment.content}</p>
+
+							<!-- 선물 포인트가 있는 경우 -->
+							{#if comment.gift_moon_point > 0}
+								<div
+									class="mt-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-1"
+								>
+									<Icon attribute="gift" size={14} color={colors.warning} />
+									<span class="ml-1 text-xs font-medium text-yellow-800">
+										{comment.gift_moon_point} 포인트 선물
+									</span>
+								</div>
+							{/if}
 						</div>
-
-						<div class="mt-1.5 flex items-center justify-between">
-							<span class="font-semibold text-gray-900">₩50,000</span>
-
-							<button>
-								<RiHeartFill size={18} color={colors.gray[400]} />
+					</div>
+				</div>
+			{/each}
+		</div>
+	{:else if selected === 2 && selected_data.services.length > 0}
+		<!-- 서비스 탭 -->
+		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
+			{#each selected_data.services as service}
+				<Service {service} service_likes={selected_data.service_likes} />
+			{/each}
+		</div>
+	{:else if selected === 3 && selected_data.service_reviews.length > 0}
+		<!-- 받은리뷰 탭 -->
+		<div class="mx-4 mt-4 space-y-3">
+			{#each selected_data.service_reviews as review}
+				<div class="rounded-lg border border-gray-200 bg-white p-4">
+					<!-- 리뷰받은 서비스 정보 -->
+					{#if review.service}
+						<div class="mb-3 rounded bg-gray-50 p-3">
+							<p class="mb-1 text-xs text-gray-500">받은 리뷰</p>
+							<p class="text-sm font-medium">
+								{review.service.title || '제목 없음'}
+							</p>
+							<button
+								onclick={() => goto(`/service/${review.service.id}`)}
+								class="mt-1 text-xs text-blue-600 hover:underline"
+							>
+								서비스 보기 →
 							</button>
 						</div>
+					{/if}
+
+					<!-- 리뷰 내용 -->
+					<div class="flex items-start space-x-3">
+						{#if review.reviewer?.avatar_url}
+							<img
+								src={review.reviewer.avatar_url}
+								alt={review.reviewer.name || '익명'}
+								class="h-8 w-8 rounded-full"
+							/>
+						{:else}
+							<img src={profile_png} alt="익명" class="h-8 w-8 rounded-full" />
+						{/if}
+						<div class="flex-1">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center space-x-2">
+									{#if review.reviewer?.handle}
+										<p class="text-sm font-medium">@{review.reviewer.handle}</p>
+									{:else}
+										<p class="text-sm font-medium">익명 사용자</p>
+									{/if}
+									<div class="flex items-center">
+										{#each Array(5) as _, i}
+											<Icon
+												attribute="star"
+												size={14}
+												color={i < review.rating
+													? colors.primary
+													: colors.gray[300]}
+											/>
+										{/each}
+									</div>
+								</div>
+								<span class="text-xs text-gray-500">
+									{new Date(review.created_at).toLocaleDateString('ko-KR')}
+								</span>
+							</div>
+
+							{#if review.title}
+								<h3 class="mt-2 text-sm font-medium">{review.title}</h3>
+							{/if}
+
+							<p class="mt-1 text-sm whitespace-pre-wrap text-gray-700">
+								{review.content}
+							</p>
+						</div>
 					</div>
 				</div>
-			</div>
-		</section>
+			{/each}
+		</div>
+	{:else}
+		<!-- 데이터가 없는 경우 -->
+		<div class="mx-4 mt-8 text-center text-gray-500">
+			{#if selected === 0}
+				<p>작성한 게시글이 없습니다.</p>
+			{:else if selected === 1}
+				<p>작성한 댓글이 없습니다.</p>
+			{:else if selected === 2}
+				<p>등록한 서비스가 없습니다.</p>
+			{:else if selected === 3}
+				<p>받은 리뷰가 없습니다.</p>
+			{/if}
+		</div>
 	{/if}
-
-	<!-- 탭 컨텐츠 -->
-	<section>
-		<!-- 게시글 탭 -->
-		<div class="active tab-content" id="posts-content">
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<h3 class="font-medium">프론트엔드 개발 팁: React 최적화 방법</h3>
-						<p class="mt-1 text-sm text-gray-600">
-							React 애플리케이션의 성능을 향상시키는 몇 가지 방법을 공유합니다.
-							메모이제이션, 코드 스플리팅, 가상화 등 다양한 기법을 알아보세요.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<span>2025년 6월 10일</span>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>124</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>32</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<h3 class="font-medium">타입스크립트 초보자를 위한 가이드</h3>
-						<p class="mt-1 text-sm text-gray-600">
-							타입스크립트를 처음 시작하는 분들을 위한 기초 가이드입니다. 타입
-							정의부터 인터페이스, 제네릭까지 단계별로 설명합니다.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<span>2025년 6월 5일</span>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>89</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>15</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<h3 class="font-medium">웹 개발자를 위한 필수 도구 모음</h3>
-						<p class="mt-1 text-sm text-gray-600">
-							개발 생산성을 높여주는 필수 도구들을 소개합니다. 코드 에디터,
-							디버깅 도구, 버전 관리 시스템 등 다양한 도구를 알아보세요.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<span>2025년 5월 28일</span>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>156</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>42</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<h3 class="font-medium">Node.js와 Express로 RESTful API 만들기</h3>
-						<p class="mt-1 text-sm text-gray-600">
-							Node.js와 Express 프레임워크를 사용하여 RESTful API를 구축하는
-							방법을 단계별로 설명합니다.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<span>2025년 5월 20일</span>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>112</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>28</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- 댓글 탭 -->
-		<div class="tab-content" id="comments-content">
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<div class="mb-1 flex items-center text-xs text-gray-500">
-							<span>김민수님의 게시글에 댓글</span>
-							<span class="mx-1">•</span>
-							<span>2025년 6월 11일</span>
-						</div>
-						<p class="text-sm">
-							정말 유용한 정보 감사합니다! 저도 최근에 React 최적화에 관심이
-							많았는데 도움이 많이 되었어요.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>12</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>3</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<div class="mb-1 flex items-center text-xs text-gray-500">
-							<span>이지현님의 게시글에 댓글</span>
-							<span class="mx-1">•</span>
-							<span>2025년 6월 8일</span>
-						</div>
-						<p class="text-sm">
-							타입스크립트 관련 글 잘 봤습니다. 혹시 타입스크립트와 React를 함께
-							사용하는 방법에 대한 글도 작성해 주실 수 있을까요?
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>8</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>1</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<div class="mb-1 flex items-center text-xs text-gray-500">
-							<span>박준호님의 게시글에 댓글</span>
-							<span class="mx-1">•</span>
-							<span>2025년 6월 3일</span>
-						</div>
-						<p class="text-sm">
-							Next.js 관련 내용이 정말 도움이 되었습니다. SSR과 SSG의 차이점을
-							명확하게 이해할 수 있었어요.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>15</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>2</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="flex items-start">
-					<div class="flex-1">
-						<div class="mb-1 flex items-center text-xs text-gray-500">
-							<span>최유진님의 게시글에 댓글</span>
-							<span class="mx-1">•</span>
-							<span>2025년 5월 29일</span>
-						</div>
-						<p class="text-sm">
-							GraphQL 관련 내용이 매우 유익했습니다. REST API와 비교하는 부분이
-							특히 도움이 되었어요.
-						</p>
-						<div class="mt-2 flex items-center text-xs text-gray-500">
-							<div class="flex items-center">
-								<i class="ri-heart-line ri-sm mr-1"></i>
-								<span>10</span>
-							</div>
-							<span class="mx-1">•</span>
-							<div class="flex items-center">
-								<i class="ri-message-2-line ri-sm mr-1"></i>
-								<span>0</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- 서비스 탭 -->
-		<div class="tab-content" id="services-content">
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex">
-					<div class="mr-3 h-20 w-20 overflow-hidden rounded-lg">
-						<img
-							src="https://readdy.ai/api/search-image?query=professional%20web%20development%20service%2C%20coding%20on%20laptop%2C%20website%20design%2C%20programming%20interface%2C%20clean%20modern%20design&width=100&height=100&seq=2&orientation=squarish"
-							alt="웹 개발 서비스"
-							class="h-full w-full object-cover"
-						/>
-					</div>
-					<div class="flex-1">
-						<h3 class="font-medium">웹 프론트엔드 개발</h3>
-						<div class="mt-1 flex items-center">
-							<div class="flex items-center text-yellow-500">
-								<i class="ri-star-fill ri-sm"></i>
-							</div>
-							<span class="ml-1 text-sm">4.9</span>
-							<span class="ml-1 text-xs text-gray-500">(127)</span>
-						</div>
-						<p class="mt-1 text-sm text-gray-600">
-							React, Vue, Angular 등을 활용한 웹 프론트엔드 개발
-						</p>
-						<p class="text-primary mt-1 font-medium">₩150,000부터</p>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex">
-					<div class="mr-3 h-20 w-20 overflow-hidden rounded-lg">
-						<img
-							src="https://readdy.ai/api/search-image?query=mobile%20app%20development%2C%20smartphone%20with%20app%20interface%2C%20coding%20for%20mobile%2C%20UI%20design%20for%20app&width=100&height=100&seq=3&orientation=squarish"
-							alt="모바일 앱 개발"
-							class="h-full w-full object-cover"
-						/>
-					</div>
-					<div class="flex-1">
-						<h3 class="font-medium">모바일 앱 개발</h3>
-						<div class="mt-1 flex items-center">
-							<div class="flex items-center text-yellow-500">
-								<i class="ri-star-fill ri-sm"></i>
-							</div>
-							<span class="ml-1 text-sm">4.8</span>
-							<span class="ml-1 text-xs text-gray-500">(98)</span>
-						</div>
-						<p class="mt-1 text-sm text-gray-600">
-							React Native, Flutter를 활용한 크로스 플랫폼 앱 개발
-						</p>
-						<p class="text-primary mt-1 font-medium">₩200,000부터</p>
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="flex">
-					<div class="mr-3 h-20 w-20 overflow-hidden rounded-lg">
-						<img
-							src="https://readdy.ai/api/search-image?query=code%20review%20service%2C%20programmer%20reviewing%20code%2C%20software%20quality%20assurance%2C%20debugging%20process&width=100&height=100&seq=4&orientation=squarish"
-							alt="코드 리뷰"
-							class="h-full w-full object-cover"
-						/>
-					</div>
-					<div class="flex-1">
-						<h3 class="font-medium">코드 리뷰 및 컨설팅</h3>
-						<div class="mt-1 flex items-center">
-							<div class="flex items-center text-yellow-500">
-								<i class="ri-star-fill ri-sm"></i>
-							</div>
-							<span class="ml-1 text-sm">5.0</span>
-							<span class="ml-1 text-xs text-gray-500">(42)</span>
-						</div>
-						<p class="mt-1 text-sm text-gray-600">
-							코드 품질 향상 및 성능 최적화를 위한 전문 리뷰
-						</p>
-						<p class="text-primary mt-1 font-medium">₩100,000부터</p>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- 받은리뷰 탭 -->
-		<div class="tab-content" id="reviews-content">
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<img
-						src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20Korean%20woman%2C%20business%20casual%2C%20friendly%20smile%2C%20neutral%20background&width=40&height=40&seq=5&orientation=squarish"
-						alt="리뷰어 이미지"
-						class="mr-3 h-10 w-10 rounded-full"
-					/>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<h3 class="font-medium">김지영</h3>
-							<span class="text-xs text-gray-500">2025년 6월 8일</span>
-						</div>
-						<div class="mt-1 flex items-center text-yellow-500">
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-						</div>
-						<p class="mt-1 text-sm">
-							프론트엔드 개발 서비스를 이용했는데 정말 만족스러웠습니다.
-							요구사항을 정확히 이해하고 기대 이상의 결과물을 제공해 주셨어요.
-							특히 사용자 경험을 고려한 디자인이 인상적이었습니다.
-						</p>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<img
-						src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20Korean%20man%2C%20business%20casual%2C%20confident%20pose%2C%20neutral%20background&width=40&height=40&seq=6&orientation=squarish"
-						alt="리뷰어 이미지"
-						class="mr-3 h-10 w-10 rounded-full"
-					/>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<h3 class="font-medium">박현우</h3>
-							<span class="text-xs text-gray-500">2025년 5월 25일</span>
-						</div>
-						<div class="mt-1 flex items-center text-yellow-500">
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-						</div>
-						<p class="mt-1 text-sm">
-							코드 리뷰 서비스를 받았는데, 정말 많은 도움이 되었습니다. 제가
-							놓친 부분들을 꼼꼼하게 체크해주시고, 성능 최적화에 대한 조언도
-							매우 유익했습니다. 덕분에 코드 품질이 크게 향상되었어요.
-						</p>
-					</div>
-				</div>
-			</div>
-			<div class="border-b border-gray-100 p-4">
-				<div class="flex items-start">
-					<img
-						src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20Korean%20woman%2C%20tech%20professional%2C%20smart%20casual%2C%20neutral%20background&width=40&height=40&seq=7&orientation=squarish"
-						alt="리뷰어 이미지"
-						class="mr-3 h-10 w-10 rounded-full"
-					/>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<h3 class="font-medium">이수진</h3>
-							<span class="text-xs text-gray-500">2025년 5월 12일</span>
-						</div>
-						<div class="mt-1 flex items-center text-yellow-500">
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-half-line ri-sm"></i>
-						</div>
-						<p class="mt-1 text-sm">
-							모바일 앱 개발 서비스를 이용했습니다. 전반적으로 만족스러웠으나,
-							초기 요구사항 정의 과정에서 조금 더 명확한 커뮤니케이션이 있었으면
-							좋았을 것 같습니다. 그래도 최종 결과물은 훌륭했고, 특히 UI/UX가
-							매우 직관적이고 사용하기 편했습니다.
-						</p>
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="flex items-start">
-					<img
-						src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20Korean%20man%2C%20tech%20entrepreneur%2C%20modern%20outfit%2C%20neutral%20background&width=40&height=40&seq=8&orientation=squarish"
-						alt="리뷰어 이미지"
-						class="mr-3 h-10 w-10 rounded-full"
-					/>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<h3 class="font-medium">최동현</h3>
-							<span class="text-xs text-gray-500">2025년 4월 30일</span>
-						</div>
-						<div class="mt-1 flex items-center text-yellow-500">
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-							<i class="ri-star-fill ri-sm"></i>
-						</div>
-						<p class="mt-1 text-sm">
-							웹 프론트엔드 개발 서비스를 이용했는데, 정말 전문적인 지식과
-							기술력을 갖추고 계신 것 같습니다. 특히 React와 TypeScript를 활용한
-							코드 구조가 매우 체계적이고 유지보수하기 좋았습니다. 다음에도 꼭
-							함께 일하고 싶습니다.
-						</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- <Post /> -->
 </main>
 
 {#if $page.params.handle === $user_store.handle}
@@ -754,5 +576,20 @@
 		>
 			제출
 		</button>
+	</div>
+</Modal>
+
+<Modal bind:is_modal_open={is_follow_modal_open} modal_position="center">
+	<div class="p-4">
+		<h2 class="mb-4 text-lg font-bold">
+			{follow_modal_type === 'followers' ? '팔로워' : '팔로잉'}
+		</h2>
+		{#if follow_modal_users.length === 0}
+			<p class="py-8 text-center text-gray-500">아직 유저가 없습니다.</p>
+		{:else}
+			{#each follow_modal_users as users}
+				<UserCard profile={users.user} />
+			{/each}
+		{/if}
 	</div>
 </Modal>

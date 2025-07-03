@@ -75,7 +75,7 @@ export const create_service_reviews_api = (supabase) => ({
 		return data;
 	},
 
-	// 리뷰어별 리뷰 조회
+	// 리뷰어별 리뷰 조회 (사용자가 작성한 리뷰)
 	select_by_reviewer_id: async (reviewer_id) => {
 		// if (has_invalid_args([reviewer_id])) return [];
 
@@ -94,6 +94,45 @@ export const create_service_reviews_api = (supabase) => ({
 		if (error)
 			throw new Error(
 				`Failed to select reviews by reviewer id: ${error.message}`,
+			);
+		return data;
+	},
+
+	// 서비스 작성자별 받은 리뷰 조회 (서비스 작성자가 받은 리뷰)
+	select_by_service_author_id: async (author_id) => {
+		// 1. 먼저 해당 사용자의 서비스 ID들을 가져옴
+		const { data: services, error: serviceError } = await supabase
+			.from('services')
+			.select('id')
+			.eq('author_id', author_id);
+
+		if (serviceError)
+			throw new Error(
+				`Failed to select services by author id: ${serviceError.message}`,
+			);
+
+		if (!services || services.length === 0) {
+			return [];
+		}
+
+		const serviceIds = services.map((service) => service.id);
+
+		// 2. 해당 서비스들에 대한 리뷰를 가져옴
+		const { data, error } = await supabase
+			.from('service_reviews')
+			.select(
+				`
+				*,
+				reviewer:reviewer_id(id, name, handle, avatar_url),
+				service:service_id(id, title)
+			`,
+			)
+			.in('service_id', serviceIds)
+			.order('created_at', { ascending: false });
+
+		if (error)
+			throw new Error(
+				`Failed to select reviews by service author id: ${error.message}`,
 			);
 		return data;
 	},

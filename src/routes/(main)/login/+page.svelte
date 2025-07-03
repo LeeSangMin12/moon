@@ -3,8 +3,11 @@
 	import logo from '$lib/img/logo.png';
 	import kakao_login from '$lib/img/partials/login/kakao_login.png';
 	import landing_logo from '$lib/img/partials/login/landing_logo.jpg';
+	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
+
+	import colors from '$lib/js/colors';
 
 	const TITLE = '문';
 
@@ -22,7 +25,11 @@
 	};
 </script>
 
-<Header nav_class="bg-white"></Header>
+<Header>
+	<button slot="left" onclick={() => history.back()}>
+		<RiArrowLeftSLine size={28} color={colors.gray[800]} />
+	</button>
+</Header>
 
 <main class="flex h-screen flex-col items-center justify-between">
 	<div class="mt-26 flex flex-col items-center">
@@ -33,6 +40,9 @@
 			alt="landing_logo_png"
 			class="mt-6 h-80 w-full object-cover px-4"
 		/>
+
+		<h2 class="text-center text-gray-500">지식 공유 하면</h2>
+		<h2 class="text-center text-gray-500">후원, 서비스 판매, 채용 연계까지!</h2>
 	</div>
 
 	<button onclick={sign_in_with_kakao}>

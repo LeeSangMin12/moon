@@ -16,11 +16,11 @@
 			selected_img.uri = URL.createObjectURL(selected_img);
 
 			const file_ext = selected_img.name.split('.').pop();
-			const file_path = `${$user_store.id}/${Date.now()}.${file_ext}`;
+			const file_path = `avatars/${$user_store.id}/${Date.now()}.${file_ext}`;
 
 			await $api_store.user_avatars.upload(file_path, selected_img);
 
-			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/avatars/${file_path}`;
+			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/${file_path}`;
 			await $api_store.users.update($user_store.id, {
 				avatar_url: img_url,
 			});

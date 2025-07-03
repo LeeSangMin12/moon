@@ -1,7 +1,17 @@
 <script>
 	// import { username } from '@/lib/store/users_store.js';
 	import { goto } from '$app/navigation';
-	import { RiArrowRightSLine } from 'svelte-remixicon';
+	import {
+		RiArrowLeftSLine,
+		RiArrowRightSLine,
+		RiArrowRightWideLine,
+		RiBookmarkLine,
+		RiCommunityLine,
+		RiGraduationCapLine,
+		RiHeartLine,
+		RiTeamLine,
+		RiUserLine,
+	} from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
@@ -18,147 +28,119 @@
 
 <Header>
 	<div slot="left">
-		<a class="flex items-center" href="see_more/modify_membership">
-			<h1 class="mr-1.5 font-semibold">{$user_store.name}님</h1>
-
-			<RiArrowRightSLine size={24} color={colors.gray[600]} />
+		<a class="flex items-center" href={`/@${$user_store.handle}`}>
+			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 		</a>
 	</div>
 </Header>
 
 <main>
-	<button class="flex items-center px-5 py-4">
-		<svg
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			class="mr-3"
+	<div class="mx-4 mt-2 flex items-center justify-center">
+		<a
+			href={`/@${$user_store.handle}/accounts/point`}
+			class="flex h-16 w-full items-center justify-between rounded-[14px] bg-gradient-to-r from-blue-500 to-sky-500 px-7"
 		>
-			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
-				d="M19 4C20.6569 4 22 5.34315 22 7V7.33388L12.4819 12.5688C12.1818 12.7338 11.8182 12.7338 11.5181 12.5688L2 7.33388V7C2 5.34315 3.34315 4 5 4H19ZM2 9.66622V17C2 18.6569 3.34315 20 5 20H19C20.6569 20 22 18.6569 22 17V9.66622L12.5613 14.8575C12.2158 15.0475 11.7842 15.0475 11.4387 14.8575L2 9.66622Z"
-				fill="#5F636E"
-			/>
-		</svg>
+			<p class="font-bold text-white">문 포인트</p>
+			<p class="flex items-center text-xl font-bold text-white">
+				<span>{$user_store.moon_point} P</span>
 
-		<p>추천하기</p>
-	</button>
+				<svg
+					class="ml-2 inline-block"
+					width="9"
+					height="16"
+					viewBox="0 0 9 16"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<path
+						d="M1 15L8 8L1 1"
+						stroke="white"
+						stroke-opacity="0.54"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
+			</p>
+		</a>
+	</div>
 
-	<button class="flex items-center px-5 py-4">
-		<svg
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			class="mr-3"
+	<p class="flex items-center px-5 pt-6 text-lg font-semibold">나의 활동</p>
+
+	<div class="mt-3 flex flex-col gap-5">
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/profile"
 		>
-			<g clip-path="url(#clip0_3013_6517)">
-				<path
-					fill-rule="evenodd"
-					clip-rule="evenodd"
-					d="M6.66667 4C5.19391 4 4 5.19391 4 6.66667V17.3333C4 18.8061 5.19391 20 6.66667 20H17.3333C18.8061 20 20 18.8061 20 17.3333V14.6667H15.5556C14.0828 14.6667 12.8889 13.4728 12.8889 12C12.8889 10.5272 14.0828 9.33333 15.5556 9.33333H20V6.66667C20 5.19391 18.8061 4 17.3333 4H6.66667Z"
-					fill="#5F636E"
-					stroke="#5F636E"
-					stroke-width="2"
-				/>
-			</g>
-			<defs>
-				<clipPath id="clip0_3013_6517">
-					<rect width="24" height="24" fill="white" />
-				</clipPath>
-			</defs>
-		</svg>
+			<RiUserLine size={20} color={colors.gray[600]} class="mr-3" />
 
-		<p>계좌정보</p>
-	</button>
+			<p>프로필</p>
+		</a>
 
-	<div class="h-2 bg-gray-200" />
-
-	<p class="flex items-center px-5 py-4 text-lg font-semibold">나의 설문조사</p>
-
-	<button class="flex items-center px-5 py-4">
-		<svg
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			class="mr-3"
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/orders"
 		>
-			<rect
-				x="3"
-				y="3"
-				width="18"
-				height="18"
-				rx="9"
-				fill="#5F636E"
-				stroke="#5F636E"
-				stroke-width="2"
-			/>
-			<path
-				d="M15.9492 9L11.2227 15.4453L8 11.793"
-				stroke="#F6F8F9"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
+			<RiGraduationCapLine size={20} color={colors.gray[600]} class="mr-3" />
 
-		<p>참여한 조사</p>
-	</button>
+			<p>서비스 구매/판매</p>
+		</a>
 
-	<button class="flex items-center px-5 py-4">
-		<svg
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			class="mr-3"
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/like"
 		>
-			<rect
-				x="5"
-				y="4"
-				width="14"
-				height="16"
-				rx="3"
-				fill="#5F636E"
-				stroke="#5F636E"
-				stroke-width="2"
-			/>
-			<path
-				d="M8 9H16"
-				stroke="white"
-				stroke-width="2"
-				stroke-linecap="round"
-			/>
-			<path
-				d="M8 14H14"
-				stroke="white"
-				stroke-width="2"
-				stroke-linecap="round"
-			/>
-		</svg>
+			<RiHeartLine size={20} color={colors.gray[600]} class="mr-3" />
 
-		<p>의뢰한 조사</p>
-	</button>
+			<p>좋아요한 서비스</p>
+		</a>
 
-	<div class="h-2 bg-gray-200" />
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/bookmark"
+		>
+			<RiBookmarkLine size={20} color={colors.gray[600]} class="mr-3" />
 
-	<p class="flex items-center px-5 py-4 text-lg font-semibold">지원</p>
+			<p>북마크</p>
+		</a>
 
-	<a class="flex items-center px-5 py-4" href="see_more/event">
-		<p>이벤트</p>
-	</a>
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/community"
+		>
+			<RiTeamLine size={20} color={colors.gray[600]} class="mr-3" />
 
-	<a class="flex items-center px-5 py-4" href="see_more/notice">
-		<p>공지사항</p>
-	</a>
-	<a class="flex items-center px-5 py-4" href="see_more/terms_of_use">
+			<p>참여 커뮤니티</p>
+		</a>
+	</div>
+
+	<div class="mt-3 h-1 bg-gray-200" />
+
+	<p class="flex items-center px-5 pt-6 text-lg font-semibold">지원</p>
+
+	<div class="mt-3 flex flex-col gap-5">
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/event"
+		>
+			<p>이벤트</p>
+		</a>
+
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/notice"
+		>
+			<p>공지사항</p>
+		</a>
+
+		<div class="flex items-center justify-between px-4">
+			<p>버전정보</p>
+
+			<span class="text-primary">V.1.4.6</span>
+		</div>
+	</div>
+
+	<!-- <a class="flex items-center px-5 py-4" href="see_more/terms_of_use">
 		<p>이용약관</p>
 	</a>
 
@@ -168,17 +150,15 @@
 
 	<a class="flex items-center px-5 py-4" href="see_more/company_introduction">
 		<p>회사소개</p>
-	</a>
+	</a> -->
 
-	<div class="flex items-center justify-between px-5 py-4">
-		<p>버전정보</p>
+	<div class="mt-3 h-1 bg-gray-200" />
 
-		<span class="text-primary">V.1.4.6</span>
-	</div>
-
-	<div class="h-2 bg-gray-200" />
-
-	<a class="flex items-center px-5 py-4" href="http://pf.kakao.com/_ypnXG/chat">
+	<a
+		class="flex items-center px-4 pt-4"
+		href="https://open.kakao.com/o/sMTQ2HEh"
+		target="_blank"
+	>
 		<p>카카오톡 문의</p>
 	</a>
 </main>

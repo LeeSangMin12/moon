@@ -86,4 +86,35 @@ export const create_post_comments_api = (supabase) => ({
 		}
 		return true;
 	},
+
+	// 특정 사용자가 작성한 댓글 조회
+	select_by_user_id: async (user_id) => {
+		const { data, error } = await supabase
+			.from('post_comments')
+			.select(
+				`
+				*,
+				users:user_id(id, handle, name, avatar_url),
+				post:post_id(
+					id, 
+					title, 
+					content,
+					users:author_id(id, handle, name)
+				),
+				parent_comment:parent_comment_id(
+					id,
+					content,
+					users:user_id(id, handle, name)
+				)
+			`,
+			)
+			.eq('user_id', user_id)
+			.order('created_at', { ascending: false });
+
+		if (error) {
+			throw new Error(`Failed to select comments by user_id: ${error.message}`);
+		}
+
+		return data;
+	},
 });
