@@ -4,7 +4,6 @@
 		PUBLIC_SUPABASE_ANON_KEY,
 		PUBLIC_SUPABASE_URL,
 	} from '$env/static/public';
-	import { create_api } from '$lib/supabase/api';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import {
@@ -18,29 +17,9 @@
 
 	import colors from '$lib/js/colors';
 	import { comma, format_date, show_toast } from '$lib/js/common';
+	import { api_store } from '$lib/store/api_store';
 
 	let { data } = $props();
-
-	// 관리자 페이지용 API 인스턴스
-	let api = $state(null);
-	let is_loading = $state(true);
-
-	onMount(async () => {
-		try {
-			// 직접 supabase 클라이언트 생성
-			const supabase = createBrowserClient(
-				PUBLIC_SUPABASE_URL,
-				PUBLIC_SUPABASE_ANON_KEY,
-			);
-			api = create_api(supabase);
-			console.log('API 초기화 완료');
-		} catch (error) {
-			console.error('API 초기화 실패:', error);
-			show_toast('error', 'API 초기화에 실패했습니다.');
-		} finally {
-			is_loading = false;
-		}
-	});
 
 	let pending_charges = $state(data.pending_charges || []);
 	let recent_charges = $state(data.recent_charges || []);
@@ -50,17 +29,19 @@
 	let reject_reason = $state('');
 
 	// 충전 요청 승인
-	const handle_approve = async (charge_id) => {
-		if (!api) {
-			show_toast('error', 'API가 초기화되지 않았습니다.');
-			return;
-		}
-
+	const handle_approve = async (charge) => {
 		if (!confirm('이 충전 요청을 승인하시겠습니까?')) return;
 
 		try {
-			await api.moon_charges.approve_charge_request(charge_id);
+			await $api_store.moon_charges.approve_charge_request(charge.id);
 			show_toast('success', '충전 요청이 승인되었습니다.');
+
+			await $api_store.moon_point_transactions.insert({
+				user_id: charge.user_id,
+				amount: charge.point,
+				type: 'charge',
+				description: '문 충전 승인',
+			});
 
 			// 데이터 새로고침
 			await invalidateAll();
@@ -81,18 +62,13 @@
 
 	// 충전 요청 거절
 	const handle_reject = async () => {
-		if (!api) {
-			show_toast('error', 'API가 초기화되지 않았습니다.');
-			return;
-		}
-
 		if (!reject_reason.trim()) {
 			show_toast('error', '거절 사유를 입력해주세요.');
 			return;
 		}
 
 		try {
-			await api.moon_charges.reject_charge_request(
+			await $api_store.moon_charges.reject_charge_request(
 				selected_charge_id,
 				reject_reason,
 			);
@@ -144,357 +120,320 @@
 	<title>관리자 - 문 충전 관리</title>
 </svelte:head>
 
-{#if is_loading}
-	<div class="flex h-screen items-center justify-center">
-		<div class="text-center">
-			<div
-				class="border-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-t-2 border-b-2"
-			></div>
-			<p class="text-gray-600">관리자 페이지를 로딩 중입니다...</p>
-		</div>
+<div class="container mx-auto max-w-7xl px-4 py-8">
+	<div class="mb-8">
+		<h1 class="text-3xl font-bold text-gray-900">문 충전 관리</h1>
+		<p class="mt-2 text-gray-600">사용자들의 문 충전 요청을 관리합니다.</p>
 	</div>
-{:else}
-	<div class="container mx-auto max-w-7xl px-4 py-8">
-		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-900">문 충전 관리</h1>
-			<p class="mt-2 text-gray-600">사용자들의 문 충전 요청을 관리합니다.</p>
-		</div>
 
-		{#if data.table_missing}
-			<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
-				<div class="flex">
-					<div class="flex-shrink-0">
-						<svg
-							class="h-5 w-5 text-yellow-400"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					</div>
-					<div class="ml-3">
-						<h3 class="text-sm font-medium text-yellow-800">
-							데이터베이스 설정 필요
-						</h3>
-						<div class="mt-2 text-sm text-yellow-700">
-							<p>
-								문 충전 시스템을 사용하려면 먼저 데이터베이스 테이블을 생성해야
-								합니다.
-							</p>
-							<p class="mt-2">다음 단계를 따라 설정해주세요:</p>
-							<ol class="mt-2 list-inside list-decimal space-y-1">
-								<li>Supabase 관리 패널의 SQL 에디터로 이동</li>
-								<li>
-									<code class="rounded bg-yellow-100 px-1"
-										>moon_charges_schema.sql</code
-									> 파일의 내용을 실행
-								</li>
-								<li>
-									<code class="rounded bg-yellow-100 px-1"
-										>add_role_column.sql</code
-									> 파일의 내용을 실행
-								</li>
-								<li>페이지를 새로고침</li>
-							</ol>
-							{#if data.error}
-								<p class="mt-2 text-red-600">오류: {data.error}</p>
-							{/if}
-						</div>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<!-- 통계 카드 -->
-			<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-				<div class="rounded-lg bg-white p-6 shadow">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<RiTimeLine size={24} color={colors.yellow} />
-						</div>
-						<div class="ml-4">
-							<p class="text-sm font-medium text-gray-500">대기 중인 요청</p>
-							<p class="text-2xl font-semibold text-gray-900">
-								{pending_charges.length}건
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div class="rounded-lg bg-white p-6 shadow">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<RiMoonFill size={24} color={colors.primary} />
-						</div>
-						<div class="ml-4">
-							<p class="text-sm font-medium text-gray-500">
-								대기 중인 총 포인트
-							</p>
-							<p class="text-2xl font-semibold text-gray-900">
-								{comma(
-									pending_charges.reduce(
-										(sum, charge) => sum + charge.point,
-										0,
-									),
-								)}개
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div class="rounded-lg bg-white p-6 shadow">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<span class="text-2xl">💰</span>
-						</div>
-						<div class="ml-4">
-							<p class="text-sm font-medium text-gray-500">대기 중인 총 금액</p>
-							<p class="text-2xl font-semibold text-gray-900">
-								{comma(
-									pending_charges.reduce(
-										(sum, charge) => sum + charge.amount,
-										0,
-									),
-								)}원
-							</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- 대기 중인 요청들 -->
-			<div class="mb-8">
-				<h2 class="mb-4 text-xl font-semibold text-gray-900">
-					대기 중인 충전 요청
-				</h2>
-
-				{#if pending_charges.length === 0}
-					<div class="rounded-lg bg-white p-8 text-center shadow">
-						<RiTimeLine
-							size={48}
-							color={colors.gray[400]}
-							class="mx-auto mb-4"
+	{#if data.table_missing}
+		<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+			<div class="flex">
+				<div class="flex-shrink-0">
+					<svg
+						class="h-5 w-5 text-yellow-400"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+							clip-rule="evenodd"
 						/>
-						<p class="text-gray-500">대기 중인 충전 요청이 없습니다.</p>
+					</svg>
+				</div>
+				<div class="ml-3">
+					<h3 class="text-sm font-medium text-yellow-800">
+						데이터베이스 설정 필요
+					</h3>
+					<div class="mt-2 text-sm text-yellow-700">
+						<p>
+							문 충전 시스템을 사용하려면 먼저 데이터베이스 테이블을 생성해야
+							합니다.
+						</p>
+						<p class="mt-2">다음 단계를 따라 설정해주세요:</p>
+						<ol class="mt-2 list-inside list-decimal space-y-1">
+							<li>Supabase 관리 패널의 SQL 에디터로 이동</li>
+							<li>
+								<code class="rounded bg-yellow-100 px-1"
+									>moon_charges_schema.sql</code
+								> 파일의 내용을 실행
+							</li>
+							<li>
+								<code class="rounded bg-yellow-100 px-1"
+									>add_role_column.sql</code
+								> 파일의 내용을 실행
+							</li>
+							<li>페이지를 새로고침</li>
+						</ol>
+						{#if data.error}
+							<p class="mt-2 text-red-600">오류: {data.error}</p>
+						{/if}
 					</div>
-				{:else}
-					<div class="overflow-hidden rounded-lg bg-white shadow">
-						<table class="min-w-full divide-y divide-gray-200">
-							<thead class="bg-gray-50">
-								<tr>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										사용자
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										충전 포인트
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										결제 금액
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										계좌 정보
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										요청 시간
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										작업
-									</th>
-								</tr>
-							</thead>
-							<tbody class="divide-y divide-gray-200 bg-white">
-								{#each pending_charges as charge}
-									<tr>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"
-										>
-											<div>
-												<div class="font-medium">
-													{charge.users?.name || '알 수 없음'}
-												</div>
-												<div class="text-gray-500">
-													@{charge.users?.handle || '알 수 없음'}
-												</div>
-											</div>
-										</td>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"
-										>
-											<div class="flex items-center">
-												<RiMoonFill size={16} color={colors.primary} />
-												<span class="ml-1 font-medium"
-													>{comma(charge.point)}개</span
-												>
-											</div>
-										</td>
-										<td
-											class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900"
-										>
-											{comma(charge.amount)}원
-										</td>
-										<td class="px-6 py-4 text-sm text-gray-900">
-											<div class="space-y-1">
-												<div><strong>은행:</strong> {charge.bank}</div>
-												<div>
-													<strong>계좌:</strong>
-													{charge.account_number}
-												</div>
-												<div>
-													<strong>예금주:</strong>
-													{charge.account_holder}
-												</div>
-											</div>
-										</td>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-500"
-										>
-											{format_date(charge.created_at)}
-										</td>
-										<td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
-											<div class="flex space-x-2">
-												<button
-													onclick={() => handle_approve(charge.id)}
-													class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500"
-												>
-													<RiCheckLine size={16} />
-													<span class="ml-1">승인</span>
-												</button>
-												<button
-													onclick={() => open_reject_modal(charge.id)}
-													class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
-												>
-													<RiCloseLine size={16} />
-													<span class="ml-1">거절</span>
-												</button>
-											</div>
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
+				</div>
+			</div>
+		</div>
+	{:else}
+		<!-- 통계 카드 -->
+		<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+			<div class="rounded-lg bg-white p-6 shadow">
+				<div class="flex items-center">
+					<div class="flex-shrink-0">
+						<RiTimeLine size={24} color={colors.yellow} />
 					</div>
-				{/if}
+					<div class="ml-4">
+						<p class="text-sm font-medium text-gray-500">대기 중인 요청</p>
+						<p class="text-2xl font-semibold text-gray-900">
+							{pending_charges.length}건
+						</p>
+					</div>
+				</div>
 			</div>
 
-			<!-- 최근 처리된 요청들 -->
-			<div>
-				<h2 class="mb-4 text-xl font-semibold text-gray-900">
-					최근 처리된 요청
-				</h2>
-
-				{#if recent_charges.length === 0}
-					<div class="rounded-lg bg-white p-8 text-center shadow">
-						<p class="text-gray-500">최근 처리된 요청이 없습니다.</p>
+			<div class="rounded-lg bg-white p-6 shadow">
+				<div class="flex items-center">
+					<div class="flex-shrink-0">
+						<RiMoonFill size={24} color={colors.primary} />
 					</div>
-				{:else}
-					<div class="overflow-hidden rounded-lg bg-white shadow">
-						<table class="min-w-full divide-y divide-gray-200">
-							<thead class="bg-gray-50">
+					<div class="ml-4">
+						<p class="text-sm font-medium text-gray-500">대기 중인 총 포인트</p>
+						<p class="text-2xl font-semibold text-gray-900">
+							{comma(
+								pending_charges.reduce((sum, charge) => sum + charge.point, 0),
+							)}개
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="rounded-lg bg-white p-6 shadow">
+				<div class="flex items-center">
+					<div class="flex-shrink-0">
+						<span class="text-2xl">💰</span>
+					</div>
+					<div class="ml-4">
+						<p class="text-sm font-medium text-gray-500">대기 중인 총 금액</p>
+						<p class="text-2xl font-semibold text-gray-900">
+							{comma(
+								pending_charges.reduce((sum, charge) => sum + charge.amount, 0),
+							)}원
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 대기 중인 요청들 -->
+		<div class="mb-8">
+			<h2 class="mb-4 text-xl font-semibold text-gray-900">
+				대기 중인 충전 요청
+			</h2>
+
+			{#if pending_charges.length === 0}
+				<div class="rounded-lg bg-white p-8 text-center shadow">
+					<RiTimeLine size={48} color={colors.gray[400]} class="mx-auto mb-4" />
+					<p class="text-gray-500">대기 중인 충전 요청이 없습니다.</p>
+				</div>
+			{:else}
+				<div class="overflow-hidden rounded-lg bg-white shadow">
+					<table class="min-w-full divide-y divide-gray-200">
+						<thead class="bg-gray-50">
+							<tr>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									사용자
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									충전 포인트
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									결제 금액
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									계좌 정보
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									요청 시간
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									작업
+								</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-200 bg-white">
+							{#each pending_charges as charge}
 								<tr>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										사용자
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										충전 포인트
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										결제 금액
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										상태
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										처리 시간
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-									>
-										거절 사유
-									</th>
-								</tr>
-							</thead>
-							<tbody class="divide-y divide-gray-200 bg-white">
-								{#each recent_charges as charge}
-									<tr>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"
-										>
-											<div>
-												<div class="font-medium">
-													{charge.users?.name || '알 수 없음'}
-												</div>
-												<div class="text-gray-500">
-													@{charge.users?.handle || '알 수 없음'}
-												</div>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+										<div>
+											<div class="font-medium">
+												{charge.users?.name || '알 수 없음'}
 											</div>
-										</td>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"
-										>
-											<div class="flex items-center">
-												<RiMoonFill size={16} color={colors.primary} />
-												<span class="ml-1 font-medium"
-													>{comma(charge.point)}개</span
-												>
+											<div class="text-gray-500">
+												@{charge.users?.handle || '알 수 없음'}
 											</div>
-										</td>
-										<td
-											class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900"
-										>
-											{comma(charge.amount)}원
-										</td>
-										<td class="px-6 py-4 text-sm whitespace-nowrap">
-											<span
-												class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {get_status_style(
-													charge.status,
-												)}"
+										</div>
+									</td>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+										<div class="flex items-center">
+											<RiMoonFill size={16} color={colors.primary} />
+											<span class="ml-1 font-medium"
+												>{comma(charge.point)}개</span
 											>
-												{get_status_text(charge.status)}
-											</span>
-										</td>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-500"
+										</div>
+									</td>
+									<td
+										class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900"
+									>
+										{comma(charge.amount)}원
+									</td>
+									<td class="px-6 py-4 text-sm text-gray-900">
+										<div class="space-y-1">
+											<div><strong>은행:</strong> {charge.bank}</div>
+											<div>
+												<strong>계좌:</strong>
+												{charge.account_number}
+											</div>
+											<div>
+												<strong>예금주:</strong>
+												{charge.account_holder}
+											</div>
+										</div>
+									</td>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+										{format_date(charge.created_at)}
+									</td>
+									<td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
+										<div class="flex space-x-2">
+											<button
+												onclick={() => handle_approve(charge)}
+												class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500"
+											>
+												<RiCheckLine size={16} />
+												<span class="ml-1">승인</span>
+											</button>
+											<button
+												onclick={() => open_reject_modal(charge.id)}
+												class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+											>
+												<RiCloseLine size={16} />
+												<span class="ml-1">거절</span>
+											</button>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</div>
+
+		<!-- 최근 처리된 요청들 -->
+		<div>
+			<h2 class="mb-4 text-xl font-semibold text-gray-900">최근 처리된 요청</h2>
+
+			{#if recent_charges.length === 0}
+				<div class="rounded-lg bg-white p-8 text-center shadow">
+					<p class="text-gray-500">최근 처리된 요청이 없습니다.</p>
+				</div>
+			{:else}
+				<div class="overflow-hidden rounded-lg bg-white shadow">
+					<table class="min-w-full divide-y divide-gray-200">
+						<thead class="bg-gray-50">
+							<tr>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									사용자
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									충전 포인트
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									결제 금액
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									상태
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									처리 시간
+								</th>
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									거절 사유
+								</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-200 bg-white">
+							{#each recent_charges as charge}
+								<tr>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+										<div>
+											<div class="font-medium">
+												{charge.users?.name || '알 수 없음'}
+											</div>
+											<div class="text-gray-500">
+												@{charge.users?.handle || '알 수 없음'}
+											</div>
+										</div>
+									</td>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+										<div class="flex items-center">
+											<RiMoonFill size={16} color={colors.primary} />
+											<span class="ml-1 font-medium"
+												>{comma(charge.point)}개</span
+											>
+										</div>
+									</td>
+									<td
+										class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900"
+									>
+										{comma(charge.amount)}원
+									</td>
+									<td class="px-6 py-4 text-sm whitespace-nowrap">
+										<span
+											class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {get_status_style(
+												charge.status,
+											)}"
 										>
-											{format_date(charge.updated_at)}
-										</td>
-										<td class="px-6 py-4 text-sm text-gray-500">
-											{charge.reject_reason || '-'}
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				{/if}
-			</div>
-		{/if}
-	</div>
-{/if}
+											{get_status_text(charge.status)}
+										</span>
+									</td>
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+										{format_date(charge.updated_at)}
+									</td>
+									<td class="px-6 py-4 text-sm text-gray-500">
+										{charge.reject_reason || '-'}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</div>
+	{/if}
+</div>
 
 <!-- 거절 사유 입력 모달 -->
 <Modal bind:is_modal_open={is_reject_modal_open} modal_position="center">

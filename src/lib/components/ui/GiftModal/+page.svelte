@@ -37,6 +37,20 @@
 				gift_moon_point,
 			);
 
+			await $api_store.moon_point_transactions.insert({
+				user_id: $user_store.id,
+				amount: -gift_moon_point,
+				type: 'gift',
+				description: '문 선물',
+			});
+
+			await $api_store.moon_point_transactions.insert({
+				user_id: receiver_id,
+				amount: gift_moon_point,
+				type: 'receive',
+				description: '문 선물 받음',
+			});
+
 			// 이벤트로 상위 컴포넌트에 알림
 			dispatch('gift_success', {
 				gift_content,
