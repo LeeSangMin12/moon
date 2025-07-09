@@ -163,6 +163,10 @@
 
 		modal.gift = false;
 	}
+
+	const is_video = (uri) => {
+		return /\.(mp4|mov|webm|ogg)$/i.test(uri);
+	};
 </script>
 
 <article class="px-4">
@@ -212,9 +216,20 @@
 	<div>
 		<!-- 본문 -->
 		{#if post.images?.length > 0}
-			<figure class="mt-2">
-				<CustomCarousel images={post.images.map((image) => image.uri)} />
-			</figure>
+			{#if is_video(post.images[0].uri)}
+				<figure class="mt-2">
+					<video
+						src={post.images[0].uri}
+						controls
+						class="w-full rounded-lg"
+						style="max-height: 320px;"
+					/>
+				</figure>
+			{:else}
+				<figure class="mt-2">
+					<CustomCarousel images={post.images.map((image) => image.uri)} />
+				</figure>
+			{/if}
 		{:else}
 			<a
 				href={`/@${post.users.handle}/post/${post.id}`}
@@ -223,8 +238,6 @@
 				{post.content}
 			</a>
 		{/if}
-		<!-- 비디오 -->
-		<!-- https://github.com/sampotts/plyr?tab=readme-ov-file -->
 
 		{#if post.community_id}
 			<a

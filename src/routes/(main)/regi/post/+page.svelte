@@ -38,6 +38,8 @@
 		images: [],
 	});
 
+	let upload_type = $state('image'); // 'image' 또는 'video'
+
 	/**
 	 * 이미지 추가
 	 */
@@ -111,6 +113,40 @@
 			}),
 		);
 	};
+
+	const add_file = (event) => {
+		console.log(event.target.files);
+		const selected_files = event.target.files;
+		let files_copy = [];
+
+		if (upload_type === 'image') {
+			files_copy = [...post_form_data.images];
+			for (let i = 0; i < selected_files.length; i++) {
+				if (selected_files[i].type.startsWith('image/')) {
+					selected_files[i].uri = URL.createObjectURL(selected_files[i]);
+					files_copy.push(selected_files[i]);
+				}
+			}
+			if (files_copy.length > 7) {
+				alert('이미지 개수는 7개를 초과할 수 없습니다.');
+				return;
+			}
+		} else if (upload_type === 'video') {
+			if (selected_files.length > 1) {
+				alert('영상은 1개만 업로드할 수 있습니다.');
+				return;
+			}
+			if (!selected_files[0].type.startsWith('video/')) {
+				alert('영상 파일만 업로드할 수 있습니다.');
+				return;
+			}
+			selected_files[0].uri = URL.createObjectURL(selected_files[0]);
+			files_copy = [selected_files[0]];
+		}
+
+		post_form_data.images = files_copy;
+		event.target.value = '';
+	};
 </script>
 
 <Header>
@@ -134,14 +170,33 @@
 	<div class="mt-6">
 		<span class="ml-1 text-sm font-medium">안내이미지 (선택)</span>
 
+		<div class="my-3 flex gap-2">
+			<button
+				class={`btn btn-sm  ${upload_type === 'image' ? 'btn-primary' : 'bg-gray-100'}`}
+				class:selected={upload_type === 'image'}
+				onclick={() => {
+					if (post_form_data.images.length === 0) upload_type = 'image';
+					else show_toast('warning', '업로드된 파일을 먼저 삭제하세요.');
+				}}>이미지 업로드</button
+			>
+			<button
+				class={`btn btn-sm ${upload_type === 'video' ? 'btn-primary' : 'bg-gray-100'}`}
+				class:selected={upload_type === 'video'}
+				onclick={() => {
+					if (post_form_data.images.length === 0) upload_type = 'video';
+					else show_toast('warning', '업로드된 파일을 먼저 삭제하세요.');
+				}}>영상 업로드</button
+			>
+		</div>
+
 		<div class="mt-2 flex overflow-x-auto">
 			<label for="input-file">
 				<input
 					type="file"
 					id="input-file"
-					onchange={add_img}
-					accept="image/*,"
-					multiple
+					onchange={add_file}
+					accept={upload_type === 'image' ? 'image/*' : 'video/*'}
+					multiple={upload_type === 'image'}
 					class="hidden"
 				/>
 				<div
@@ -160,21 +215,33 @@
 						/>
 					</svg>
 
-					<span class="text-xs text-gray-900"
-						>{post_form_data.images.length}/7</span
-					>
+					<span class="text-xs text-gray-900">
+						{upload_type === 'image'
+							? `${post_form_data.images.length}/7`
+							: `${post_form_data.images.length}/1`}
+					</span>
 				</div>
 			</label>
 
 			<div class="flex flex-row">
 				{#each post_form_data.images as img, idx}
 					<div class="relative min-w-max">
-						<img
-							key={idx}
-							class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-							src={img.uri}
-							alt={img.name}
-						/>
+						{#if img.type && img.type.startsWith('video/')}
+							<video
+								key={idx}
+								class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
+								src={img.uri}
+								controls
+								alt={img.name}
+							/>
+						{:else}
+							<img
+								key={idx}
+								class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
+								src={img.uri}
+								alt={img.name}
+							/>
+						{/if}
 						<button onclick={() => delete_img(idx)} aria-label="삭제">
 							<svg
 								class="absolute top-[-2px] left-20"
@@ -182,11 +249,12 @@
 								width="1.3rem"
 								height="1.3rem"
 								viewBox="0 0 24 24"
-								><path
+							>
+								<path
 									fill={colors.gray[900]}
 									d="m8.4 17l3.6-3.6l3.6 3.6l1.4-1.4l-3.6-3.6L17 8.4L15.6 7L12 10.6L8.4 7L7 8.4l3.6 3.6L7 15.6zm3.6 5q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"
-								/></svg
-							>
+								/>
+							</svg>
 						</button>
 					</div>
 				{/each}
