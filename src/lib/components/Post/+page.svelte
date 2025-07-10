@@ -230,10 +230,14 @@
 					<CustomCarousel images={post.images.map((image) => image.uri)} />
 				</figure>
 			{/if}
-		{:else}
+		{/if}
+
+		{#if $page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/)}
+			<pre class="mt-4 text-sm whitespace-pre-wrap">{post.content}</pre>
+		{:else if post.images?.length === 0}
 			<a
 				href={`/@${post.users.handle}/post/${post.id}`}
-				class="mt-2 line-clamp-4 text-sm text-gray-600"
+				class="mt-4 line-clamp-4 text-sm"
 			>
 				{post.content}
 			</a>
@@ -319,7 +323,6 @@
 		</button>
 	</div>
 </article>
-
 <hr class="mt-2 border-gray-300" />
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">

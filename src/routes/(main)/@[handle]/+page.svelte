@@ -288,6 +288,7 @@
 			<!-- 메시지와 팔로우 버튼 -->
 			<div class="mt-4 flex space-x-2">
 				<button
+					onclick={() => goto(`/@${user.handle}/accounts/profile/modify`)}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 				>
 					프로필 편집

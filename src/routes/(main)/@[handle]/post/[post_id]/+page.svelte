@@ -232,7 +232,7 @@
 </script>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={() => goto('/')}>
+	<button slot="left" class="flex items-center" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 
