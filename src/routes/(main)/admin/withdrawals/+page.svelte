@@ -1,13 +1,15 @@
 <script>
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import {
+		RiArrowLeftSLine,
 		RiCheckLine,
 		RiCloseLine,
 		RiMoneyDollarCircleLine,
 		RiTimeLine,
 	} from 'svelte-remixicon';
 
+	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 
 	import colors from '$lib/js/colors';
@@ -101,6 +103,12 @@
 <svelte:head>
 	<title>관리자 - 출금 신청 관리</title>
 </svelte:head>
+
+<Header>
+	<button slot="left" onclick={() => goto('/admin/home')}>
+		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
+	</button>
+</Header>
 
 <div class="container mx-auto max-w-7xl px-4 py-8">
 	<div class="mb-8">

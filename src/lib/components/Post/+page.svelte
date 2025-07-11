@@ -215,7 +215,27 @@
 
 	<div>
 		<!-- 본문 -->
-		{#if post.images?.length > 0}
+		{#if $page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/)}
+			{#if post.images?.length > 0}
+				{#if is_video(post.images[0].uri)}
+					<figure class="mt-2">
+						<video
+							src={post.images[0].uri}
+							controls
+							class="w-full rounded-lg"
+							style="max-height: 320px;"
+						>
+							<track kind="captions" label="No captions" />
+						</video>
+					</figure>
+				{:else}
+					<figure class="mt-2">
+						<CustomCarousel images={post.images.map((image) => image.uri)} />
+					</figure>
+				{/if}
+			{/if}
+			<pre class="mt-4 text-sm whitespace-pre-wrap">{post.content}</pre>
+		{:else if post.images?.length > 0}
 			{#if is_video(post.images[0].uri)}
 				<figure class="mt-2">
 					<video
@@ -223,24 +243,17 @@
 						controls
 						class="w-full rounded-lg"
 						style="max-height: 320px;"
-					/>
+					>
+						<track kind="captions" label="No captions" />
+					</video>
 				</figure>
 			{:else}
 				<figure class="mt-2">
 					<CustomCarousel images={post.images.map((image) => image.uri)} />
 				</figure>
 			{/if}
-		{/if}
-
-		{#if $page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/)}
-			<pre class="mt-4 text-sm whitespace-pre-wrap">{post.content}</pre>
-		{:else if post.images?.length === 0}
-			<a
-				href={`/@${post.users.handle}/post/${post.id}`}
-				class="mt-4 line-clamp-4 text-sm"
-			>
-				{post.content}
-			</a>
+		{:else}
+			<pre class="mt-4 line-clamp-8 text-sm">{post.content}</pre>
 		{/if}
 
 		{#if post.community_id}

@@ -152,7 +152,7 @@
 		</div>
 
 		<!-- 소개글 -->
-		<pre class="mt-4 line-clamp-6 text-sm">
+		<pre class="mt-4 text-sm whitespace-pre-wrap">
 {community.content}
 		</pre>
 

@@ -21,7 +21,19 @@ export const create_moon_charges_api = (supabase) => ({
 
 		return data;
 	},
+	select_recent: async (limit) => {
+		const { data, error } = await supabase
+			.from('moon_charges')
+			.select('*')
+			.order('created_at', { ascending: false })
+			.limit(limit);
 
+		if (error) {
+			throw new Error(`최근 충전 요청 조회 실패: ${error.message}`);
+		}
+
+		return data || [];
+	},
 	// 사용자별 충전 요청 조회
 	select_by_user_id: async (user_id) => {
 		const { data, error } = await supabase
