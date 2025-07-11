@@ -45,6 +45,13 @@
 	>
 	<button
 		onclick={() => sign_in('dummy3@naver.com', '1234')}
-		class="btn btn-primary">풀스택상민</button
-	>
+		class="btn btn-primary"
+		>풀스택상민
+	</button>
+
+	<button
+		onclick={() => sign_in('dummy5@naver.com', '1234')}
+		class="btn btn-primary"
+		>데이터먹는쩡은
+	</button>
 </div>

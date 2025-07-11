@@ -234,7 +234,7 @@
 					</figure>
 				{/if}
 			{/if}
-			<pre class="mt-4 text-sm whitespace-pre-wrap">{post.content}</pre>
+			<pre class="mt-2 text-sm whitespace-pre-wrap">{post.content}</pre>
 		{:else if post.images?.length > 0}
 			{#if is_video(post.images[0].uri)}
 				<figure class="mt-2">
@@ -253,7 +253,10 @@
 				</figure>
 			{/if}
 		{:else}
-			<pre class="mt-4 line-clamp-8 text-sm">{post.content}</pre>
+			<a href={`/@${post.users.handle}/post/${post.id}`}>
+				<pre
+					class="mt-2 line-clamp-8 text-sm whitespace-pre-wrap">{post.content}</pre>
+			</a>
 		{/if}
 
 		{#if post.community_id}
