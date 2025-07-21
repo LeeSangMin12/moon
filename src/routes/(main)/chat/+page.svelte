@@ -10,6 +10,14 @@
 	const TITLE = '채팅';
 </script>
 
+<svelte:head>
+	<title>채팅 | 문</title>
+	<meta
+		name="description"
+		content="전문가와 1:1 채팅으로 실시간 소통하세요. 질문하고 답변받는 개인화된 채팅 서비스를 이용해보세요."
+	/>
+</svelte:head>
+
 <Header>
 	<h1 slot="left" class="text-xl font-bold">{TITLE}</h1>
 

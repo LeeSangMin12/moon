@@ -231,6 +231,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>게시글 | 문</title>
+	<meta
+		name="description"
+		content="이 페이지는 사용자가 작성한 게시글의 상세 내용을 확인하고, 댓글을 남기거나, 좋아요, 북마크, 팔로우, 신고 등 다양한 상호작용을 할 수 있는 문(Moon)의 소셜 게시글 상세 페이지입니다. 게시글의 작성자 정보, 댓글 목록, 그리고 관련된 모든 활동을 한눈에 볼 수 있어 소통과 정보 공유에 최적화되어 있습니다."
+	/>
+</svelte:head>
+
 <Header>
 	<button slot="left" class="flex items-center" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />

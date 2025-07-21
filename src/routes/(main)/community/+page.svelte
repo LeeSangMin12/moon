@@ -97,6 +97,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>커뮤니티 | 문</title>
+	<meta
+		name="description"
+		content="다양한 주제와 관심사를 가진 사람들이 모여 소통하고 정보를 나누는 공간입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<h1 slot="left" class="font-semibold">커뮤니티</h1>
 	<!-- <div slot="right" class="flex items-center gap-3">

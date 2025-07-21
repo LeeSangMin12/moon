@@ -67,6 +67,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>서비스 | 문</title>
+	<meta
+		name="description"
+		content="AI·마케팅·디자인·IT 등 다양한 분야의 전문가 서비스를 찾아보고 이용해보세요. 맞춤형 서비스로 니즈를 해결하세요."
+	/>
+</svelte:head>
+
 <Header>
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 </Header>

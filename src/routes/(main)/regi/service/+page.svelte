@@ -99,6 +99,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>서비스 등록 | 문</title>
+	<meta
+		name="description"
+		content="서비스를 등록할 수 있는 문의 서비스 등록 페이지입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<button
 		slot="left"

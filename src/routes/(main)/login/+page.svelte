@@ -25,6 +25,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>로그인 | 문 - 질문할땐? 문!</title>
+	<meta
+		name="description"
+		content="문에 로그인하고 전문가들과 소통하세요. 지식 공유, 후원, 서비스 판매, 채용 연계까지 모든 것을 문에서 경험하세요."
+	/>
+</svelte:head>
+
 <Header>
 	<button slot="left" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={28} color={colors.gray[800]} />

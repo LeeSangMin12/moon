@@ -84,6 +84,14 @@
 	}
 </script>
 
+<svelte:head>
+	<title>문 포인트 | 문</title>
+	<meta
+		name="description"
+		content="문 포인트 내역을 확인하고, 문 포인트를 쉽게 관리할 수 있는 문의 포인트 페이지입니다."
+	/>
+</svelte:head>
+
 <Header nav_class="bg-white">
 	<div slot="left">
 		<a href={`/@${$user_store.handle}/accounts`}>

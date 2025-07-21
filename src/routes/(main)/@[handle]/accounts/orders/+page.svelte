@@ -110,6 +110,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>주문 내역 | 문</title>
+	<meta
+		name="description"
+		content="내가 구매한 서비스와 판매한 서비스를 한눈에 확인하고, 주문을 쉽게 관리할 수 있는 문의 주문 내역 페이지입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<button slot="left" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />

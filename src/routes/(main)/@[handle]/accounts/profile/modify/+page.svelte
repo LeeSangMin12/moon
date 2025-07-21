@@ -67,6 +67,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>프로필 수정 | 문</title>
+	<meta
+		name="description"
+		content="프로필 사진과 성명, 소개글을 수정할 수 있는 문의 프로필 수정 페이지입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<a slot="left" href={`/@${$user_store.handle}/accounts/profile`}>
 		<RiArrowLeftSLine size={24} color={colors.gray[800]} />

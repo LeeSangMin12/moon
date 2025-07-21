@@ -182,6 +182,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>커뮤니티 생성 | 문</title>
+	<meta
+		name="description"
+		content="커뮤니티를 생성할 수 있는 문의 커뮤니티 생성 페이지입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<button slot="left" class="flex items-center" onclick={go_prev}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />

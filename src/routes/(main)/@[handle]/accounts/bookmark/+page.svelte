@@ -29,6 +29,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>북마크 | 문</title>
+	<meta
+		name="description"
+		content="내가 북마크한 게시물 목록을 한눈에 확인하고, 관심 있는 콘텐츠를 쉽게 관리"
+	/>
+</svelte:head>
+
 <Header>
 	<div slot="left">
 		<button onclick={() => goto(`/@${$user_store.handle}/accounts`)}>

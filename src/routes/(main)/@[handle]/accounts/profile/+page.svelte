@@ -20,6 +20,11 @@
 	};
 </script>
 
+<svelte:head>
+	<title>회원 정보 설정 | 문</title>
+	<meta name="description" content="회원 정보 설정 페이지입니다." />
+</svelte:head>
+
 <Header>
 	<div slot="left">
 		<a class="flex items-center" href={`/@${$user_store.handle}/accounts`}>

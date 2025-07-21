@@ -62,6 +62,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>검색 | 문</title>
+	<meta
+		name="description"
+		content="게시글, 커뮤니티, 서비스, 프로필을 검색하여 원하는 정보와 전문가를 찾아보세요."
+	/>
+</svelte:head>
+
 <header class="sticky top-0 z-50 bg-white whitespace-nowrap">
 	<nav class="pt-safe">
 		<div class="z-10 flex h-[56px] w-full items-center">

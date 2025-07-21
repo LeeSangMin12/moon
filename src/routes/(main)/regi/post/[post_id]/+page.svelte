@@ -114,6 +114,14 @@
 	};
 </script>
 
+<svelte:head>
+	<title>게시글 수정 | 문</title>
+	<meta
+		name="description"
+		content="게시글을 수정할 수 있는 문의 게시글 수정 페이지입니다."
+	/>
+</svelte:head>
+
 <Header>
 	<button slot="left" class="flex items-center" onclick={() => goto('/')}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />

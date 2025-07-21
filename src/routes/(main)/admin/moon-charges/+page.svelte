@@ -342,10 +342,10 @@
 								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
 									<div>
 										<div class="font-medium">
-											{charge.users?.name || '알 수 없음'}
+											{charge?.account_holder || '알 수 없음'}
 										</div>
 										<div class="text-gray-500">
-											@{charge.users?.handle || '알 수 없음'}
+											@{charge?.users?.handle || '알 수 없음'}
 										</div>
 									</div>
 								</td>

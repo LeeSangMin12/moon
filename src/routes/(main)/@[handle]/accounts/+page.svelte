@@ -17,13 +17,14 @@
 
 	import colors from '$lib/js/colors';
 	import { user_store } from '$lib/store/user_store';
-
-	const TITLE = '더보기';
 </script>
 
 <svelte:head>
-	<title>{TITLE} | 설문모아</title>
-	<meta name="description" content={TITLE} />
+	<title>더보기 | 문</title>
+	<meta
+		name="description"
+		content="내 프로필, 주문 내역, 좋아요한 서비스, 북마크, 참여 커뮤니티, 이벤트, 공지사항을 확인할 수 있는 문의 더보기 페이지입니다."
+	/>
 </svelte:head>
 
 <Header>

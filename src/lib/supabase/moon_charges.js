@@ -24,7 +24,7 @@ export const create_moon_charges_api = (supabase) => ({
 	select_recent: async (limit) => {
 		const { data, error } = await supabase
 			.from('moon_charges')
-			.select('*')
+			.select('*, users(name, handle)')
 			.order('created_at', { ascending: false })
 			.limit(limit);
 

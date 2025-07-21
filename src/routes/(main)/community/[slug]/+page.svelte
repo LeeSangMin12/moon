@@ -108,6 +108,15 @@
 	};
 </script>
 
+<svelte:head>
+	<title>{community?.title || '커뮤니티'} | 문</title>
+	<meta
+		name="description"
+		content={community?.content ||
+			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
+	/>
+</svelte:head>
+
 <Header>
 	<div slot="left">
 		<button class="flex items-center" onclick={() => history.back()}>

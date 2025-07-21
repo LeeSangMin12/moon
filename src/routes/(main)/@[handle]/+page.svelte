@@ -204,6 +204,15 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{user?.name || '사용자'}의 프로필 | 문</title>
+	<meta
+		name="description"
+		content="{user?.name ||
+			'사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요."
+	/>
+</svelte:head>
+
 <Header>
 	<div slot="left">
 		{#if $page.params.handle !== $user_store.handle}
