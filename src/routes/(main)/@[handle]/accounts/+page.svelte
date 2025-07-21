@@ -115,7 +115,7 @@
 		</a>
 	</div>
 
-	<div class="mt-3 h-1 bg-gray-200" />
+	<div class="mt-3 h-1 bg-gray-200"></div>
 
 	<p class="flex items-center px-5 pt-6 text-lg font-semibold">지원</p>
 
@@ -153,7 +153,7 @@
 		<p>회사소개</p>
 	</a> -->
 
-	<div class="mt-3 h-1 bg-gray-200" />
+	<div class="mt-3 h-1 bg-gray-200"></div>
 
 	<a
 		class="flex items-center px-4 pt-4"

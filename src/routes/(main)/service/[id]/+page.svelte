@@ -30,17 +30,7 @@
 		review_order_id,
 		my_review,
 	} = $state(data);
-</script>
 
-<svelte:head>
-	<title>{service?.title || '서비스'} | 문</title>
-	<meta
-		name="description"
-		content="{service?.description || '전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}"
-	/>
-</svelte:head>
-
-<script>
 	// Modal States
 	let is_buy_modal_open = $state(false);
 	let is_review_modal_open = $state(false);
@@ -287,6 +277,15 @@
 			review_form_data.content.trim(),
 	);
 </script>
+
+<svelte:head>
+	<title>{service?.title || '서비스'} | 문</title>
+	<meta
+		name="description"
+		content={service?.description ||
+			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
+	/>
+</svelte:head>
 
 <Header>
 	<button slot="left" onclick={() => history.back()}>

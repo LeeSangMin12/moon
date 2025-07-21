@@ -241,7 +241,9 @@
 								src={img.uri}
 								controls
 								alt={img.name}
-							/>
+							>
+								<track kind="captions" src="" label="자막" />
+							</video>
 						{:else}
 							<img
 								key={idx}
