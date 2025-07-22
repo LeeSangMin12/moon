@@ -53,7 +53,7 @@
 				<button
 					type="button"
 					class="block h-full max-h-80 w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-transparent p-0"
-					on:click={() => openModal(img)}
+					onclick={() => openModal(img)}
 					aria-label="이미지 크게 보기"
 				>
 					<img
@@ -70,13 +70,13 @@
 	<!-- 좌우 버튼 -->
 	{#if images.length > 1}
 		<button
-			on:click={prev}
+			onclick={prev}
 			class="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
 		>
 			<Icon attribute="arrow_left" size={20} color={colors.white} />
 		</button>
 		<button
-			on:click={next}
+			onclick={next}
 			class="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
 		>
 			<Icon attribute="arrow_right" size={20} color={colors.white} />
@@ -94,7 +94,7 @@
 				class:bg-gray-400={currentIndex !== startIndex + i}
 				class:scale-125={currentIndex === startIndex + i}
 				aria-label={`Go to slide ${startIndex + i + 1}`}
-				on:click={() => goToSlide(startIndex + i)}
+				onclick={() => goToSlide(startIndex + i)}
 			></button>
 		{/each}
 	</div>
@@ -103,15 +103,15 @@
 {#if showModal}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-		on:click={closeModal}
+		onclick={closeModal}
 		role="presentation"
 	>
 		<div
 			class="relative"
 			role="dialog"
 			tabindex="0"
-			on:click|stopPropagation
-			on:keydown={(e) => {
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
 				if (e.key === 'Escape') closeModal();
 			}}
 		>
@@ -122,7 +122,7 @@
 			/>
 			<button
 				class="absolute top-2 right-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-				on:click={closeModal}
+				onclick={closeModal}
 				aria-label="닫기"
 			>
 				<Icon attribute="close" size={20} color={colors.white} />

@@ -27,7 +27,7 @@
 		{#if !disable_backdrop_close}
 			<button
 				class="absolute inset-0 h-full w-full cursor-default"
-				on:click={close_modal}
+				onclick={close_modal}
 				aria-label="모달 닫기 배경"
 			></button>
 		{/if}
@@ -45,7 +45,7 @@
 		{#if !disable_backdrop_close}
 			<button
 				class="absolute inset-0 h-full w-full cursor-default"
-				on:click={close_modal}
+				onclick={close_modal}
 				aria-label="모달 닫기 배경"
 			></button>
 		{/if}

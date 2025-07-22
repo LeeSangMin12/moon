@@ -9,7 +9,7 @@
 <nav
 	class=" btm-nav fixed bottom-0 z-10 flex h-[calc(53px+env(safe-area-inset-bottom))] w-full max-w-screen-md items-center justify-evenly bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
 >
-	<button on:click={() => goto('/')} class="flex flex-col items-center gap-0.5">
+	<button onclick={() => goto('/')} class="flex flex-col items-center gap-0.5">
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			height="20px"
@@ -29,7 +29,7 @@
 	</button>
 
 	<button
-		on:click={() => goto('/community')}
+		onclick={() => goto('/community')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -53,7 +53,7 @@
 	</button>
 
 	<button
-		on:click={() => goto('/search')}
+		onclick={() => goto('/search')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -77,7 +77,7 @@
 	</button>
 
 	<button
-		on:click={() => goto('/service')}
+		onclick={() => goto('/service')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -101,7 +101,7 @@
 	</button>
 
 	<button
-		on:click={() => {
+		onclick={() => {
 			if ($user_store.handle === '비회원') {
 				goto('/login');
 			} else {

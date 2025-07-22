@@ -17,7 +17,7 @@
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
 		"@ianvs/prettier-plugin-sort-imports": "^4.4.2",
-		"@sveltejs/kit": "^2.16.0",
+		"@sveltejs/kit": "^2.25.1",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/vite": "^4.1.8",
 		"@testing-library/jest-dom": "^6.6.3",

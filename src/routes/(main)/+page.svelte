@@ -103,7 +103,7 @@
 </script>
 
 <svelte:head>
-	<title>맞춤형 AI 전문가 매칭, 문</title>
+	<title>전문가 매칭의 모든것, 문</title>
 	<meta
 		name="description"
 		content="AI·마케팅·디자인·IT 등 다양한 분야의 전문가를 문에서 만나보세요. 전문가 매칭 서비스로 원하는 서비스를 찾아보세요."
