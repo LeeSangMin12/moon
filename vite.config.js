@@ -1,10 +1,17 @@
+import { enhancedImages } from '@sveltejs/enhanced-img';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [tailwindcss(), enhancedImages(), sveltekit()],
+	build: {
+		chunkSizeWarningLimit: 1000,
+	},
+	optimizeDeps: {
+		include: ['lodash.get', 'lodash.isequal', 'lodash.clonedeep'],
+	},
 	test: {
 		workspace: [
 			{

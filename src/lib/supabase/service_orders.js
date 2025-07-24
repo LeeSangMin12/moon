@@ -218,7 +218,7 @@ export const create_service_orders_api = (supabase) => ({
 	},
 
 	// 최근 주문 조회 (무한 스크롤용)
-	select_infinite_scroll: async (last_order_id, limit = 10, user_id = null) => {
+	select_infinite_scroll: async (last_order_id, limit = 20, user_id = null) => {
 		let query = supabase
 			.from('service_orders')
 			.select(

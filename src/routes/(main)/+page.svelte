@@ -6,6 +6,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Skeleton from '$lib/components/ui/Skeleton/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Post from '$lib/components/Post/+page.svelte';
 
@@ -25,6 +26,7 @@
 
 	let is_infinite_loading = $state(false);
 	let last_post_id = $state('');
+	let is_loading = $state(true);
 
 	onMount(async () => {
 		if (joined_communities) {
@@ -37,10 +39,14 @@
 
 	$effect(async () => {
 		if (selected === 0) {
-			posts = await $api_store.posts.select_infinite_scroll('', '');
+			posts = await $api_store.posts.select_infinite_scroll('', '', 20);
 		} else {
 			const community_id = joined_communities[selected - 1].id;
-			posts = await $api_store.posts.select_infinite_scroll('', community_id);
+			posts = await $api_store.posts.select_infinite_scroll(
+				'',
+				community_id,
+				20,
+			);
 		}
 		last_post_id = posts.at(-1)?.id ?? '';
 	});
@@ -51,17 +57,19 @@
 	const infinite_scroll = () => {
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
-				if (posts.length >= 10 && entry.isIntersecting) {
+				if (posts.length >= 5 && entry.isIntersecting) {
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();
-					}, 1500);
+					}, 1000);
 				}
 			});
 		});
 
 		const target = document.getElementById('infinite_scroll');
-		observer.observe(target);
+		if (target) {
+			observer.observe(target);
+		}
 	};
 
 	/**
@@ -73,6 +81,7 @@
 		const available_post = await $api_store.posts.select_infinite_scroll(
 			last_post_id,
 			community_id,
+			20,
 		);
 		is_infinite_loading = false;
 

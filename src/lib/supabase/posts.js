@@ -12,14 +12,14 @@ export const create_posts_api = (supabase) => ({
 
 		return posts;
 	},
-	select_infinite_scroll: async (last_post_id, community_id) => {
+	select_infinite_scroll: async (last_post_id, community_id, limit = 20) => {
 		let query = supabase
 			.from('posts')
 			.select(
 				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
 			)
 			.order('created_at', { ascending: false }) // 최신순 정렬
-			.limit(10);
+			.limit(limit);
 
 		if (community_id !== '') {
 			query = query.eq('community_id', community_id);

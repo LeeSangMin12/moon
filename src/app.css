@@ -29,6 +29,7 @@
 		'Segoe UI Emoji',
 		'Segoe UI Symbol',
 		sans-serif;
+	font-display: swap;
 }
 
 pre {
@@ -95,4 +96,55 @@ main{
 }
 .btn-gray {
   @apply border-none bg-gray-200;
+}
+
+/* Performance optimizations */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Reduce layout shift */
+.aspect-ratio-16-9 {
+  aspect-ratio: 16 / 9;
+}
+
+/* Critical CSS for LCP optimization */
+.line-clamp-8 {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.max-h-32 {
+  max-height: 8rem;
+}
+
+/* Prevent layout shifts */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Optimize text rendering */
+body {
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Critical content optimization */
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }

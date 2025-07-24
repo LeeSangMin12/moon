@@ -48,7 +48,7 @@
 		class="flex transition-transform duration-500 ease-in-out"
 		style="transform: translateX(-{currentIndex * 100}%);"
 	>
-		{#each images as img}
+		{#each images as img, index}
 			<div class="flex min-w-full items-center justify-center">
 				<button
 					type="button"
@@ -61,6 +61,9 @@
 						alt=""
 						class="pointer-events-none h-full max-h-80 w-full object-cover"
 						draggable="false"
+						loading={index === 0 ? 'eager' : 'lazy'}
+						decoding="async"
+						style="aspect-ratio: 16/9;"
 					/>
 				</button>
 			</div>
@@ -119,6 +122,7 @@
 				src={modalImage}
 				alt="크게 보기"
 				class="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg"
+				loading="eager"
 			/>
 			<button
 				class="absolute top-2 right-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"

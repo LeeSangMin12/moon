@@ -38,7 +38,7 @@ export const create_services_api = (supabase) => ({
 			.from('services')
 			.select('*')
 			.order('created_at', { ascending: false }) // 최신순 정렬
-			.limit(10);
+			.limit(20);
 
 		if (last_service_id !== '') {
 			query.lt('id', last_service_id);
