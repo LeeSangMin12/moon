@@ -12,6 +12,9 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ['lodash.get', 'lodash.isequal', 'lodash.clonedeep'],
 	},
+	server: {
+		allowedHosts: ['90308f01a72b.ngrok-free.app'],
+	},
 	test: {
 		workspace: [
 			{
@@ -26,6 +29,7 @@ export default defineConfig({
 					setupFiles: ['./vitest-setup-client.js'],
 				},
 			},
+
 			{
 				extends: './vite.config.js',
 				test: {
