@@ -13,7 +13,7 @@ export default defineConfig({
 		include: ['lodash.get', 'lodash.isequal', 'lodash.clonedeep'],
 	},
 	server: {
-		allowedHosts: ['90308f01a72b.ngrok-free.app'],
+		allowedHosts: ['be5fd8453a51.ngrok-free.app'],
 	},
 	test: {
 		workspace: [
