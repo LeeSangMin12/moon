@@ -6,15 +6,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), enhancedImages(), sveltekit()],
-	build: {
-		chunkSizeWarningLimit: 1000,
-	},
-	optimizeDeps: {
-		include: ['lodash.get', 'lodash.isequal', 'lodash.clonedeep'],
-	},
-	server: {
-		allowedHosts: ['be5fd8453a51.ngrok-free.app'],
-	},
 	test: {
 		workspace: [
 			{
