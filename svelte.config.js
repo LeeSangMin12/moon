@@ -1,8 +1,12 @@
 import adapter from '@sveltejs/adapter-vercel';
 
-export default {
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
 	kit: {
-		adapter: adapter({}),
+		adapter: adapter({
+			// Vercel 배포를 위한 추가 설정
+			runtime: 'nodejs18.x',
+		}),
 	},
 	// svelte-carousel 사용시 필요
 	vite: {
@@ -11,3 +15,5 @@ export default {
 		},
 	},
 };
+
+export default config;

@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/(main)/community/regi/Set_content/+page.svelte";
