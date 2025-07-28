@@ -41,11 +41,16 @@
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
 	let selected_data = $state({
-		posts: posts || [],
+		posts: [],
 		post_comments: [],
 		services: [],
 		service_likes: [],
 		service_reviews: [],
+	});
+
+	// posts가 변경될 때 selected_data.posts도 업데이트
+	$effect(() => {
+		selected_data.posts = posts || [];
 	});
 
 	let is_following = $state(false);
