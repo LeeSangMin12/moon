@@ -1,1 +1,0 @@
-export { default as component } from "../../../../src/routes/(main)/regi/service/[service_id]/+page.svelte";

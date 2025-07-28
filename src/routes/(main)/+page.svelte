@@ -6,7 +6,6 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Skeleton from '$lib/components/ui/Skeleton/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import Post from '$lib/components/Post/+page.svelte';
 
@@ -26,7 +25,6 @@
 
 	let is_infinite_loading = $state(false);
 	let last_post_id = $state('');
-	let is_loading = $state(true);
 
 	onMount(async () => {
 		if (joined_communities) {
@@ -57,7 +55,7 @@
 	const infinite_scroll = () => {
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
-				if (posts.length >= 5 && entry.isIntersecting) {
+				if (posts.length >= 20 && entry.isIntersecting) {
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();

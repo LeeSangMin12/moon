@@ -1,1 +1,0 @@
-export { default as component } from "../../../../src/routes/(main)/auth/auth-code-error/+page.svelte";

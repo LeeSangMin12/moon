@@ -10,7 +10,7 @@ export async function GET() {
 
 		<url>
 			<loc>https://moon.it.kr/</loc>
-			<lastmod>2025-07-21T08:55:47+00:00</lastmod>
+			<lastmod>2025-07-28T10:00:00+00:00</lastmod>
 		</url>
 		</urlset>`.trim(),
 		{

@@ -6,9 +6,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), enhancedImages(), sveltekit()],
-	ssr: {
-		noExternal: ['svelte-carousel'],
-	},
 	test: {
 		workspace: [
 			{
