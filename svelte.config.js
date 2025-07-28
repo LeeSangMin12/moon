@@ -2,7 +2,7 @@ import adapter from '@sveltejs/adapter-vercel';
 
 export default {
 	kit: {
-		adapter: adapter({}),
+		adapter: adapter(),
 	},
 	// svelte-carousel 사용시 필요
 	vite: {
