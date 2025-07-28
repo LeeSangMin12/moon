@@ -35,7 +35,7 @@
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();
-					}, 1500);
+					}, 1000);
 				}
 			});
 		});

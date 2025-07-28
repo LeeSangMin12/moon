@@ -255,7 +255,7 @@
 		{:else}
 			<a href={`/@${post.users.handle}/post/${post.id}`}>
 				<pre
-					class="mt-2 line-clamp-8 text-sm whitespace-pre-wrap">{post.content}</pre>
+					class="mt-2 line-clamp-6 overflow-hidden text-sm whitespace-pre-wrap">{post.content}</pre>
 			</a>
 		{/if}
 

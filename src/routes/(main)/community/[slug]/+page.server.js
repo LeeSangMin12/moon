@@ -1,4 +1,3 @@
-import { error } from '@sveltejs/kit';
 import { create_api } from '$lib/supabase/api';
 
 export async function load({ params, parent, locals: { supabase } }) {

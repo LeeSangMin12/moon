@@ -37,10 +37,14 @@
 
 	$effect(async () => {
 		if (selected === 0) {
-			posts = await $api_store.posts.select_infinite_scroll('', '');
+			posts = await $api_store.posts.select_infinite_scroll('', '', 20);
 		} else {
 			const community_id = joined_communities[selected - 1].id;
-			posts = await $api_store.posts.select_infinite_scroll('', community_id);
+			posts = await $api_store.posts.select_infinite_scroll(
+				'',
+				community_id,
+				20,
+			);
 		}
 		last_post_id = posts.at(-1)?.id ?? '';
 	});
@@ -51,17 +55,19 @@
 	const infinite_scroll = () => {
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
-				if (posts.length >= 10 && entry.isIntersecting) {
+				if (posts.length >= 20 && entry.isIntersecting) {
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();
-					}, 1500);
+					}, 1000);
 				}
 			});
 		});
 
 		const target = document.getElementById('infinite_scroll');
-		observer.observe(target);
+		if (target) {
+			observer.observe(target);
+		}
 	};
 
 	/**
@@ -73,6 +79,7 @@
 		const available_post = await $api_store.posts.select_infinite_scroll(
 			last_post_id,
 			community_id,
+			20,
 		);
 		is_infinite_loading = false;
 
@@ -103,7 +110,7 @@
 </script>
 
 <svelte:head>
-	<title>맞춤형 AI 전문가 매칭, 문</title>
+	<title>전문가 매칭의 모든것, 문</title>
 	<meta
 		name="description"
 		content="AI·마케팅·디자인·IT 등 다양한 분야의 전문가를 문에서 만나보세요. 전문가 매칭 서비스로 원하는 서비스를 찾아보세요."

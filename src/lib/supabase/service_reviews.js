@@ -220,7 +220,7 @@ export const create_service_reviews_api = (supabase) => ({
 	},
 
 	// 최근 리뷰 조회 (무한 스크롤용)
-	select_infinite_scroll: async (service_id, last_review_id, limit = 10) => {
+	select_infinite_scroll: async (service_id, last_review_id, limit = 20) => {
 		let query = supabase
 			.from('service_reviews')
 			.select(

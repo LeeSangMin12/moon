@@ -44,7 +44,7 @@
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();
-					}, 1500);
+					}, 1000);
 				}
 			});
 		});
@@ -122,8 +122,9 @@
 					<img
 						src={community.avatar_url || logo}
 						alt="커뮤니티 아바타"
-						class="mr-2 h-12 w-12 rounded-full object-cover"
+						class="mr-2 block aspect-square h-10 w-10 rounded-full object-cover"
 					/>
+
 					<div class="flex flex-col justify-between">
 						<p class="line-clamp-2 pr-4 font-medium">
 							{community.title}
