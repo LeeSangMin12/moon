@@ -145,16 +145,16 @@
 			<div class="mr-4">
 				<img
 					src={community.avatar_url || logo}
-					alt="프로필 이미지"
-					class="h-16 w-16 rounded-full border-2 border-gray-100 object-cover"
+					alt="커뮤니티 아바타"
+					class="mr-2 block aspect-square h-14 w-14 rounded-full object-cover"
 				/>
 			</div>
 			<!-- 프로필 정보 -->
 			<div class="flex-1">
-				<h1 class="text-xl font-bold">{community.title}</h1>
+				<h1 class="text-lg font-semibold">{community.title}</h1>
 
-				<p class="mt-2 flex items-center gap-1 text-gray-400">
-					<RiUserLine size={18} color={colors.gray[400]} />
+				<p class="mt-2 flex items-center gap-1 text-sm text-gray-400">
+					<RiUserLine size={16} color={colors.gray[400]} />
 					{community.community_members?.[0]?.count ?? 0}
 				</p>
 			</div>

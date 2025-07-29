@@ -39,7 +39,7 @@
 	];
 
 	let { data } = $props();
-	let { post, comments, meta } = $state(data);
+	let { post, comments } = $state(data);
 
 	let is_bookmarked = $state(
 		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
@@ -232,39 +232,8 @@
 </script>
 
 <svelte:head>
-	<title>{meta.title}</title>
-	<meta name="description" content={meta.description} />
-
-	<!-- Open Graph / Facebook -->
-	<meta property="og:type" content="article" />
-	<meta property="og:url" content={meta.url} />
-	<meta property="og:title" content={meta.title} />
-	<meta property="og:description" content={meta.description} />
-	{#if meta.image}
-		<meta property="og:image" content={meta.image} />
-		<meta property="og:image:width" content="1200" />
-		<meta property="og:image:height" content="630" />
-		<meta property="og:image:alt" content={meta.title} />
-	{/if}
-	<meta property="og:site_name" content="문(Moon)" />
-	<meta property="og:author" content={meta.author} />
-
-	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
-	<meta property="twitter:url" content={meta.url} />
-	<meta property="twitter:title" content={meta.title} />
-	<meta property="twitter:description" content={meta.description} />
-	{#if meta.image}
-		<meta property="twitter:image" content={meta.image} />
-		<meta property="twitter:image:width" content="1200" />
-		<meta property="twitter:image:height" content="630" />
-		<meta property="twitter:image:alt" content={meta.title} />
-	{/if}
-
-	<!-- Additional meta tags for better SEO -->
-	<meta name="author" content={meta.author} />
-	<meta name="robots" content="index, follow" />
-	<link rel="canonical" href={meta.url} />
+	<title>{post.title} | 문</title>
+	<meta name="description" content={post.content} />
 </svelte:head>
 
 <Header>
