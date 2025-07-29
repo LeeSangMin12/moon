@@ -39,7 +39,7 @@
 	];
 
 	let { data } = $props();
-	let { post, comments } = $state(data);
+	let { post, comments, meta } = $state(data);
 
 	let is_bookmarked = $state(
 		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
@@ -232,11 +232,39 @@
 </script>
 
 <svelte:head>
-	<title>게시글 | 문</title>
-	<meta
-		name="description"
-		content="이 페이지는 사용자가 작성한 게시글의 상세 내용을 확인하고, 댓글을 남기거나, 좋아요, 북마크, 팔로우, 신고 등 다양한 상호작용을 할 수 있는 문(Moon)의 소셜 게시글 상세 페이지입니다. 게시글의 작성자 정보, 댓글 목록, 그리고 관련된 모든 활동을 한눈에 볼 수 있어 소통과 정보 공유에 최적화되어 있습니다."
-	/>
+	<title>{meta.title}</title>
+	<meta name="description" content={meta.description} />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content={meta.url} />
+	<meta property="og:title" content={meta.title} />
+	<meta property="og:description" content={meta.description} />
+	{#if meta.image}
+		<meta property="og:image" content={meta.image} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={meta.title} />
+	{/if}
+	<meta property="og:site_name" content="문(Moon)" />
+	<meta property="og:author" content={meta.author} />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta property="twitter:url" content={meta.url} />
+	<meta property="twitter:title" content={meta.title} />
+	<meta property="twitter:description" content={meta.description} />
+	{#if meta.image}
+		<meta property="twitter:image" content={meta.image} />
+		<meta property="twitter:image:width" content="1200" />
+		<meta property="twitter:image:height" content="630" />
+		<meta property="twitter:image:alt" content={meta.title} />
+	{/if}
+
+	<!-- Additional meta tags for better SEO -->
+	<meta name="author" content={meta.author} />
+	<meta name="robots" content="index, follow" />
+	<link rel="canonical" href={meta.url} />
 </svelte:head>
 
 <Header>
