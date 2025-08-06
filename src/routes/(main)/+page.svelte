@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { RiAddLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
@@ -24,51 +24,74 @@
 	let selected = $state(0);
 
 	let is_infinite_loading = $state(false);
-	let last_post_id = $state('');
+	let observer = $state(null);
 
 	onMount(async () => {
 		if (joined_communities) {
 			tabs = ['최신', ...joined_communities.map((c) => c.title)];
 		}
 
-		last_post_id = posts[posts.length - 1]?.id || '';
-		infinite_scroll();
+		// Initialize infinite scroll after a short delay to ensure DOM is ready
+		setTimeout(() => {
+			setup_infinite_scroll();
+		}, 100);
 	});
 
 	$effect(async () => {
+		// Fetch random posts instead of sequential posts
 		if (selected === 0) {
-			posts = await $api_store.posts.select_infinite_scroll('', '', 20);
+			posts = await $api_store.posts.select_random('', 20);
 		} else {
 			const community_id = joined_communities[selected - 1].id;
-			posts = await $api_store.posts.select_infinite_scroll(
-				'',
-				community_id,
-				20,
-			);
+			posts = await $api_store.posts.select_random(community_id, 20);
 		}
-		last_post_id = posts.at(-1)?.id ?? '';
+
+		// Re-setup infinite scroll when posts change
+		setTimeout(() => {
+			setup_infinite_scroll();
+		}, 100);
 	});
 
 	/**
-	 * 무한스크롤 함수
+	 * 무한스크롤 설정 함수
 	 */
-	const infinite_scroll = () => {
-		const observer = new IntersectionObserver((entries) => {
-			entries.forEach((entry) => {
-				if (posts.length >= 20 && entry.isIntersecting) {
-					is_infinite_loading = true;
-					setTimeout(() => {
-						load_more_data();
-					}, 1000);
-				}
-			});
-		});
+	const setup_infinite_scroll = () => {
+		// Clean up existing observer
+		if (observer) {
+			observer.disconnect();
+		}
 
+		// Create new observer
+		observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting && !is_infinite_loading) {
+						is_infinite_loading = true;
+						setTimeout(() => {
+							load_more_data();
+						}, 1000);
+					}
+				});
+			},
+			{
+				rootMargin: '100px', // Trigger when element is 100px from viewport
+				threshold: 0.1, // Trigger when 10% of element is visible
+			},
+		);
+
+		// Observe the target element
 		const target = document.getElementById('infinite_scroll');
 		if (target) {
 			observer.observe(target);
 		}
 	};
+
+	// Cleanup observer on component destroy
+	onDestroy(() => {
+		if (observer) {
+			observer.disconnect();
+		}
+	});
 
 	/**
 	 * 무한스크롤 데이터 더 가져오기
@@ -76,18 +99,20 @@
 	const load_more_data = async () => {
 		const community_id =
 			selected === 0 ? '' : joined_communities[selected - 1].id;
-		const available_post = await $api_store.posts.select_infinite_scroll(
-			last_post_id,
+
+		// Get IDs of already loaded posts to avoid duplicates
+		const exclude_ids = posts.map((post) => post.id);
+
+		const new_posts = await $api_store.posts.select_random(
 			community_id,
 			20,
+			exclude_ids,
 		);
 		is_infinite_loading = false;
 
-		//더 불러올 값이 있을때만 조회
-		if (available_post.length !== 0) {
-			posts = [...posts, ...available_post];
-
-			last_post_id = available_post.at(-1)?.id ?? '';
+		// Add new random posts to the existing list
+		if (new_posts.length !== 0) {
+			posts = [...posts, ...new_posts];
 		}
 	};
 
@@ -134,7 +159,7 @@
 		</div>
 	{/each}
 
-	<div id="infinite_scroll"></div>
+	<div id="infinite_scroll" class="my-4 h-4"></div>
 
 	<div class="flex justify-center py-4">
 		<div

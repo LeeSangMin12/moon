@@ -101,4 +101,32 @@ export const create_posts_api = (supabase) => ({
 
 		return data;
 	},
+	select_random: async (community_id = '', limit = 20, exclude_ids = []) => {
+		let query = supabase
+			.from('posts')
+			.select(
+				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
+			)
+			.order('created_at', { ascending: false })
+			.limit(limit * 2); // Get more posts to account for filtering
+
+		if (community_id !== '') {
+			query = query.eq('community_id', community_id);
+		}
+
+		// Exclude posts that are already loaded
+		if (exclude_ids.length > 0) {
+			query = query.not('id', 'in', `(${exclude_ids.join(',')})`);
+		}
+
+		let { data: posts, error } = await query;
+
+		if (error) throw new Error(`Failed to select_random: ${error.message}`);
+
+		// Shuffle the posts array to randomize the order
+		const shuffled = posts.sort(() => Math.random() - 0.5);
+
+		// Return only the requested limit
+		return shuffled.slice(0, limit);
+	},
 });
