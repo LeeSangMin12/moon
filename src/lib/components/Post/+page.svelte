@@ -175,7 +175,7 @@
 			<img
 				src={post.users.avatar_url ?? profile_png}
 				alt={post.users.name}
-				class="mr-2 h-8 w-8 rounded-full"
+				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 			/>
 
 			<p class="pr-3 text-sm font-medium">{post.users.name}</p>
@@ -208,7 +208,7 @@
 	<!-- 제목 -->
 	<a
 		href={`/@${post.users.handle}/post/${post.id}`}
-		class="mt-1 line-clamp-2 font-semibold"
+		class="mt-2 line-clamp-2 font-semibold"
 	>
 		{post.title}
 	</a>

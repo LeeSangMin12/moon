@@ -12,6 +12,17 @@ export const create_community_members_api = (supabase) => ({
 
 		return community_members;
 	},
+	select_by_community_id: async (community_id) => {
+		let { data: community_participants, error } = await supabase
+			.from('community_members')
+			.select('*, users(id, name, handle, avatar_url)')
+			.eq('community_id', community_id);
+
+		if (error)
+			throw new Error(`Failed to select_by_community_id: ${error.message}`);
+
+		return community_participants;
+	},
 	insert: async (community_id, user_id) => {
 		let { error } = await supabase
 			.from('community_members')

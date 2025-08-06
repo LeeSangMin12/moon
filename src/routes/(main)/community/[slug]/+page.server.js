@@ -12,10 +12,13 @@ export async function load({ params, parent, locals: { supabase } }) {
 
 	const community = await api.communities.select_by_slug(params.slug);
 	const posts = await api.posts.select_by_community_id(community.id);
+	const community_participants =
+		await api.community_members.select_by_community_id(community.id);
 
 	return {
 		community,
 		community_members,
 		posts,
+		community_participants,
 	};
 }

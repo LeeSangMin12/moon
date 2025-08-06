@@ -42,7 +42,7 @@
 				/>
 			</div>
 		</div>
-		<div class="chat-header">이상민</div>
+		<div class="chat-header"></div>
 		<div class="chat-bubble text-sm">개발 외주 필요하신거 맞으신가요?</div>
 		<time class="chat-footer mt-0.5 text-xs text-gray-500">12:45</time>
 	</div>
