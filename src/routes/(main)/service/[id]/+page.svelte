@@ -285,6 +285,48 @@
 		content={service?.description ||
 			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content={service?.title || '서비스'} />
+	<meta
+		property="og:description"
+		content={service?.description ||
+			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
+	/>
+	<meta
+		property="og:image"
+		content={service?.images?.[0]?.uri ||
+			service?.users?.avatar_url ||
+			'%sveltekit.assets%/open_graph_img.png'}
+	/>
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:site_name" content="문" />
+	<meta property="og:locale" content="ko_KR" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content={service?.title || '서비스'} />
+	<meta
+		property="twitter:description"
+		content={service?.description ||
+			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
+	/>
+	<meta
+		property="twitter:image"
+		content={service?.images?.[0]?.uri ||
+			service?.users?.avatar_url ||
+			'%sveltekit.assets%/open_graph_img.png'}
+	/>
 </svelte:head>
 
 <Header>

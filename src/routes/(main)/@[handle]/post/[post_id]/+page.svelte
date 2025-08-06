@@ -234,6 +234,31 @@
 <svelte:head>
 	<title>{post.title} | 문</title>
 	<meta name="description" content={post.content} />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="article" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content={post.title} />
+	<meta property="og:description" content={post.content} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content={post.title} />
+	<meta property="twitter:description" content={post.content} />
+
+	{#if post.images?.length > 0}
+		<meta property="og:image" content={post.images[0].uri} />
+		<meta property="twitter:image" content={post.images[0].uri} />
+	{/if}
 </svelte:head>
 
 <Header>

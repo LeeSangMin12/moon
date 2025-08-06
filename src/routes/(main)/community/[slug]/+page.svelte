@@ -126,6 +126,42 @@
 		content={community?.content ||
 			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content={community?.title || '커뮤니티'} />
+	<meta
+		property="og:description"
+		content={community?.content ||
+			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
+	/>
+	<meta
+		property="og:image"
+		content={community?.avatar_url || '%sveltekit.assets%/open_graph_img.png'}
+	/>
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content={community?.title || '커뮤니티'} />
+	<meta
+		property="twitter:description"
+		content={community?.content ||
+			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
+	/>
+	<meta
+		property="twitter:image"
+		content={community?.avatar_url || '%sveltekit.assets%/open_graph_img.png'}
+	/>
 </svelte:head>
 
 <Header>

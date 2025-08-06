@@ -217,9 +217,39 @@
 	<title>{user?.name || '사용자'}의 프로필 | 문</title>
 	<meta
 		name="description"
-		content="{user?.name ||
-			'사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요."
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="profile" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content="{user?.name || '사용자'}의" 프로필 />
+	<meta
+		property="og:description"
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
+	/>
+	<meta property="og:image" content={user?.avatar_url || profile_png} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content="{user?.name || '사용자'}의" 프로필 />
+	<meta
+		property="twitter:description"
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
+	/>
+	<meta property="twitter:image" content={user?.avatar_url || profile_png} />
 </svelte:head>
 
 <Header>
