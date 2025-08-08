@@ -157,6 +157,11 @@
 		if (!check_login() || !validate_order_form()) return;
 
 		try {
+			// 수수료 계산 (10% 기준)
+			const commission_rate = 0.05;
+			const commission = Math.floor(service.price * commission_rate);
+			const total_with_commission = service.price + commission;
+
 			const order_data = {
 				buyer_id: $user_store.id,
 				seller_id: service.users.id,
@@ -164,7 +169,8 @@
 				service_title: service.title,
 				quantity: 1,
 				unit_price: service.price,
-				total_amount: service.price,
+				commission_amount: commission,
+				total_with_commission: total_with_commission,
 				depositor_name: order_form_data.depositor_name.trim(),
 				bank: order_form_data.bank.trim(),
 				account_number: order_form_data.account_number.trim(),
@@ -348,7 +354,7 @@
 			<img
 				src={service.users.avatar_url || profile_png}
 				alt={service.users.name}
-				class="mr-2 h-8 w-8 rounded-full"
+				class="mr-2 aspect-square h-8 w-8 flex-shrink-0 rounded-full object-cover"
 			/>
 			<p class="pr-4 text-sm font-medium">@{service.users.handle}</p>
 		</a>
@@ -413,7 +419,7 @@
 										<img
 											src={review.reviewer.avatar_url || '/favicon.png'}
 											alt={review.reviewer.name}
-											class="mr-3 h-8 w-8 rounded-full"
+											class="mr-3 aspect-square h-8 w-8 rounded-full object-cover"
 										/>
 										<div>
 											<p class="text-sm font-medium">
@@ -551,9 +557,23 @@
 
 		<div class="my-4 h-px bg-gray-200"></div>
 
-		<div class="flex justify-between">
-			<p class="font-semibold">총 결제 금액</p>
-			<p class="text-primary text-lg font-bold">₩{comma(service.price)}</p>
+		<div class="space-y-2">
+			<div class="flex justify-between">
+				<p class="text-sm text-gray-600">서비스 금액</p>
+				<p class="text-sm">₩{comma(service.price)}</p>
+			</div>
+			<div class="flex justify-between">
+				<p class="text-sm text-gray-600">플랫폼 수수료 (5%)</p>
+				<p class="text-sm text-gray-500">
+					+₩{comma(Math.floor(service.price * 0.05))}
+				</p>
+			</div>
+			<div class="flex justify-between border-t pt-2">
+				<p class="font-semibold">총 결제 금액</p>
+				<p class="text-primary text-lg font-bold">
+					₩{comma(service.price + Math.floor(service.price * 0.05))}
+				</p>
+			</div>
 		</div>
 
 		<!-- 입금 계좌 안내 박스 -->

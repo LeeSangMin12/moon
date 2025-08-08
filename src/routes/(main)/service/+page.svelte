@@ -1,4 +1,7 @@
 <script>
+	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
+	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
+	import sell_service_png from '$lib/img/common/banner/sell_service.png';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiAddLine, RiHeartFill } from 'svelte-remixicon';
@@ -6,6 +9,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Banner from '$lib/components/Banner/+page.svelte';
 	import Service from '$lib/components/Service/+page.svelte';
 
 	import colors from '$lib/js/colors';
@@ -16,6 +20,25 @@
 
 	let { data } = $props();
 	let { services, service_likes } = $state(data);
+
+	let images = [
+		{
+			title: 'leave_opinion',
+			src: leave_opinion_png,
+			url: 'https://forms.gle/ZjxT8S4BmsBHsfv87',
+		},
+		{
+			title: 'sell_service',
+			src: sell_service_png,
+			url: 'https://docs.google.com/forms/d/e/1FAIpQLSeJQnzoxYbyIQy50jCWBsX4FY7CO8RzJfstsuISFCJNrowxQQ/viewform',
+		},
+		{
+			title: 'free_lawyer',
+			src: free_lawyer_png,
+			url: 'https://www.notion.so/2494cb364b428057bfdced50db5e0353',
+		},
+	];
+
 	let search_text = $state('');
 	let is_infinite_loading = $state(false);
 	let last_service_id = $state('');
@@ -84,7 +107,7 @@
 		<input
 			type="text"
 			placeholder="서비스 또는 전문가 검색"
-			class="block w-full rounded-lg bg-gray-100 p-3 text-sm focus:outline-none"
+			class="block w-full rounded-lg bg-gray-100 p-3 py-4 text-sm focus:outline-none"
 			bind:value={search_text}
 			onkeydown={async (e) => {
 				if (e.key === 'Enter') await handle_search();
@@ -98,8 +121,12 @@
 		</button>
 	</div>
 
+	<section class="mt-4 flex flex-col items-center">
+		<Banner {images} />
+	</section>
+
 	<section>
-		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
+		<div class="mt-4 grid grid-cols-2 gap-4 px-4 sm:grid-cols-3">
 			{#each services as service}
 				<Service {service} {service_likes} />
 			{/each}

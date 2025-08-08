@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { RiArrowLeftSLine } from 'svelte-remixicon';
+	import { RiArrowLeftSLine, RiInformationLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -18,6 +18,9 @@
 
 	let selected_tab_index = $state(0);
 	const tabs = ['구매', '판매'];
+
+	// 판매자 가이드 표시 여부
+	let show_seller_guide = $state(false);
 
 	// 주문 상태 한글 변환
 	const get_status_text = (status) => {
@@ -41,6 +44,18 @@
 			refunded: 'bg-gray-100 text-gray-800',
 		};
 		return color_map[status] || 'bg-gray-100 text-gray-800';
+	};
+
+	// 주문 상태별 아이콘
+	const get_status_icon = (status) => {
+		const icon_map = {
+			pending: '⏳',
+			paid: '💰',
+			completed: '✅',
+			cancelled: '❌',
+			refunded: '↩️',
+		};
+		return icon_map[status] || '📋';
 	};
 
 	// 날짜 포맷팅 함수
@@ -108,6 +123,11 @@
 			show_toast('error', '주문 취소에 실패했습니다.');
 		}
 	};
+
+	// 판매자 가이드 토글
+	const toggle_seller_guide = () => {
+		show_seller_guide = !show_seller_guide;
+	};
 </script>
 
 <svelte:head>
@@ -171,10 +191,11 @@
 											order.status,
 										)}"
 									>
+										{get_status_icon(order.status)}
 										{get_status_text(order.status)}
 									</span>
 									<p class="text-primary mt-2 text-lg font-bold">
-										₩{comma(order.total_amount)}
+										₩{comma(order.total_with_commission)}
 									</p>
 								</div>
 							</div>
@@ -223,7 +244,42 @@
 			</div>
 		{:else}
 			<div class="px-4">
-				<h2 class="mb-4 text-lg font-semibold">판매한 서비스</h2>
+				<div class="mb-4 flex items-center justify-between">
+					<h2 class="text-lg font-semibold">판매한 서비스</h2>
+					<button
+						onclick={toggle_seller_guide}
+						class="flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-100"
+					>
+						<RiInformationLine size={16} />
+						{show_seller_guide ? '가이드 숨기기' : '판매자 가이드'}
+					</button>
+				</div>
+
+				{#if show_seller_guide}
+					<div class="mb-6 rounded-lg bg-blue-50 p-4">
+						<h3 class="mb-3 font-semibold text-blue-900">
+							📋 판매자 주문 관리 가이드
+						</h3>
+						<div class="space-y-2 text-sm text-blue-800">
+							<div class="flex items-start gap-2">
+								<span class="font-medium">1단계:</span>
+								<span>고객이 주문하면 "결제 대기" 상태가 됩니다.</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<span class="font-medium">2단계:</span>
+								<span>입금 확인 후 "결제 승인" 버튼을 눌러주세요.</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<span class="font-medium">3단계:</span>
+								<span>서비스 완료 후 "서비스 완료" 버튼을 눌러주세요.</span>
+							</div>
+							<div class="mt-3 text-xs text-blue-600">
+								💡 각 단계별로 상태가 자동으로 업데이트되어 고객에게 알림이
+								갑니다.
+							</div>
+						</div>
+					</div>
+				{/if}
 
 				{#if my_sales.length === 0}
 					<div class="py-12 text-center">
@@ -255,10 +311,11 @@
 											order.status,
 										)}"
 									>
+										{get_status_icon(order.status)}
 										{get_status_text(order.status)}
 									</span>
 									<p class="text-primary mt-2 text-lg font-bold">
-										₩{comma(order.total_amount)}
+										₩{comma(order.unit_price)}
 									</p>
 								</div>
 							</div>
@@ -308,6 +365,20 @@
 										</button>
 									{/if}
 								</div>
+
+								{#if order.status === 'pending'}
+									<div
+										class="mt-2 rounded-md bg-yellow-50 p-2 text-xs text-yellow-800"
+									>
+										💡 입금 확인 후 "결제 승인" 버튼을 눌러주세요.
+									</div>
+								{:else if order.status === 'paid'}
+									<div
+										class="mt-2 rounded-md bg-blue-50 p-2 text-xs text-blue-800"
+									>
+										💡 서비스 제공 완료 후 "서비스 완료" 버튼을 눌러주세요.
+									</div>
+								{/if}
 							</div>
 						</div>
 					{/each}
