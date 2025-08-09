@@ -151,9 +151,11 @@ export const create_service_reviews_api = (supabase) => ({
 			)
 			.eq('service_id', service_id)
 			.eq('reviewer_id', reviewer_id)
+			.order('created_at', { ascending: false })
+			.limit(1)
 			.maybeSingle();
 
-		if (error && error.code !== 'PGRST116') {
+		if (error) {
 			throw new Error(
 				`Failed to select review by service and reviewer: ${error.message}`,
 			);
@@ -277,7 +279,7 @@ export const create_service_reviews_api = (supabase) => ({
 
 	// 리뷰 작성 가능 여부 확인 (완료된 주문이 있는지 확인)
 	can_write_review: async (service_id, user_id) => {
-		// 해당 서비스에 대해 완료된 주문이 있는지 확인 (가장 최근 주문)
+		// 1) 해당 서비스에 대해 사용자가 완료한 주문들을 가져온다 (최신순)
 		const { data: orders, error: orderError } = await supabase
 			.from('service_orders')
 			.select('id, created_at')
@@ -291,28 +293,35 @@ export const create_service_reviews_api = (supabase) => ({
 			return { can_write: false, order_id: null };
 		}
 
-		// 완료된 주문이 없으면 리뷰 작성 불가
 		if (!orders || orders.length === 0) {
+			// 완료된 주문이 없으면 작성 불가
 			return { can_write: false, order_id: null };
 		}
 
-		// 이미 리뷰를 작성했는지 확인
-		const { data: existingReview, error: reviewError } = await supabase
+		// 2) 해당 주문들 중 이미 리뷰가 작성된 주문을 조회
+		const orderIds = orders.map((o) => o.id);
+		const { data: reviewsForOrders, error: reviewsError } = await supabase
 			.from('service_reviews')
-			.select('id')
+			.select('order_id')
 			.eq('service_id', service_id)
 			.eq('reviewer_id', user_id)
-			.maybeSingle();
+			.in('order_id', orderIds);
 
-		if (reviewError && reviewError.code !== 'PGRST116') {
-			console.error('리뷰 확인 실패:', reviewError);
+		if (reviewsError) {
+			console.error('리뷰 확인 실패:', reviewsError);
 			return { can_write: false, order_id: null };
 		}
 
-		// 이미 리뷰를 작성했으면 새로 작성 불가, 하지만 수정은 가능 (order_id는 반환)
-		const can_write = !existingReview;
-		const order_id = orders[0].id; // 가장 최근 완료된 주문 (수정 시에도 필요)
+		const reviewedOrderIds = new Set(
+			(reviewsForOrders || []).map((r) => r.order_id),
+		);
 
-		return { can_write, order_id };
+		// 3) 최신 주문부터 아직 리뷰가 없는 주문을 찾는다
+		const eligibleOrder = orders.find((o) => !reviewedOrderIds.has(o.id));
+		if (!eligibleOrder) {
+			return { can_write: false, order_id: null };
+		}
+
+		return { can_write: true, order_id: eligibleOrder.id };
 	},
 });

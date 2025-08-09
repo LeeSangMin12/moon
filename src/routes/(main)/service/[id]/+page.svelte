@@ -35,6 +35,7 @@
 	let is_buy_modal_open = $state(false);
 	let is_review_modal_open = $state(false);
 	let is_submitting_review = $state(false);
+	let editing_review = $state(null);
 
 	// Form Data
 	let order_form_data = $state({
@@ -223,30 +224,31 @@
 		try {
 			is_submitting_review = true;
 
-			const review_data = {
-				service_id: service.id,
-				reviewer_id: $user_store.id,
-				order_id: review_order_id,
-				rating: review_form_data.rating,
-				title: review_form_data.title.trim(),
-				content: review_form_data.content.trim(),
-			};
-
-			if (my_review) {
-				await $api_store.service_reviews.update(my_review.id, {
+			if (!editing_review && can_write_review) {
+				// 아직 리뷰가 없는 완료된 주문이 존재 -> 새 리뷰 작성
+				const review_data = {
+					service_id: service.id,
+					reviewer_id: $user_store.id,
 					order_id: review_order_id,
+					rating: review_form_data.rating,
+					title: review_form_data.title.trim(),
+					content: review_form_data.content.trim(),
+				};
+				await $api_store.service_reviews.insert(review_data);
+				show_toast('success', '리뷰가 작성되었습니다.');
+			} else if (editing_review) {
+				// 기존 리뷰 수정 (order_id는 변경하지 않음)
+				await $api_store.service_reviews.update(editing_review.id, {
 					rating: review_form_data.rating,
 					title: review_form_data.title.trim(),
 					content: review_form_data.content.trim(),
 				});
 				show_toast('success', '리뷰가 수정되었습니다.');
-			} else {
-				await $api_store.service_reviews.insert(review_data);
-				show_toast('success', '리뷰가 작성되었습니다.');
 			}
 
 			await refresh_data();
 			is_review_modal_open = false;
+			editing_review = null;
 			reset_review_form();
 		} catch (error) {
 			console.error('리뷰 작성/수정 실패:', error);
@@ -256,14 +258,17 @@
 		}
 	};
 
-	const open_review_modal = () => {
-		if (my_review) {
+	const open_review_modal = (target_review = null) => {
+		editing_review = target_review;
+		if (target_review) {
+			// 특정 리뷰 수정 모드
 			review_form_data = {
-				rating: my_review.rating,
-				title: my_review.title || '',
-				content: my_review.content || '',
+				rating: target_review.rating,
+				title: target_review.title || '',
+				content: target_review.content || '',
 			};
 		} else {
+			// 새 리뷰 작성 모드
 			reset_review_form();
 		}
 		is_review_modal_open = true;
@@ -393,12 +398,12 @@
 			<div class="mt-8">
 				<div class="mb-4 flex items-center justify-between">
 					<h2 class="text-lg font-semibold">리뷰 ({service_reviews.length})</h2>
-					{#if can_write_review || my_review}
+					{#if can_write_review}
 						<button
-							onclick={open_review_modal}
+							onclick={() => open_review_modal()}
 							class="bg-primary hover:bg-primary-dark rounded-md px-3 py-1.5 text-sm text-white"
 						>
-							{my_review ? '리뷰 수정' : '리뷰 작성'}
+							리뷰 작성
 						</button>
 					{/if}
 				</div>
@@ -446,6 +451,16 @@
 									<p class="text-sm leading-relaxed text-gray-700">
 										{review.content}
 									</p>
+								{/if}
+								{#if review.reviewer_id === $user_store.id}
+									<div class="mt-3 flex justify-end">
+										<button
+											onclick={() => open_review_modal(review)}
+											class="btn btn-sm text-primary text-xs"
+										>
+											수정하기
+										</button>
+									</div>
 								{/if}
 							</div>
 						{/each}
@@ -609,8 +624,15 @@
 <Modal bind:is_modal_open={is_review_modal_open} modal_position="center">
 	<div class="p-4">
 		<div class="flex items-center justify-between">
-			<h3 class="font-semibold">{my_review ? '리뷰 수정' : '리뷰 작성'}</h3>
-			<button onclick={() => (is_review_modal_open = false)}>
+			<h3 class="font-semibold">
+				{editing_review ? '리뷰 수정' : '리뷰 작성'}
+			</h3>
+			<button
+				onclick={() => {
+					is_review_modal_open = false;
+					editing_review = null;
+				}}
+			>
 				<RiCloseLine size={24} color={colors.gray[400]} />
 			</button>
 		</div>
@@ -670,10 +692,10 @@
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					{my_review ? '수정 중...' : '작성 중...'}
+					{editing_review ? '수정 중...' : '작성 중...'}
 				</span>
 			{:else}
-				{my_review ? '리뷰 수정하기' : '리뷰 작성하기'}
+				{editing_review ? '리뷰 수정하기' : '리뷰 작성하기'}
 			{/if}
 		</button>
 	</div>
