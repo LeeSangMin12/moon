@@ -39,7 +39,7 @@
 	];
 
 	let { data } = $props();
-	let { post, comments } = $state(data);
+	let { post, comments, page_url } = $state(data);
 
 	let is_bookmarked = $state(
 		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
@@ -233,32 +233,48 @@
 
 <svelte:head>
 	<title>{post.title} | 문</title>
-	<meta name="description" content={post.content} />
+	<meta name="description" content={(post.content ?? '').slice(0, 160)} />
+	<link rel="canonical" href={page_url} />
 
-	<!-- Open Graph / Facebook -->
+	<!-- Open Graph -->
 	<meta property="og:type" content="article" />
-	<meta
-		property="og:url"
-		content={typeof window !== 'undefined' ? window.location.href : ''}
-	/>
+	<meta property="og:url" content={page_url} />
 	<meta property="og:title" content={post.title} />
-	<meta property="og:description" content={post.content} />
+	<meta
+		property="og:description"
+		content={(post.content ?? '').slice(0, 200)}
+	/>
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 
 	<!-- Twitter -->
-	<meta property="twitter:card" content="summary_large_image" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content={page_url} />
+	<meta name="twitter:title" content={post.title} />
 	<meta
-		property="twitter:url"
-		content={typeof window !== 'undefined' ? window.location.href : ''}
+		name="twitter:description"
+		content={(post.content ?? '').slice(0, 200)}
 	/>
-	<meta property="twitter:title" content={post.title} />
-	<meta property="twitter:description" content={post.content} />
 
 	{#if post.images?.length > 0}
 		<meta property="og:image" content={post.images[0].uri} />
-		<meta property="twitter:image" content={post.images[0].uri} />
+		<meta name="twitter:image" content={post.images[0].uri} />
 	{/if}
+
+	<!-- Article structured data -->
+	<script type="application/ld+json">
+        {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: post.title,
+            description: (post.content ?? '').slice(0, 200),
+            image: post?.images?.[0]?.uri ? [post.images[0].uri] : undefined,
+            author: post?.users?.name ? { '@type': 'Person', name: post.users.name } : undefined,
+            datePublished: post?.created_at,
+            dateModified: post?.updated_at ?? post?.created_at,
+            mainEntityOfPage: page_url
+        })}
+	</script>
 </svelte:head>
 
 <Header>

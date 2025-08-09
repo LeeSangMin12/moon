@@ -12,5 +12,6 @@ export const load = async ({ params, parent, locals: { supabase }, url }) => {
 	return {
 		post,
 		comments,
+		page_url: url.origin + url.pathname,
 	};
 };
