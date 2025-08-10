@@ -86,11 +86,33 @@
 			$user_store.user_follows = $user_store.user_follows.filter(
 				(follow) => follow.following_id !== user.id,
 			);
+			// 팔로워 수 감소
+			follower_count--;
 		} else {
 			await $api_store.user_follows.follow($user_store.id, user.id);
 			$user_store.user_follows.push({
 				following_id: user.id,
 			});
+			// 팔로워 수 증가
+			follower_count++;
+
+			// 앱 레벨 알림 생성: 팔로우 당한 사용자에게
+			try {
+				await $api_store.notifications.insert({
+					recipient_id: user.id,
+					actor_id: $user_store.id,
+					type: 'follow.created',
+					resource_type: 'user',
+					resource_id: String($user_store.id),
+					payload: {
+						follower_id: $user_store.id,
+						follower_handle: $user_store.handle,
+					},
+					link_url: `/@${$user_store.handle}`,
+				});
+			} catch (e) {
+				console.error('Failed to insert notification (follow.created):', e);
+			}
 		}
 
 		is_following = !is_following;
@@ -213,9 +235,39 @@
 	<title>{user?.name || '사용자'}의 프로필 | 문</title>
 	<meta
 		name="description"
-		content="{user?.name ||
-			'사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요."
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="profile" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content="{user?.name || '사용자'}의" 프로필 />
+	<meta
+		property="og:description"
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
+	/>
+	<meta property="og:image" content={user?.avatar_url || profile_png} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content="{user?.name || '사용자'}의" 프로필 />
+	<meta
+		property="twitter:description"
+		content={user?.self_introduction ||
+			`${user?.name || '사용자'}의 프로필입니다. 게시글, 댓글, 서비스, 리뷰를 확인하고 팔로우하세요.`}
+	/>
+	<meta property="twitter:image" content={user?.avatar_url || profile_png} />
 </svelte:head>
 
 <Header>
@@ -254,13 +306,13 @@
 				<img
 					src={user.avatar_url || profile_png}
 					alt="프로필 이미지"
-					class="h-16 w-16 rounded-full border-2 border-gray-100 object-cover"
+					class="block aspect-square h-14 w-14 rounded-full object-cover"
 				/>
 			</div>
 			<!-- 프로필 정보 -->
 			<div class="flex-1">
 				<h2 class="text-sm text-gray-500">@{user.handle}</h2>
-				<h1 class="text-xl font-bold">{user.name}</h1>
+				<h1 class="mt-1 text-lg font-semibold">{user.name}</h1>
 				<!-- 별점 -->
 				<!-- <div class="mt-1 flex items-center">
 					<div class="flex items-center text-yellow-500">
@@ -374,7 +426,7 @@
 					<!-- 댓글이 달린 게시글 정보 -->
 					{#if comment.post}
 						<div class="mb-3 rounded bg-gray-50 p-3">
-							<p class="mb-1 text-xs text-gray-500">댓글을 남긴 게시글</p>
+							<!-- <p class="mb-1 text-xs text-gray-500">댓글을 남긴 게시글</p> -->
 							<p
 								class="line-clamp-2 overflow-hidden text-sm font-medium text-ellipsis"
 								style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;"
@@ -430,7 +482,7 @@
 								>
 									<Icon attribute="gift" size={14} color={colors.warning} />
 									<span class="ml-1 text-xs font-medium text-yellow-800">
-										{comment.gift_moon_point} 포인트 선물
+										{comment.gift_moon_point} 문 선물
 									</span>
 								</div>
 							{/if}

@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { RiAddLine } from 'svelte-remixicon';
+	import { onDestroy, onMount } from 'svelte';
+	import { RiAddLine, RiNotificationFill } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -22,9 +22,12 @@
 
 	let tabs = $state(['최신']);
 	let selected = $state(0);
+	let unread_count = $state(0);
+
+	let last_post_id = $state('');
 
 	let is_infinite_loading = $state(false);
-	let last_post_id = $state('');
+	let observer = $state(null);
 
 	onMount(async () => {
 		if (joined_communities) {
@@ -33,42 +36,87 @@
 
 		last_post_id = posts[posts.length - 1]?.id || '';
 		infinite_scroll();
+
+		// 초기 알림 미읽음 카운트 로드
+		refresh_unread_count();
 	});
 
+	// 사용자 변경 시 미읽음 카운트 갱신
 	$effect(async () => {
-		if (selected === 0) {
-			posts = await $api_store.posts.select_infinite_scroll('', '', 20);
-		} else {
-			const community_id = joined_communities[selected - 1].id;
-			posts = await $api_store.posts.select_infinite_scroll(
-				'',
-				community_id,
-				20,
+		const uid = $user_store.id;
+		if (!uid) return;
+		refresh_unread_count();
+	});
+
+	const refresh_unread_count = async () => {
+		try {
+			if (!$user_store?.id) return;
+			unread_count = await $api_store.notifications.select_unread_count(
+				$user_store.id,
 			);
+		} catch (e) {
+			console.error('Failed to load unread notifications count:', e);
 		}
-		last_post_id = posts.at(-1)?.id ?? '';
+	};
+
+	$effect(async () => {
+		// Track dependencies explicitly
+		selected;
+		joined_communities;
+
+		const community_id =
+			selected === 0 ? '' : (joined_communities[selected - 1]?.id ?? '');
+		const initial_posts = await $api_store.posts.select_infinite_scroll(
+			'',
+			community_id,
+			20,
+		);
+		posts = initial_posts;
+		last_post_id = initial_posts.at(-1)?.id ?? '';
 	});
 
 	/**
-	 * 무한스크롤 함수
+	 * 무한스크롤 설정 함수
 	 */
 	const infinite_scroll = () => {
-		const observer = new IntersectionObserver((entries) => {
-			entries.forEach((entry) => {
-				if (posts.length >= 20 && entry.isIntersecting) {
-					is_infinite_loading = true;
-					setTimeout(() => {
-						load_more_data();
-					}, 1000);
-				}
-			});
-		});
+		// Clean up existing observer
+		if (observer) {
+			observer.disconnect();
+		}
 
 		const target = document.getElementById('infinite_scroll');
-		if (target) {
-			observer.observe(target);
-		}
+		if (!target) return;
+
+		observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (
+						entry.isIntersecting &&
+						!is_infinite_loading &&
+						posts.length >= 20
+					) {
+						is_infinite_loading = true;
+						load_more_data().finally(() => {
+							is_infinite_loading = false;
+						});
+					}
+				});
+			},
+			{
+				rootMargin: '200px 0px',
+				threshold: 0.01,
+			},
+		);
+
+		observer.observe(target);
 	};
+
+	// Cleanup observer on component destroy
+	onDestroy(() => {
+		if (observer) {
+			observer.disconnect();
+		}
+	});
 
 	/**
 	 * 무한스크롤 데이터 더 가져오기
@@ -113,18 +161,24 @@
 	<title>전문가 매칭의 모든것, 문</title>
 	<meta
 		name="description"
-		content="AI·마케팅·디자인·IT 등 다양한 분야의 전문가를 문에서 만나보세요. 전문가 매칭 서비스로 원하는 서비스를 찾아보세요."
+		content="AI·마케팅·디자인·IT 등 다양한 분야의 전문가를 문에서 만나보세요."
 	/>
 </svelte:head>
 
 <Header>
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 
-	<!-- <button onclick={() => goto('/search')} slot="right">
-		<Icon attribute="search" size={24} color={colors.gray[600]} />
-	</button> -->
+	<button onclick={() => goto('/alarm')} slot="right" class="relative">
+		<RiNotificationFill size={20} color={colors.gray[400]} />
+		{#if unread_count > 0}
+			<span
+				class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
+			>
+				{unread_count > 99 ? '99+' : unread_count}
+			</span>
+		{/if}
+	</button>
 </Header>
-
 <main>
 	<TabSelector {tabs} bind:selected />
 

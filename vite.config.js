@@ -6,6 +6,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), enhancedImages(), sveltekit()],
+	server: {
+		allowedHosts: ['1e49f49088ad.ngrok-free.app'],
+	},
 	test: {
 		workspace: [
 			{

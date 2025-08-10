@@ -267,7 +267,7 @@
 				<img
 					src={comment_state.users.avatar_url ?? profile_png}
 					alt="프로필"
-					class="h-full w-full rounded-full object-cover"
+					class="block aspect-square h-full w-full rounded-full object-cover"
 				/>
 			</a>
 			<div class="w-full">

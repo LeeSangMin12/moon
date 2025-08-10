@@ -9,6 +9,7 @@ import { create_community_topics_api } from '$lib/supabase/community_topics';
 import { create_moon_charges_api } from '$lib/supabase/moon_charges';
 import { create_moon_point_transactions_api } from '$lib/supabase/moon_point_transactions';
 import { create_moon_withdrawals_api } from '$lib/supabase/moon_withdrawals';
+import { create_notifications_api } from '$lib/supabase/notifications';
 import { create_post_bookmarks_api } from '$lib/supabase/post_bookmarks';
 import { create_post_comment_votes_api } from '$lib/supabase/post_comment_votes';
 import { create_post_comments_api } from '$lib/supabase/post_comments';
@@ -46,6 +47,7 @@ export const create_api = (supabase) => ({
 	user_reports: create_user_reports_api(supabase),
 	moon_point_transactions: create_moon_point_transactions_api(supabase),
 	moon_withdrawals: create_moon_withdrawals_api(supabase),
+	notifications: create_notifications_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

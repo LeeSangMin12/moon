@@ -26,11 +26,12 @@
 </div>
 
 <div class="mx-4 mt-8">
-	<p class="ml-1 font-semibold">성명</p>
+	<p class="ml-1 font-semibold">이름</p>
 
 	<div class="mt-2">
 		<input
 			type="text"
+			placeholder="예: 홍길동"
 			bind:value={data.name}
 			class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 		/>
@@ -43,6 +44,7 @@
 	<div class="mt-2">
 		<input
 			type="text"
+			placeholder="예: devsangmin32"
 			bind:value={data.handle}
 			oninput={() => validate_handle(data.handle)}
 			class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"

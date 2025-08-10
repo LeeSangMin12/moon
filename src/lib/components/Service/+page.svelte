@@ -42,7 +42,7 @@
 			src={service.images[0].uri ||
 				'https://img.daisyui.com/images/stock/photo-1625726411847-8cbb60cc71e6.webp'}
 			alt={service.title}
-			class="h-28 w-full object-cover"
+			class="h-18 w-full object-cover"
 		/>
 	</a>
 	<div class="px-2 py-2">

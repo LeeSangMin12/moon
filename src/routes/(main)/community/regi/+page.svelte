@@ -146,6 +146,10 @@
 					new_community.id,
 					form_data.selected_topics,
 				);
+				await $api_store.community_members.insert(
+					new_community.id,
+					$user_store.id,
+				);
 
 				if (form_data.avatar_url) {
 					const file_ext = form_data.avatar_url.name.split('.').pop();
@@ -162,7 +166,9 @@
 				}
 
 				show_toast('success', '커뮤니티 생성이 완료되었어요!');
-				goto('/community');
+				goto(`/community/${form_data.slug}`, {
+					replaceState: true,
+				});
 			}
 		} finally {
 			update_global_store('loading', false);

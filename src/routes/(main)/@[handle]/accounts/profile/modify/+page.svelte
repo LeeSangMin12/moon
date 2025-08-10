@@ -71,7 +71,7 @@
 	<title>프로필 수정 | 문</title>
 	<meta
 		name="description"
-		content="프로필 사진과 성명, 소개글을 수정할 수 있는 문의 프로필 수정 페이지입니다."
+		content="프로필 사진과 이름, 소개글을 수정할 수 있는 문의 프로필 수정 페이지입니다."
 	/>
 </svelte:head>
 
@@ -125,7 +125,7 @@
 	</div>
 
 	<div class="mt-8">
-		<p class="ml-1 font-semibold">성명</p>
+		<p class="ml-1 font-semibold">이름</p>
 
 		<div class="mt-2">
 			<input
@@ -137,14 +137,20 @@
 	</div>
 
 	<div class="mt-8">
-		<p class="ml-1 font-semibold">소개글</p>
+		<div class="flex items-center justify-between">
+			<p class="ml-1 font-semibold">소개글</p>
+			<p class="text-xs text-gray-500">
+				{form.self_introduction.length}/200
+			</p>
+		</div>
 
 		<div class="mt-2">
 			<textarea
 				class="textarea focus:border-primary w-full focus:outline-none"
 				rows="4"
+				maxlength="200"
 				bind:value={form.self_introduction}
-				placeholder="자기소개를 입력하세요"
+				placeholder="자기소개를 입력하세요 (최대 200자)"
 			></textarea>
 		</div>
 	</div>

@@ -12,6 +12,7 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 	import Post from '$lib/components/Post/+page.svelte';
+	import UserCard from '$lib/components/Profile/UserCard.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
@@ -29,9 +30,14 @@
 	];
 
 	let { data } = $props();
-	let { community, community_members, posts } = $derived(data);
+	let { community, community_members, community_participants, posts } =
+		$derived(data);
 	let community_members_state = $state(data.community_members);
+	let participant_count = $state(
+		data.community.community_members?.[0]?.count ?? 0,
+	);
 
+	let is_participants_modal_open = $state(false);
 	let is_menu_modal_open = $state(false);
 	let is_report_modal_open = $state(false);
 
@@ -48,6 +54,9 @@
 		try {
 			await $api_store.community_members.insert(community_id, $user_store.id);
 			community_members_state.push({ community_id, user_id: $user_store.id });
+			// 참여자 수 증가
+			participant_count++;
+
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -60,6 +69,8 @@
 			community_members_state = community_members_state.filter(
 				(member) => member.community_id !== community_id,
 			);
+			// 참여자 수 감소
+			participant_count--;
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
 			console.error(error);
@@ -115,6 +126,42 @@
 		content={community?.content ||
 			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content={community?.title || '커뮤니티'} />
+	<meta
+		property="og:description"
+		content={community?.content ||
+			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
+	/>
+	<meta
+		property="og:image"
+		content={community?.avatar_url || '%sveltekit.assets%/open_graph_img.png'}
+	/>
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content={community?.title || '커뮤니티'} />
+	<meta
+		property="twitter:description"
+		content={community?.content ||
+			'다양한 주제와 관심사를 가진 사람들이 모여 소통하는 커뮤니티입니다.'}
+	/>
+	<meta
+		property="twitter:image"
+		content={community?.avatar_url || '%sveltekit.assets%/open_graph_img.png'}
+	/>
 </svelte:head>
 
 <Header>
@@ -142,21 +189,24 @@
 	<section class="px-4 py-4">
 		<div class="flex items-start">
 			<!-- 프로필 이미지 -->
-			<div class="mr-4">
+			<div>
 				<img
 					src={community.avatar_url || logo}
-					alt="프로필 이미지"
-					class="h-16 w-16 rounded-full border-2 border-gray-100 object-cover"
+					alt="커뮤니티 아바타"
+					class="mr-2 block aspect-square h-14 w-14 rounded-full object-cover"
 				/>
 			</div>
 			<!-- 프로필 정보 -->
 			<div class="flex-1">
-				<h1 class="text-xl font-bold">{community.title}</h1>
+				<h1 class="font-semibold">{community.title}</h1>
 
-				<p class="mt-2 flex items-center gap-1 text-gray-400">
-					<RiUserLine size={18} color={colors.gray[400]} />
-					{community.community_members?.[0]?.count ?? 0}
-				</p>
+				<button
+					onclick={() => (is_participants_modal_open = true)}
+					class="mt-1 flex items-center gap-1 text-sm text-gray-400"
+				>
+					<RiUserLine size={16} color={colors.gray[400]} />
+					{participant_count}
+				</button>
 			</div>
 		</div>
 
@@ -278,5 +328,18 @@
 		>
 			제출
 		</button>
+	</div>
+</Modal>
+
+<Modal bind:is_modal_open={is_participants_modal_open} modal_position="center">
+	<div class="p-4">
+		<h2 class="mb-4 text-lg font-semibold">참여자</h2>
+		{#if community_participants.length === 0}
+			<p class="py-8 text-center text-gray-500">아직 유저가 없습니다.</p>
+		{:else}
+			{#each community_participants as participant}
+				<UserCard profile={participant.users} />
+			{/each}
+		{/if}
 	</div>
 </Modal>

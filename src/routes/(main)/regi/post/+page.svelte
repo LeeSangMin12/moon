@@ -94,7 +94,9 @@
 			}
 
 			show_toast('success', '게시글이 저장되었습니다.');
-			goto('/');
+			goto(`/@${$user_store.handle}/post/${new_post.id}`, {
+				replaceState: true,
+			});
 		} finally {
 			update_global_store('loading', false);
 		}
@@ -158,7 +160,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={() => goto('/')}>
+	<button slot="left" class="flex items-center" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 
@@ -285,13 +287,20 @@
 	</div>
 
 	<div class="mt-8 flex flex-col">
-		<p class="ml-1 text-sm font-medium">글 내용</p>
+		<div class="flex items-center justify-between">
+			<p class="ml-1 text-sm font-medium">글 내용</p>
+			<p class="text-xs text-gray-500">
+				{post_form_data.content.length}/600
+			</p>
+		</div>
 
 		<div class="mt-2">
 			<textarea
 				bind:value={post_form_data.content}
+				maxlength="600"
 				type="text"
 				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
+				placeholder="게시글 내용을 입력해주세요 (최대 600자)"
 			></textarea>
 		</div>
 	</div>

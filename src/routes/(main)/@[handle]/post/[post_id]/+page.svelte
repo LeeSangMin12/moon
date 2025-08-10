@@ -39,7 +39,7 @@
 	];
 
 	let { data } = $props();
-	let { post, comments } = $state(data);
+	let { post, comments, page_url } = $state(data);
 
 	let is_bookmarked = $state(
 		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
@@ -87,9 +87,30 @@
 		};
 
 		comments = [...comments, new_comment];
+
+		// 앱 레벨 알림 생성: 게시글 작성자에게 (자기 자신 제외)
+		try {
+			if (post?.users?.id && post.users.id !== $user_store.id) {
+				await $api_store.notifications.insert({
+					recipient_id: post.users.id,
+					actor_id: $user_store.id,
+					type: 'comment.created',
+					resource_type: 'post',
+					resource_id: String(post.id),
+					payload: {
+						comment_id: new_comment.id,
+						post_id: post.id,
+						preview: new_comment.content?.slice(0, 80),
+					},
+					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_comment.id}`,
+				});
+			}
+		} catch (e) {
+			console.error('Failed to insert notification (comment.created):', e);
+		}
 	};
 
-	const handle_reply_added = (event) => {
+	const handle_reply_added = async (event) => {
 		const { parent_comment_id, new_reply } = event.detail;
 
 		// 댓글 배열에서 해당 부모 댓글을 찾아서 답글 추가
@@ -111,6 +132,30 @@
 		};
 
 		comments = update_comment_replies(comments);
+
+		// 앱 레벨 알림 생성: 부모 댓글 작성자에게 (자기 자신 제외)
+		try {
+			const parent = comments.find((c) => c.id === parent_comment_id);
+			const parent_author_id = parent?.user_id;
+			if (parent_author_id && parent_author_id !== $user_store.id) {
+				await $api_store.notifications.insert({
+					recipient_id: parent_author_id,
+					actor_id: $user_store.id,
+					type: 'comment.reply',
+					resource_type: 'post',
+					resource_id: String(post.id),
+					payload: {
+						comment_id: new_reply.id,
+						parent_comment_id,
+						post_id: post.id,
+						preview: new_reply.content?.slice(0, 80),
+					},
+					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_reply.id}`,
+				});
+			}
+		} catch (e) {
+			console.error('Failed to insert notification (comment.reply):', e);
+		}
 	};
 
 	const handle_gift_comment_added = async (event) => {
@@ -232,11 +277,49 @@
 </script>
 
 <svelte:head>
-	<title>게시글 | 문</title>
+	<title>{post.title} | 문</title>
+	<meta name="description" content={(post.content ?? '').slice(0, 160)} />
+	<link rel="canonical" href={page_url} />
+
+	<!-- Open Graph -->
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content={page_url} />
+	<meta property="og:title" content={post.title} />
 	<meta
-		name="description"
-		content="이 페이지는 사용자가 작성한 게시글의 상세 내용을 확인하고, 댓글을 남기거나, 좋아요, 북마크, 팔로우, 신고 등 다양한 상호작용을 할 수 있는 문(Moon)의 소셜 게시글 상세 페이지입니다. 게시글의 작성자 정보, 댓글 목록, 그리고 관련된 모든 활동을 한눈에 볼 수 있어 소통과 정보 공유에 최적화되어 있습니다."
+		property="og:description"
+		content={(post.content ?? '').slice(0, 200)}
 	/>
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content={page_url} />
+	<meta name="twitter:title" content={post.title} />
+	<meta
+		name="twitter:description"
+		content={(post.content ?? '').slice(0, 200)}
+	/>
+
+	{#if post.images?.length > 0}
+		<meta property="og:image" content={post.images[0].uri} />
+		<meta name="twitter:image" content={post.images[0].uri} />
+	{/if}
+
+	<!-- Article structured data -->
+	<script type="application/ld+json">
+        {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: post.title,
+            description: (post.content ?? '').slice(0, 200),
+            image: post?.images?.[0]?.uri ? [post.images[0].uri] : undefined,
+            author: post?.users?.name ? { '@type': 'Person', name: post.users.name } : undefined,
+            datePublished: post?.created_at,
+            dateModified: post?.updated_at ?? post?.created_at,
+            mainEntityOfPage: page_url
+        })}
+	</script>
 </svelte:head>
 
 <Header>

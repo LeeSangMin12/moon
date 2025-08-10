@@ -35,6 +35,7 @@
 	let is_buy_modal_open = $state(false);
 	let is_review_modal_open = $state(false);
 	let is_submitting_review = $state(false);
+	let editing_review = $state(null);
 
 	// Form Data
 	let order_form_data = $state({
@@ -131,6 +132,23 @@
 			await $api_store.service_likes.insert(service_id, $user_store.id);
 			service_likes = [...service_likes, { service_id }];
 			show_toast('success', '서비스 좋아요를 눌렀어요!');
+
+			// 앱 레벨 알림 생성: 서비스 작성자에게
+			try {
+				if (service?.users?.id && service.users.id !== $user_store.id) {
+					await $api_store.notifications.insert({
+						recipient_id: service.users.id,
+						actor_id: $user_store.id,
+						type: 'service.liked',
+						resource_type: 'service',
+						resource_id: String(service_id),
+						payload: { service_id, service_title: service.title },
+						link_url: `/service/${service_id}`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (service.liked):', e);
+			}
 		} catch (error) {
 			console.error('좋아요 실패:', error);
 			show_toast('error', '좋아요에 실패했습니다.');
@@ -157,6 +175,11 @@
 		if (!check_login() || !validate_order_form()) return;
 
 		try {
+			// 수수료 계산 (10% 기준)
+			const commission_rate = 0.05;
+			const commission = Math.floor(service.price * commission_rate);
+			const total_with_commission = service.price + commission;
+
 			const order_data = {
 				buyer_id: $user_store.id,
 				seller_id: service.users.id,
@@ -164,7 +187,8 @@
 				service_title: service.title,
 				quantity: 1,
 				unit_price: service.price,
-				total_amount: service.price,
+				commission_amount: commission,
+				total_with_commission: total_with_commission,
 				depositor_name: order_form_data.depositor_name.trim(),
 				bank: order_form_data.bank.trim(),
 				account_number: order_form_data.account_number.trim(),
@@ -173,6 +197,27 @@
 			};
 
 			await $api_store.service_orders.insert(order_data);
+
+			// 앱 레벨 알림 생성: 판매자에게 주문 생성 알림
+			try {
+				if (service?.users?.id && service.users.id !== $user_store.id) {
+					await $api_store.notifications.insert({
+						recipient_id: service.users.id,
+						actor_id: $user_store.id,
+						type: 'order.created',
+						resource_type: 'order',
+						resource_id: '',
+						payload: {
+							service_id: service.id,
+							service_title: service.title,
+							total: total_with_commission,
+						},
+						link_url: `/@${service.users.handle}/accounts/orders`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (order.created):', e);
+			}
 			show_toast(
 				'success',
 				'주문이 성공적으로 접수되었습니다! 결제 확인 후 서비스가 제공됩니다.',
@@ -217,30 +262,52 @@
 		try {
 			is_submitting_review = true;
 
-			const review_data = {
-				service_id: service.id,
-				reviewer_id: $user_store.id,
-				order_id: review_order_id,
-				rating: review_form_data.rating,
-				title: review_form_data.title.trim(),
-				content: review_form_data.content.trim(),
-			};
-
-			if (my_review) {
-				await $api_store.service_reviews.update(my_review.id, {
+			if (!editing_review && can_write_review) {
+				// 아직 리뷰가 없는 완료된 주문이 존재 -> 새 리뷰 작성
+				const review_data = {
+					service_id: service.id,
+					reviewer_id: $user_store.id,
 					order_id: review_order_id,
+					rating: review_form_data.rating,
+					title: review_form_data.title.trim(),
+					content: review_form_data.content.trim(),
+				};
+				await $api_store.service_reviews.insert(review_data);
+				// 앱 레벨 알림: 서비스 작성자에게 리뷰 생성
+				try {
+					if (service?.users?.id && service.users.id !== $user_store.id) {
+						await $api_store.notifications.insert({
+							recipient_id: service.users.id,
+							actor_id: $user_store.id,
+							type: 'review.created',
+							resource_type: 'service',
+							resource_id: String(service.id),
+							payload: {
+								service_id: service.id,
+								service_title: service.title,
+								rating: review_form_data.rating,
+								title: review_form_data.title,
+							},
+							link_url: `/service/${service.id}#reviews`,
+						});
+					}
+				} catch (e) {
+					console.error('Failed to insert notification (review.created):', e);
+				}
+				show_toast('success', '리뷰가 작성되었습니다.');
+			} else if (editing_review) {
+				// 기존 리뷰 수정 (order_id는 변경하지 않음)
+				await $api_store.service_reviews.update(editing_review.id, {
 					rating: review_form_data.rating,
 					title: review_form_data.title.trim(),
 					content: review_form_data.content.trim(),
 				});
 				show_toast('success', '리뷰가 수정되었습니다.');
-			} else {
-				await $api_store.service_reviews.insert(review_data);
-				show_toast('success', '리뷰가 작성되었습니다.');
 			}
 
 			await refresh_data();
 			is_review_modal_open = false;
+			editing_review = null;
 			reset_review_form();
 		} catch (error) {
 			console.error('리뷰 작성/수정 실패:', error);
@@ -250,14 +317,17 @@
 		}
 	};
 
-	const open_review_modal = () => {
-		if (my_review) {
+	const open_review_modal = (target_review = null) => {
+		editing_review = target_review;
+		if (target_review) {
+			// 특정 리뷰 수정 모드
 			review_form_data = {
-				rating: my_review.rating,
-				title: my_review.title || '',
-				content: my_review.content || '',
+				rating: target_review.rating,
+				title: target_review.title || '',
+				content: target_review.content || '',
 			};
 		} else {
+			// 새 리뷰 작성 모드
 			reset_review_form();
 		}
 		is_review_modal_open = true;
@@ -285,6 +355,48 @@
 		content={service?.description ||
 			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
 	/>
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta
+		property="og:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="og:title" content={service?.title || '서비스'} />
+	<meta
+		property="og:description"
+		content={service?.description ||
+			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
+	/>
+	<meta
+		property="og:image"
+		content={service?.images?.[0]?.uri ||
+			service?.users?.avatar_url ||
+			'%sveltekit.assets%/open_graph_img.png'}
+	/>
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:site_name" content="문" />
+	<meta property="og:locale" content="ko_KR" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta
+		property="twitter:url"
+		content={typeof window !== 'undefined' ? window.location.href : ''}
+	/>
+	<meta property="twitter:title" content={service?.title || '서비스'} />
+	<meta
+		property="twitter:description"
+		content={service?.description ||
+			'전문가가 제공하는 맞춤형 서비스입니다. 상세 정보를 확인하고 이용해보세요.'}
+	/>
+	<meta
+		property="twitter:image"
+		content={service?.images?.[0]?.uri ||
+			service?.users?.avatar_url ||
+			'%sveltekit.assets%/open_graph_img.png'}
+	/>
 </svelte:head>
 
 <Header>
@@ -306,7 +418,7 @@
 			<img
 				src={service.users.avatar_url || profile_png}
 				alt={service.users.name}
-				class="mr-2 h-8 w-8 rounded-full"
+				class="mr-2 aspect-square h-8 w-8 flex-shrink-0 rounded-full object-cover"
 			/>
 			<p class="pr-4 text-sm font-medium">@{service.users.handle}</p>
 		</a>
@@ -345,12 +457,12 @@
 			<div class="mt-8">
 				<div class="mb-4 flex items-center justify-between">
 					<h2 class="text-lg font-semibold">리뷰 ({service_reviews.length})</h2>
-					{#if can_write_review || my_review}
+					{#if can_write_review}
 						<button
-							onclick={open_review_modal}
+							onclick={() => open_review_modal()}
 							class="bg-primary hover:bg-primary-dark rounded-md px-3 py-1.5 text-sm text-white"
 						>
-							{my_review ? '리뷰 수정' : '리뷰 작성'}
+							리뷰 작성
 						</button>
 					{/if}
 				</div>
@@ -371,7 +483,7 @@
 										<img
 											src={review.reviewer.avatar_url || '/favicon.png'}
 											alt={review.reviewer.name}
-											class="mr-3 h-8 w-8 rounded-full"
+											class="mr-3 aspect-square h-8 w-8 rounded-full object-cover"
 										/>
 										<div>
 											<p class="text-sm font-medium">
@@ -390,15 +502,30 @@
 									>
 								</div>
 
-								{#if review.title}
-									<h3 class="mt-3 mb-1 font-medium">{review.title}</h3>
-								{/if}
-
-								{#if review.content}
-									<p class="text-sm leading-relaxed text-gray-700">
-										{review.content}
-									</p>
-								{/if}
+								<div class="flex justify-between">
+									<div>
+										{#if review.title}
+											<h3 class="mt-3 mb-1 font-medium">{review.title}</h3>
+										{/if}
+										{#if review.content}
+											<p class="text-sm leading-relaxed text-gray-700">
+												{review.content}
+											</p>
+										{/if}
+									</div>
+									<div class="flex flex-col self-end">
+										{#if review.reviewer_id === $user_store.id}
+											<div>
+												<button
+													onclick={() => open_review_modal(review)}
+													class="btn btn-sm text-primary text-xs"
+												>
+													수정하기
+												</button>
+											</div>
+										{/if}
+									</div>
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -509,9 +636,23 @@
 
 		<div class="my-4 h-px bg-gray-200"></div>
 
-		<div class="flex justify-between">
-			<p class="font-semibold">총 결제 금액</p>
-			<p class="text-primary text-lg font-bold">₩{comma(service.price)}</p>
+		<div class="space-y-2">
+			<div class="flex justify-between">
+				<p class="text-sm text-gray-600">서비스 금액</p>
+				<p class="text-sm">₩{comma(service.price)}</p>
+			</div>
+			<div class="flex justify-between">
+				<p class="text-sm text-gray-600">플랫폼 수수료 (5%)</p>
+				<p class="text-sm text-gray-500">
+					+₩{comma(Math.floor(service.price * 0.05))}
+				</p>
+			</div>
+			<div class="flex justify-between border-t pt-2">
+				<p class="font-semibold">총 결제 금액</p>
+				<p class="text-primary text-lg font-bold">
+					₩{comma(service.price + Math.floor(service.price * 0.05))}
+				</p>
+			</div>
 		</div>
 
 		<!-- 입금 계좌 안내 박스 -->
@@ -547,8 +688,15 @@
 <Modal bind:is_modal_open={is_review_modal_open} modal_position="center">
 	<div class="p-4">
 		<div class="flex items-center justify-between">
-			<h3 class="font-semibold">{my_review ? '리뷰 수정' : '리뷰 작성'}</h3>
-			<button onclick={() => (is_review_modal_open = false)}>
+			<h3 class="font-semibold">
+				{editing_review ? '리뷰 수정' : '리뷰 작성'}
+			</h3>
+			<button
+				onclick={() => {
+					is_review_modal_open = false;
+					editing_review = null;
+				}}
+			>
 				<RiCloseLine size={24} color={colors.gray[400]} />
 			</button>
 		</div>
@@ -608,10 +756,10 @@
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					{my_review ? '수정 중...' : '작성 중...'}
+					{editing_review ? '수정 중...' : '작성 중...'}
 				</span>
 			{:else}
-				{my_review ? '리뷰 수정하기' : '리뷰 작성하기'}
+				{editing_review ? '리뷰 수정하기' : '리뷰 작성하기'}
 			{/if}
 		</button>
 	</div>
