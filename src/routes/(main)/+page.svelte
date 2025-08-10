@@ -24,6 +24,8 @@
 	let selected = $state(0);
 	let unread_count = $state(0);
 
+	let last_post_id = $state('');
+
 	let is_infinite_loading = $state(false);
 	let observer = $state(null);
 
@@ -32,10 +34,8 @@
 			tabs = ['최신', ...joined_communities.map((c) => c.title)];
 		}
 
-		// Initialize infinite scroll after a short delay to ensure DOM is ready
-		setTimeout(() => {
-			setup_infinite_scroll();
-		}, 100);
+		last_post_id = posts[posts.length - 1]?.id || '';
+		infinite_scroll();
 
 		// 초기 알림 미읽음 카운트 로드
 		refresh_unread_count();
@@ -60,52 +60,55 @@
 	};
 
 	$effect(async () => {
-		// Fetch random posts instead of sequential posts
-		if (selected === 0) {
-			posts = await $api_store.posts.select_random('', 20);
-		} else {
-			const community_id = joined_communities[selected - 1].id;
-			posts = await $api_store.posts.select_random(community_id, 20);
-		}
+		// Track dependencies explicitly
+		selected;
+		joined_communities;
 
-		// Re-setup infinite scroll when posts change
-		setTimeout(() => {
-			setup_infinite_scroll();
-		}, 100);
+		const community_id =
+			selected === 0 ? '' : (joined_communities[selected - 1]?.id ?? '');
+		const initial_posts = await $api_store.posts.select_infinite_scroll(
+			'',
+			community_id,
+			20,
+		);
+		posts = initial_posts;
+		last_post_id = initial_posts.at(-1)?.id ?? '';
 	});
 
 	/**
 	 * 무한스크롤 설정 함수
 	 */
-	const setup_infinite_scroll = () => {
+	const infinite_scroll = () => {
 		// Clean up existing observer
 		if (observer) {
 			observer.disconnect();
 		}
 
-		// Create new observer
+		const target = document.getElementById('infinite_scroll');
+		if (!target) return;
+
 		observer = new IntersectionObserver(
 			(entries) => {
 				entries.forEach((entry) => {
-					if (entry.isIntersecting && !is_infinite_loading) {
+					if (
+						entry.isIntersecting &&
+						!is_infinite_loading &&
+						posts.length >= 20
+					) {
 						is_infinite_loading = true;
-						setTimeout(() => {
-							load_more_data();
-						}, 1000);
+						load_more_data().finally(() => {
+							is_infinite_loading = false;
+						});
 					}
 				});
 			},
 			{
-				rootMargin: '100px', // Trigger when element is 100px from viewport
-				threshold: 0.1, // Trigger when 10% of element is visible
+				rootMargin: '200px 0px',
+				threshold: 0.01,
 			},
 		);
 
-		// Observe the target element
-		const target = document.getElementById('infinite_scroll');
-		if (target) {
-			observer.observe(target);
-		}
+		observer.observe(target);
 	};
 
 	// Cleanup observer on component destroy
@@ -121,20 +124,18 @@
 	const load_more_data = async () => {
 		const community_id =
 			selected === 0 ? '' : joined_communities[selected - 1].id;
-
-		// Get IDs of already loaded posts to avoid duplicates
-		const exclude_ids = posts.map((post) => post.id);
-
-		const new_posts = await $api_store.posts.select_random(
+		const available_post = await $api_store.posts.select_infinite_scroll(
+			last_post_id,
 			community_id,
 			20,
-			exclude_ids,
 		);
 		is_infinite_loading = false;
 
-		// Add new random posts to the existing list
-		if (new_posts.length !== 0) {
-			posts = [...posts, ...new_posts];
+		//더 불러올 값이 있을때만 조회
+		if (available_post.length !== 0) {
+			posts = [...posts, ...available_post];
+
+			last_post_id = available_post.at(-1)?.id ?? '';
 		}
 	};
 
@@ -187,7 +188,7 @@
 		</div>
 	{/each}
 
-	<div id="infinite_scroll" class="my-4 h-4"></div>
+	<div id="infinite_scroll"></div>
 
 	<div class="flex justify-center py-4">
 		<div

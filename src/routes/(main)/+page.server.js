@@ -9,8 +9,8 @@ export const load = async ({ parent, locals: { supabase }, setHeaders }) => {
 		'Cache-Control': 'public, max-age=60, s-maxage=300',
 	});
 
-	// Load random posts initially for better user experience
-	const posts = await api.posts.select_random('', 20);
+	// Load only first 5 posts initially for faster LCP
+	const posts = await api.posts.select_infinite_scroll('', '', 20);
 
 	if (user?.id) {
 		const joined_communities = await api.community_members.select_by_user_id(
