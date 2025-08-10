@@ -132,6 +132,23 @@
 			await $api_store.service_likes.insert(service_id, $user_store.id);
 			service_likes = [...service_likes, { service_id }];
 			show_toast('success', '서비스 좋아요를 눌렀어요!');
+
+			// 앱 레벨 알림 생성: 서비스 작성자에게
+			try {
+				if (service?.users?.id && service.users.id !== $user_store.id) {
+					await $api_store.notifications.insert({
+						recipient_id: service.users.id,
+						actor_id: $user_store.id,
+						type: 'service.liked',
+						resource_type: 'service',
+						resource_id: String(service_id),
+						payload: { service_id, service_title: service.title },
+						link_url: `/service/${service_id}`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (service.liked):', e);
+			}
 		} catch (error) {
 			console.error('좋아요 실패:', error);
 			show_toast('error', '좋아요에 실패했습니다.');
@@ -180,6 +197,27 @@
 			};
 
 			await $api_store.service_orders.insert(order_data);
+
+			// 앱 레벨 알림 생성: 판매자에게 주문 생성 알림
+			try {
+				if (service?.users?.id && service.users.id !== $user_store.id) {
+					await $api_store.notifications.insert({
+						recipient_id: service.users.id,
+						actor_id: $user_store.id,
+						type: 'order.created',
+						resource_type: 'order',
+						resource_id: '',
+						payload: {
+							service_id: service.id,
+							service_title: service.title,
+							total: total_with_commission,
+						},
+						link_url: `/@${service.users.handle}/accounts/orders`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (order.created):', e);
+			}
 			show_toast(
 				'success',
 				'주문이 성공적으로 접수되었습니다! 결제 확인 후 서비스가 제공됩니다.',
@@ -235,6 +273,27 @@
 					content: review_form_data.content.trim(),
 				};
 				await $api_store.service_reviews.insert(review_data);
+				// 앱 레벨 알림: 서비스 작성자에게 리뷰 생성
+				try {
+					if (service?.users?.id && service.users.id !== $user_store.id) {
+						await $api_store.notifications.insert({
+							recipient_id: service.users.id,
+							actor_id: $user_store.id,
+							type: 'review.created',
+							resource_type: 'service',
+							resource_id: String(service.id),
+							payload: {
+								service_id: service.id,
+								service_title: service.title,
+								rating: review_form_data.rating,
+								title: review_form_data.title,
+							},
+							link_url: `/service/${service.id}#reviews`,
+						});
+					}
+				} catch (e) {
+					console.error('Failed to insert notification (review.created):', e);
+				}
 				show_toast('success', '리뷰가 작성되었습니다.');
 			} else if (editing_review) {
 				// 기존 리뷰 수정 (order_id는 변경하지 않음)
@@ -443,25 +502,30 @@
 									>
 								</div>
 
-								{#if review.title}
-									<h3 class="mt-3 mb-1 font-medium">{review.title}</h3>
-								{/if}
-
-								{#if review.content}
-									<p class="text-sm leading-relaxed text-gray-700">
-										{review.content}
-									</p>
-								{/if}
-								{#if review.reviewer_id === $user_store.id}
-									<div class="mt-3 flex justify-end">
-										<button
-											onclick={() => open_review_modal(review)}
-											class="btn btn-sm text-primary text-xs"
-										>
-											수정하기
-										</button>
+								<div class="flex justify-between">
+									<div>
+										{#if review.title}
+											<h3 class="mt-3 mb-1 font-medium">{review.title}</h3>
+										{/if}
+										{#if review.content}
+											<p class="text-sm leading-relaxed text-gray-700">
+												{review.content}
+											</p>
+										{/if}
 									</div>
-								{/if}
+									<div class="flex flex-col self-end">
+										{#if review.reviewer_id === $user_store.id}
+											<div>
+												<button
+													onclick={() => open_review_modal(review)}
+													class="btn btn-sm text-primary text-xs"
+												>
+													수정하기
+												</button>
+											</div>
+										{/if}
+									</div>
+								</div>
 							</div>
 						{/each}
 					</div>

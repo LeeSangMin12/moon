@@ -95,6 +95,24 @@
 			});
 			// 팔로워 수 증가
 			follower_count++;
+
+			// 앱 레벨 알림 생성: 팔로우 당한 사용자에게
+			try {
+				await $api_store.notifications.insert({
+					recipient_id: user.id,
+					actor_id: $user_store.id,
+					type: 'follow.created',
+					resource_type: 'user',
+					resource_id: String($user_store.id),
+					payload: {
+						follower_id: $user_store.id,
+						follower_handle: $user_store.handle,
+					},
+					link_url: `/@${$user_store.handle}`,
+				});
+			} catch (e) {
+				console.error('Failed to insert notification (follow.created):', e);
+			}
 		}
 
 		is_following = !is_following;

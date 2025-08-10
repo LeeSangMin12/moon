@@ -93,6 +93,28 @@
 		}
 
 		await $api_store.post_votes.handle_vote(post.id, $user_store.id, user_vote);
+
+		// 앱 레벨 알림 생성: 좋아요로 변경된 경우에만
+		try {
+			if (
+				old_vote !== 1 &&
+				user_vote === 1 &&
+				post.users?.id &&
+				post.users.id !== $user_store.id
+			) {
+				await $api_store.notifications.insert({
+					recipient_id: post.users.id,
+					actor_id: $user_store.id,
+					type: 'post.liked',
+					resource_type: 'post',
+					resource_id: String(post.id),
+					payload: { post_id: post.id, post_title: post.title },
+					link_url: `/@${post.users.handle}/post/${post.id}`,
+				});
+			}
+		} catch (e) {
+			console.error('Failed to insert notification (post.liked):', e);
+		}
 	};
 
 	const toggle_bookmark = async () => {

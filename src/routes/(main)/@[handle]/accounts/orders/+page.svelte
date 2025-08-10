@@ -73,6 +73,24 @@
 			await $api_store.service_orders.approve(order_id);
 			show_toast('success', '주문이 승인되었습니다.');
 
+			// 구매자에게 알림
+			try {
+				const order = my_sales.find((o) => o.id === order_id);
+				if (order?.buyer?.id) {
+					await $api_store.notifications.insert({
+						recipient_id: order.buyer.id,
+						actor_id: $user_store.id,
+						type: 'order.approved',
+						resource_type: 'order',
+						resource_id: String(order_id),
+						payload: { service_title: order.service_title, status: 'paid' },
+						link_url: `/@${order.buyer.handle}/accounts/orders`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (order.approved):', e);
+			}
+
 			// 데이터 새로고침
 			my_sales = await $api_store.service_orders.select_by_seller_id(
 				$user_store.id,
@@ -88,6 +106,27 @@
 		try {
 			await $api_store.service_orders.complete(order_id);
 			show_toast('success', '서비스가 완료되었습니다.');
+
+			// 구매자에게 알림
+			try {
+				const order = my_sales.find((o) => o.id === order_id);
+				if (order?.buyer?.id) {
+					await $api_store.notifications.insert({
+						recipient_id: order.buyer.id,
+						actor_id: $user_store.id,
+						type: 'order.completed',
+						resource_type: 'order',
+						resource_id: String(order_id),
+						payload: {
+							service_title: order.service_title,
+							status: 'completed',
+						},
+						link_url: `/@${order.buyer.handle}/accounts/orders`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (order.completed):', e);
+			}
 
 			// 데이터 새로고침
 			my_sales = await $api_store.service_orders.select_by_seller_id(
@@ -107,6 +146,44 @@
 		try {
 			await $api_store.service_orders.cancel(order_id, reason);
 			show_toast('success', '주문이 취소되었습니다.');
+
+			// 구매자/판매자 모두에게 알림
+			try {
+				const order =
+					selected_tab_index === 0
+						? my_orders.find((o) => o.id === order_id)
+						: my_sales.find((o) => o.id === order_id);
+				if (order?.buyer?.id) {
+					await $api_store.notifications.insert({
+						recipient_id: order.buyer.id,
+						actor_id: $user_store.id,
+						type: 'order.cancelled',
+						resource_type: 'order',
+						resource_id: String(order_id),
+						payload: {
+							service_title: order.service_title,
+							status: 'cancelled',
+						},
+						link_url: `/@${order.buyer.handle}/accounts/orders`,
+					});
+				}
+				if (order?.seller?.id) {
+					await $api_store.notifications.insert({
+						recipient_id: order.seller.id,
+						actor_id: $user_store.id,
+						type: 'order.cancelled',
+						resource_type: 'order',
+						resource_id: String(order_id),
+						payload: {
+							service_title: order.service_title,
+							status: 'cancelled',
+						},
+						link_url: `/@${order.seller.handle}/accounts/orders`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (order.cancelled):', e);
+			}
 
 			// 데이터 새로고침
 			if (selected_tab_index === 0) {
@@ -387,5 +464,3 @@
 		{/if}
 	</section>
 </main>
-
-<Bottom_nav />

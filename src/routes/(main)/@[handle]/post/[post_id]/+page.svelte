@@ -87,9 +87,30 @@
 		};
 
 		comments = [...comments, new_comment];
+
+		// 앱 레벨 알림 생성: 게시글 작성자에게 (자기 자신 제외)
+		try {
+			if (post?.users?.id && post.users.id !== $user_store.id) {
+				await $api_store.notifications.insert({
+					recipient_id: post.users.id,
+					actor_id: $user_store.id,
+					type: 'comment.created',
+					resource_type: 'post',
+					resource_id: String(post.id),
+					payload: {
+						comment_id: new_comment.id,
+						post_id: post.id,
+						preview: new_comment.content?.slice(0, 80),
+					},
+					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_comment.id}`,
+				});
+			}
+		} catch (e) {
+			console.error('Failed to insert notification (comment.created):', e);
+		}
 	};
 
-	const handle_reply_added = (event) => {
+	const handle_reply_added = async (event) => {
 		const { parent_comment_id, new_reply } = event.detail;
 
 		// 댓글 배열에서 해당 부모 댓글을 찾아서 답글 추가
@@ -111,6 +132,30 @@
 		};
 
 		comments = update_comment_replies(comments);
+
+		// 앱 레벨 알림 생성: 부모 댓글 작성자에게 (자기 자신 제외)
+		try {
+			const parent = comments.find((c) => c.id === parent_comment_id);
+			const parent_author_id = parent?.user_id;
+			if (parent_author_id && parent_author_id !== $user_store.id) {
+				await $api_store.notifications.insert({
+					recipient_id: parent_author_id,
+					actor_id: $user_store.id,
+					type: 'comment.reply',
+					resource_type: 'post',
+					resource_id: String(post.id),
+					payload: {
+						comment_id: new_reply.id,
+						parent_comment_id,
+						post_id: post.id,
+						preview: new_reply.content?.slice(0, 80),
+					},
+					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_reply.id}`,
+				});
+			}
+		} catch (e) {
+			console.error('Failed to insert notification (comment.reply):', e);
+		}
 	};
 
 	const handle_gift_comment_added = async (event) => {

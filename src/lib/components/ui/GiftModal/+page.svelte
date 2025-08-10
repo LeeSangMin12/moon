@@ -51,6 +51,21 @@
 				description: '문 선물 받음',
 			});
 
+			// 앱 레벨 알림: 수신자에게 선물 알림
+			try {
+				await $api_store.notifications.insert({
+					recipient_id: receiver_id,
+					actor_id: $user_store.id,
+					type: 'gift.received',
+					resource_type: 'user',
+					resource_id: String(receiver_id),
+					payload: { amount: gift_moon_point, post_id },
+					link_url: `/@${$user_store.handle}/accounts/point`,
+				});
+			} catch (e) {
+				console.error('Failed to insert notification (gift.received):', e);
+			}
+
 			// 이벤트로 상위 컴포넌트에 알림
 			dispatch('gift_success', {
 				gift_content,

@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
-	import { RiAddLine } from 'svelte-remixicon';
+	import { RiAddLine, RiNotificationFill } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -22,6 +22,7 @@
 
 	let tabs = $state(['최신']);
 	let selected = $state(0);
+	let unread_count = $state(0);
 
 	let is_infinite_loading = $state(false);
 	let observer = $state(null);
@@ -35,7 +36,28 @@
 		setTimeout(() => {
 			setup_infinite_scroll();
 		}, 100);
+
+		// 초기 알림 미읽음 카운트 로드
+		refresh_unread_count();
 	});
+
+	// 사용자 변경 시 미읽음 카운트 갱신
+	$effect(async () => {
+		const uid = $user_store.id;
+		if (!uid) return;
+		refresh_unread_count();
+	});
+
+	const refresh_unread_count = async () => {
+		try {
+			if (!$user_store?.id) return;
+			unread_count = await $api_store.notifications.select_unread_count(
+				$user_store.id,
+			);
+		} catch (e) {
+			console.error('Failed to load unread notifications count:', e);
+		}
+	};
 
 	$effect(async () => {
 		// Fetch random posts instead of sequential posts
@@ -145,11 +167,17 @@
 <Header>
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 
-	<!-- <button onclick={() => goto('/search')} slot="right">
-		<Icon attribute="search" size={24} color={colors.gray[600]} />
-	</button> -->
+	<button onclick={() => goto('/alarm')} slot="right" class="relative">
+		<RiNotificationFill size={20} color={colors.gray[400]} />
+		{#if unread_count > 0}
+			<span
+				class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
+			>
+				{unread_count > 99 ? '99+' : unread_count}
+			</span>
+		{/if}
+	</button>
 </Header>
-
 <main>
 	<TabSelector {tabs} bind:selected />
 
