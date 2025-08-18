@@ -346,7 +346,7 @@
 		</div>
 
 		<!-- 소개글 -->
-		<p class="mt-4 text-sm">
+		<p class="mt-4 text-sm whitespace-pre-wrap">
 			{user.self_introduction}
 		</p>
 

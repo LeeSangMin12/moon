@@ -403,7 +403,7 @@
 	<button slot="left" onclick={() => history.back()}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
-	<h1 slot="center" class="font-semibold">{service.title}</h1>
+	<h1 slot="center" class="font-semibold">서비스</h1>
 </Header>
 
 <main>
@@ -446,11 +446,18 @@
 		<p class="text-primary mt-6 text-xl font-bold">₩{comma(service.price)}</p>
 
 		<!-- Service Description -->
-		<div class="mt-4">
+		<!-- <div class="mt-4">
 			<div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
 				<div class="text-sm whitespace-pre-wrap">{service.content}</div>
 			</div>
-		</div>
+		</div> -->
+		<iframe
+			title="service_description"
+			src={service.content}
+			style="width: 100%; height: 500px; border: none !important; padding: 0"
+			frameborder="0"
+			allowfullscreen
+		></iframe>
 
 		<!-- Reviews Section -->
 		{#key service_reviews.length + (my_review?.id || 0)}
