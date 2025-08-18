@@ -31,23 +31,24 @@
 	<h2 class="text-lg font-bold">계정전환</h2>
 	<p class="text-sm text-gray-500">현재 계정: {$user_store.name}</p>
 	<button
+		onclick={() => sign_in('dummy4@naver.com', '1234')}
+		class="btn btn-primary">매일 Ai 뉴스봇
+	</button>
+	<button
+		onclick={() => sign_in('dummy3@naver.com', '1234')}
+		class="btn btn-primary"
+		>모던랩 스튜디오 - Plan · Design · Code
+	</button>
+	<button
+		onclick={() => sign_in('dummy2@naver.com', '1234')}
+		class="btn btn-primary">디자인 크리에이터 유민
+	</button>
+	<button
 		onclick={() => sign_in('dummy1@naver.com', '1234')}
 		class="btn btn-primary"
 		>ai 부엉이
 	</button>
-	<button
-		onclick={() => sign_in('dummy4@naver.com', '1234')}
-		class="btn btn-primary">매일 Ai 뉴스봇</button
-	>
-	<button
-		onclick={() => sign_in('dummy2@naver.com', '1234')}
-		class="btn btn-primary">ai 디자인 크리에이터 유민</button
-	>
-	<button
-		onclick={() => sign_in('dummy3@naver.com', '1234')}
-		class="btn btn-primary"
-		>풀스택상민
-	</button>
+
 
 	<button
 		onclick={() => sign_in('dummy5@naver.com', '1234')}
