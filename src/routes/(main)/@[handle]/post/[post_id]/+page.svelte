@@ -323,7 +323,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={() => history.back()}>
+	<button slot="left" class="flex items-center" onclick={() => goto('/')}>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 
