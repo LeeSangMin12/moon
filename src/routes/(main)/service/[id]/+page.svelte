@@ -499,14 +499,15 @@
 
 											<StarRating
 												rating={review.rating}
-												readonly={false}
+												readonly={true}
 												size={14}
 											/>
 										</div>
 									</div>
+
 									<span class="text-xs text-gray-500"
-										>{format_date(review.created_at)}</span
-									>
+										>{format_date(review.created_at)}
+									</span>
 								</div>
 
 								<div class="flex justify-between">
@@ -515,7 +516,9 @@
 											<h3 class="mt-3 mb-1 font-medium">{review.title}</h3>
 										{/if}
 										{#if review.content}
-											<p class="text-sm leading-relaxed text-gray-700">
+											<p
+												class="text-sm leading-relaxed whitespace-pre-wrap text-gray-700"
+											>
 												{review.content}
 											</p>
 										{/if}
