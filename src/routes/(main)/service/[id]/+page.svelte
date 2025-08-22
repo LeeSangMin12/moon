@@ -1,6 +1,7 @@
 <script>
 	// Assets & Navigation
 	import profile_png from '$lib/img/common/user/profile.png';
+	import { goto } from '$app/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiCloseLine,
