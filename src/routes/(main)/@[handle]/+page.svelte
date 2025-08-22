@@ -273,7 +273,7 @@
 <Header>
 	<div slot="left">
 		{#if $page.params.handle !== $user_store.handle}
-			<button class="flex items-center" onclick={() => history.back()}>
+			<button class="flex items-center" onclick={() => goto('/')}>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
 		{/if}
