@@ -400,7 +400,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => history.back()}>
+	<button slot="left" onclick={() => goto('/service')}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">서비스</h1>

@@ -166,7 +166,7 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => history.back()}>
+		<button class="flex items-center" onclick={() => goto('/community')}>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>
