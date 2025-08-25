@@ -91,7 +91,7 @@
 			}
 
 			show_toast('success', '게시글이 수정되었습니다.');
-			goto(`/@${post.users.handle}/post/${post.id}`);
+			goto(`/@${post.users?.handle || 'unknown'}/post/${post.id}`);
 		} finally {
 			update_global_store('loading', false);
 		}

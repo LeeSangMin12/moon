@@ -70,7 +70,7 @@
 	});
 
 	onMount(async () => {
-		if ($user_store?.id) {
+		if ($user_store?.id && post.users?.id) {
 			is_following = await $api_store.user_follows.is_following(
 				$user_store.id,
 				post.users.id,
@@ -109,7 +109,7 @@
 					resource_type: 'post',
 					resource_id: String(post.id),
 					payload: { post_id: post.id, post_title: post.title },
-					link_url: `/@${post.users.handle}/post/${post.id}`,
+					link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}`,
 				});
 			}
 		} catch (e) {
@@ -130,7 +130,7 @@
 	};
 
 	const toggle_follow = async () => {
-		if (!check_login()) return;
+		if (!check_login() || !post.users?.id) return;
 
 		if (is_following) {
 			await $api_store.user_follows.unfollow($user_store.id, post.users.id);
@@ -193,19 +193,21 @@
 
 <article class="px-4">
 	<div class="flex items-center justify-between">
-		<a href={`/@${post.users.handle}`} class="flex items-center">
+		<a href={`/@${post.users?.handle || 'unknown'}`} class="flex items-center">
 			<img
-				src={post.users.avatar_url ?? profile_png}
-				alt={post.users.name}
+				src={post.users?.avatar_url ?? profile_png}
+				alt={post.users?.name || 'Unknown User'}
 				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 			/>
 
-			<p class="pr-3 text-sm font-medium">{post.users.name}</p>
+			<p class="pr-3 text-sm font-medium">
+				{post.users?.name || 'Unknown User'}
+			</p>
 			<p class="mt-0.5 text-xs text-gray-400">{format_date(post.created_at)}</p>
 		</a>
 
 		{#if $page.params.post_id}
-			{#if post.users.id !== $user_store.id}
+			{#if post.users?.id && post.users.id !== $user_store.id}
 				{#if is_following}
 					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>
 				{:else}
@@ -229,7 +231,7 @@
 
 	<!-- 제목 -->
 	<a
-		href={`/@${post.users.handle}/post/${post.id}`}
+		href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}
 		class="mt-2 line-clamp-2 font-semibold"
 	>
 		{post.title}
@@ -275,7 +277,7 @@
 				</figure>
 			{/if}
 		{:else}
-			<a href={`/@${post.users.handle}/post/${post.id}`}>
+			<a href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}>
 				<pre
 					class="mt-2 line-clamp-6 overflow-hidden text-sm whitespace-pre-wrap">{post.content}</pre>
 			</a>
@@ -326,7 +328,7 @@
 			</button>
 
 			<a
-				href={`/@${post.users.handle}/post/${post.id}`}
+				href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}
 				class="mr-4 flex items-center gap-1"
 			>
 				<Icon attribute="chat_bubble" size={16} color={colors.gray[400]} />
@@ -365,7 +367,7 @@
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if post.users.id === $user_store.id}
+		{#if post.users?.id === $user_store.id}
 			<div class="flex w-full flex-col items-center rounded-lg bg-white">
 				<a
 					href={`/regi/post/${post.id}`}
@@ -394,7 +396,7 @@
 			<button
 				onclick={() => {
 					copy_to_clipboard(
-						`${window.location.origin}/@${post.users.handle}/post/${post.id}`,
+						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
 						'링크가 복사되었습니다.',
 					);
 				}}
@@ -450,7 +452,7 @@
 			<button
 				onclick={() => {
 					copy_to_clipboard(
-						`${window.location.origin}/@${post.users.handle}/post/${post.id}`,
+						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
 						'링크가 복사되었습니다.',
 					);
 				}}
@@ -523,8 +525,8 @@
 
 <GiftModal
 	bind:is_modal_open={modal.gift}
-	receiver_id={post.users.id}
-	receiver_name={post.users.name}
+	receiver_id={post.users?.id}
+	receiver_name={post.users?.name || 'Unknown User'}
 	post_id={post.id}
 	on:gift_success={handle_gift_success}
 />

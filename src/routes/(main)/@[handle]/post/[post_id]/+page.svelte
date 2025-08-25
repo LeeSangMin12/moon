@@ -102,7 +102,7 @@
 						post_id: post.id,
 						preview: new_comment.content?.slice(0, 80),
 					},
-					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_comment.id}`,
+					link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}#comment-${new_comment.id}`,
 				});
 			}
 		} catch (e) {
@@ -150,7 +150,7 @@
 						post_id: post.id,
 						preview: new_reply.content?.slice(0, 80),
 					},
-					link_url: `/@${post.users.handle}/post/${post.id}#comment-${new_reply.id}`,
+					link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}#comment-${new_reply.id}`,
 				});
 			}
 		} catch (e) {
@@ -389,7 +389,7 @@
 			<button
 				onclick={() => {
 					copy_to_clipboard(
-						`${window.location.origin}/@${post.users.handle}/post/${post.id}`,
+						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
 						'링크가 복사되었습니다.',
 					);
 				}}
@@ -407,8 +407,8 @@
 				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
 			>
 				<div class="flex w-full items-center gap-3 p-3">
-					<RiDeleteBinLine size={20} color={colors.warning} />
-					<p class="text-red-500">삭제하기</p>
+				<RiDeleteBinLine size={20} color={colors.warning} />
+				<p class="text-red-500">삭제하기</p>
 				</div>
 			</button> -->
 		{:else}
@@ -445,7 +445,7 @@
 			<button
 				onclick={() => {
 					copy_to_clipboard(
-						`${window.location.origin}/@${post.users.handle}/post/${post.id}`,
+						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
 						'링크가 복사되었습니다.',
 					);
 				}}

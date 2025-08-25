@@ -263,9 +263,9 @@
 <div class="flex flex-col">
 	<div class="flex w-full items-start justify-between">
 		<div class="flex gap-3">
-			<a class="h-8 w-8 flex-shrink-0" href={`/@${comment_state.users.handle}`}>
+			<a class="h-8 w-8 flex-shrink-0" href={comment_state.users?.handle ? `/@${comment_state.users.handle}` : '#'}>
 				<img
-					src={comment_state.users.avatar_url ?? profile_png}
+					src={comment_state.users?.avatar_url ?? profile_png}
 					alt="프로필"
 					class="block aspect-square h-full w-full rounded-full object-cover"
 				/>
@@ -274,8 +274,8 @@
 				<div class="mb-0.5 flex items-center gap-2">
 					<a
 						class="text-sm font-medium text-black"
-						href={`/@${comment_state.users.handle}`}
-						>@{comment_state.users.handle}</a
+						href={comment_state.users?.handle ? `/@${comment_state.users.handle}` : '#'}
+						>@{comment_state.users?.handle ?? '알 수 없음'}</a
 					>
 					<span class="text-xs text-gray-400"
 						>{get_time_past(new Date(comment_state.created_at))}</span
