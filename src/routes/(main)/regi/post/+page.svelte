@@ -289,18 +289,17 @@
 	<div class="mt-8 flex flex-col">
 		<div class="flex items-center justify-between">
 			<p class="ml-1 text-sm font-medium">글 내용</p>
-			<p class="text-xs text-gray-500">
+			<!-- <p class="text-xs text-gray-500">
 				{post_form_data.content.length}/600
-			</p>
+			</p> -->
 		</div>
 
 		<div class="mt-2">
 			<textarea
 				bind:value={post_form_data.content}
-				maxlength="600"
 				type="text"
 				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
-				placeholder="게시글 내용을 입력해주세요 (최대 600자)"
+				placeholder="게시글 내용을 입력해주세요"
 			></textarea>
 		</div>
 	</div>
