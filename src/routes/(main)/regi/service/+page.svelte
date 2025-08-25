@@ -8,7 +8,7 @@
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import { show_toast, check_login } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -22,6 +22,14 @@
 		content: '',
 		price: 0,
 		images: [],
+	});
+
+	onMount(() => {
+		// Check if user is logged in when page loads
+		if (!check_login()) {
+			goto('/login');
+			return;
+		}
 	});
 
 	/**
@@ -60,6 +68,12 @@
 	const save_service = async () => {
 		update_global_store('loading', true);
 		try {
+			// Check if user is logged in
+			if (!$user_store?.id) {
+				show_toast('error', '로그인이 필요합니다.');
+				return;
+			}
+
 			const new_service = await $api_store.services.insert({
 				author_id: $user_store.id,
 				title: service_form_data.title,

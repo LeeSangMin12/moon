@@ -8,7 +8,7 @@
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import { show_toast, check_login } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -39,6 +39,14 @@
 	});
 
 	let upload_type = $state('image'); // 'image' 또는 'video'
+
+	onMount(() => {
+		// Check if user is logged in when page loads
+		if (!check_login()) {
+			goto('/login');
+			return;
+		}
+	});
 
 	/**
 	 * 이미지 추가
@@ -76,6 +84,12 @@
 	const save_post = async () => {
 		update_global_store('loading', true);
 		try {
+			// Check if user is logged in
+			if (!$user_store?.id) {
+				show_toast('error', '로그인이 필요합니다.');
+				return;
+			}
+
 			const new_post = await $api_store.posts.insert({
 				community_id: community_select_value?.value || null,
 				title: post_form_data.title,

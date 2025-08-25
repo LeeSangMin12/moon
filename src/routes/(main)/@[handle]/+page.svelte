@@ -304,15 +304,15 @@
 			<!-- 프로필 이미지 -->
 			<div class="mr-4">
 				<img
-					src={user.avatar_url || profile_png}
+					src={user?.avatar_url || profile_png}
 					alt="프로필 이미지"
 					class="block aspect-square h-14 w-14 rounded-full object-cover"
 				/>
 			</div>
 			<!-- 프로필 정보 -->
 			<div class="flex-1">
-				<h2 class="text-sm text-gray-500">@{user.handle}</h2>
-				<h1 class="mt-1 text-lg font-semibold">{user.name}</h1>
+				<h2 class="text-sm text-gray-500">@{user?.handle ?? 'loading...'}</h2>
+				<h1 class="mt-1 text-lg font-semibold">{user?.name ?? 'Loading...'}</h1>
 				<!-- 별점 -->
 				<!-- <div class="mt-1 flex items-center">
 					<div class="flex items-center text-yellow-500">
@@ -347,14 +347,14 @@
 
 		<!-- 소개글 -->
 		<p class="mt-4 text-sm whitespace-pre-wrap">
-			{user.self_introduction}
+			{user?.self_introduction || ''}
 		</p>
 
 		{#if $page.params.handle === $user_store.handle}
 			<!-- 메시지와 팔로우 버튼 -->
 			<div class="mt-4 flex space-x-2">
 				<button
-					onclick={() => goto(`/@${user.handle}/accounts/profile/modify`)}
+					onclick={() => user?.handle && goto(`/@${user.handle}/accounts/profile/modify`)}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 				>
 					프로필 편집
@@ -362,7 +362,7 @@
 				<button
 					onclick={() => {
 						copy_to_clipboard(
-							`${window.location.origin}/@${user.handle}`,
+							`${window.location.origin}/@${user?.handle || ''}`,
 							'링크가 복사되었습니다.',
 						);
 					}}
@@ -397,7 +397,7 @@
 				<button
 					onclick={() => {
 						copy_to_clipboard(
-							`${window.location.origin}/@${user.handle}`,
+							`${window.location.origin}/@${user?.handle || ''}`,
 							'링크가 복사되었습니다.',
 						);
 					}}
@@ -456,7 +456,7 @@
 						/>
 						<div class="flex-1">
 							<div class="flex items-center space-x-2">
-								<p class="text-sm font-medium">@{user.handle}</p>
+								<p class="text-sm font-medium">@{user?.handle ?? 'unknown'}</p>
 								<span class="text-xs text-gray-500">
 									{new Date(comment.created_at).toLocaleDateString('ko-KR')}
 								</span>
