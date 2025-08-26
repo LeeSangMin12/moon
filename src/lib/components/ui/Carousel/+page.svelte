@@ -63,7 +63,7 @@
 						draggable="false"
 						loading={index === 0 ? 'eager' : 'lazy'}
 						decoding="async"
-						style="aspect-ratio: 16/9;"
+						style="aspect-ratio: 4/3;"
 					/>
 				</button>
 			</div>

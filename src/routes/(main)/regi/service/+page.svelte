@@ -1,15 +1,15 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast, check_login } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -22,6 +22,7 @@
 		title: '',
 		content: '',
 		price: 0,
+		contact_info: '',
 		images: [],
 	});
 
@@ -43,6 +44,22 @@
 		//미리보기용 이미지 uri 생성후 복사본에 추가
 		for (let i = 0; i < selected_images.length; i++) {
 			selected_images[i].uri = URL.createObjectURL(selected_images[i]);
+
+			// 이미지 크기 확인 및 권장사항 안내
+			const img = new Image();
+			img.onload = () => {
+				const aspectRatio = img.width / img.height;
+				const isRecommendedSize = img.width >= 652 && img.height >= 488;
+				const isRecommendedRatio = aspectRatio >= 1.3 && aspectRatio <= 1.4; // 4:3 비율 (1.33)
+
+				if (!isRecommendedSize || !isRecommendedRatio) {
+					show_toast(
+						'info',
+						'권장 크기: 652x488px (4:3 비율)로 업로드하면 더 좋은 품질을 얻을 수 있어요!',
+					);
+				}
+			};
+			img.src = selected_images[i].uri;
 
 			images_copy.push(selected_images[i]);
 		}
@@ -80,6 +97,7 @@
 				title: service_form_data.title,
 				content: service_form_data.content,
 				price: service_form_data.price,
+				contact_info: service_form_data.contact_info,
 			});
 
 			if (service_form_data.images.length > 0) {
@@ -123,11 +141,7 @@
 </svelte:head>
 
 <Header>
-	<button
-		slot="left"
-		class="flex items-center"
-		onclick={smartGoBack}
-	>
+	<button slot="left" class="flex items-center" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 
@@ -137,6 +151,9 @@
 <main class="mx-4">
 	<div class="">
 		<span class="ml-1 text-sm font-medium">서비스 이미지</span>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			권장 크기: 652x488px (4:3 비율), 최대 7개
+		</p>
 
 		<div class="mt-2 flex overflow-x-auto">
 			<label for="input-file">
@@ -172,16 +189,18 @@
 
 			<div class="flex flex-row">
 				{#each service_form_data.images as img, idx}
-					<div class="relative min-w-max">
-						<img
-							key={idx}
-							class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-							src={img.uri}
-							alt={img.name}
-						/>
+					<div class="relative ml-3 min-w-max">
+						<div class="aspect-[4/3] h-24 w-32 overflow-hidden rounded-lg">
+							<img
+								key={idx}
+								class="h-full w-full object-cover"
+								src={img.uri}
+								alt={img.name}
+							/>
+						</div>
 						<button onclick={() => delete_img(idx)} aria-label="삭제">
 							<svg
-								class="absolute top-[-2px] left-20"
+								class="absolute -top-1 -right-1"
 								xmlns="http://www.w3.org/2000/svg"
 								width="1.3rem"
 								height="1.3rem"
@@ -233,6 +252,24 @@
 			/>
 		</div>
 	</div>
+
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">
+			문의 연락처 <span class="text-red-500">*</span>
+		</p>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			고객이 서비스 문의 시 연락할 수 있는 연락처를 입력해주세요
+		</p>
+
+		<div class="mt-2">
+			<input
+				bind:value={service_form_data.contact_info}
+				type="text"
+				placeholder="예: 010-1234-5678, 카카오톡 링크, 인스타그램 링크"
+				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+			/>
+		</div>
+	</div>
 </main>
 
 <div class="fixed bottom-0 w-full max-w-screen-md bg-white px-5 py-3.5">
@@ -241,6 +278,7 @@
 			disabled={service_form_data.title.length === 0 ||
 				service_form_data.content.length === 0 ||
 				service_form_data.price === 0 ||
+				service_form_data.contact_info.length === 0 ||
 				service_form_data.images.length === 0}
 			class="btn btn-primary flex flex-1 items-center justify-center"
 			onclick={save_service}
