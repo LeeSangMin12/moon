@@ -1,6 +1,7 @@
 <script>
 	// Assets & Navigation
 	import profile_png from '$lib/img/common/user/profile.png';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import {
 		RiArrowLeftSLine,
@@ -401,7 +402,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => goto('/service')}>
+	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">서비스</h1>

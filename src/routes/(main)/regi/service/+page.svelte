@@ -3,6 +3,7 @@
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -125,7 +126,7 @@
 	<button
 		slot="left"
 		class="flex items-center"
-		onclick={() => goto('/service')}
+		onclick={smartGoBack}
 	>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>

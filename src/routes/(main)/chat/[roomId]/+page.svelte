@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiRemixiconFill } from 'svelte-remixicon';
+	import { smartGoBack } from '$lib/utils/navigation';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
@@ -16,7 +17,7 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => goto('/chat')}>
+		<button class="flex items-center" onclick={smartGoBack}>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>

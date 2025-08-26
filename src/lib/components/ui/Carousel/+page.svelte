@@ -59,7 +59,7 @@
 					<img
 						src={img}
 						alt=""
-						class="pointer-events-none h-full max-h-80 w-full object-cover"
+						class="pointer-events-none h-full max-h-80 w-full object-contain"
 						draggable="false"
 						loading={index === 0 ? 'eager' : 'lazy'}
 						decoding="async"

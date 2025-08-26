@@ -203,7 +203,7 @@
 		class="fixed bottom-18 z-10 mx-auto flex w-full max-w-screen-md justify-end pr-4"
 	>
 		<button
-			class="rounded-full bg-blue-500 p-3 text-white shadow-lg hover:bg-blue-600"
+			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600"
 			onclick={() => {
 				if (!check_login()) return;
 

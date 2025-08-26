@@ -39,10 +39,10 @@
 	>
 		{#each images as { title, src, url }, index}
 			<a
-				target="_blank"
 				href={url}
 				id={get_item_id(index)}
 				class="relative w-full shrink-0 snap-center px-4"
+				target={url.startsWith('http') ? '_blank' : undefined}
 			>
 				<img
 					{title}
@@ -71,10 +71,10 @@
 	>
 		{#each images as { title, src, url }, index}
 			<a
-				target="_blank"
 				href={url}
 				id={get_item_id(index)}
 				class="shrink-0 snap-center"
+				target={url.startsWith('http') ? '_blank' : undefined}
 			>
 				<img
 					{title}

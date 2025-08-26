@@ -48,13 +48,24 @@
 	];
 
 	let like_count = $state(post.like_count ?? 0);
-	let user_vote = $state(
-		post.post_votes?.find((vote) => vote.user_id === $user_store.id)?.vote ?? 0,
+	
+	// 투표 상태를 위한 local state (우선순위: local > server data)
+	let local_user_vote = $state(null);
+	
+	// user_vote를 reactive하게 계산 (local state가 있으면 우선 사용)
+	let user_vote = $derived(
+		local_user_vote !== null 
+			? local_user_vote
+			: ($user_store?.id && post.post_votes
+				? post.post_votes.find((vote) => vote.user_id === $user_store.id)?.vote ?? 0
+				: 0)
 	);
-	let is_bookmarked = $state(
-		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
-			? true
-			: false,
+	
+	// is_bookmarked를 reactive하게 계산
+	let is_bookmarked = $derived(
+		$user_store?.id && post.post_bookmarks
+			? post.post_bookmarks.some((bookmark) => bookmark.user_id === $user_store.id)
+			: false
 	);
 	let is_following = $state(false);
 
@@ -76,44 +87,77 @@
 				post.users.id,
 			);
 		}
+		
+		// Fetch current user's vote to ensure we have the latest state
+		if ($user_store?.id) {
+			try {
+				const current_vote = await $api_store.post_votes.get_user_vote(post.id, $user_store.id);
+				// Only update if different from what we have locally
+				const existing_vote = post.post_votes?.find((vote) => vote.user_id === $user_store.id)?.vote ?? 0;
+				if (current_vote !== existing_vote) {
+					local_user_vote = current_vote;
+				}
+			} catch (error) {
+				console.error('Failed to fetch user vote:', error);
+			}
+		}
 	});
 
-	const on_vote = async (new_vote) => {
-		const old_vote = user_vote;
+	// 중복 클릭 방지를 위한 플래그
+	let is_voting = false;
 
+	const on_vote = async (new_vote) => {
+		// 이미 투표 중이면 무시
+		if (is_voting) return;
+		is_voting = true;
+
+		const old_vote = user_vote;
+		const old_like_count = like_count;
+
+		// UI 상태 변경 (optimistic update)
 		if (old_vote === new_vote) {
-			user_vote = 0;
+			local_user_vote = 0;
 			if (new_vote === 1) like_count--;
 		} else {
 			// 변경/새 투표 로직
-			user_vote = new_vote;
+			local_user_vote = new_vote;
 
 			if (old_vote === 1) like_count--;
 			if (new_vote === 1) like_count++;
 		}
 
-		await $api_store.post_votes.handle_vote(post.id, $user_store.id, user_vote);
-
-		// 앱 레벨 알림 생성: 좋아요로 변경된 경우에만
 		try {
+			await $api_store.post_votes.handle_vote(post.id, $user_store.id, local_user_vote);
+
+			// 앱 레벨 알림 생성: 좋아요로 변경된 경우에만
 			if (
 				old_vote !== 1 &&
-				user_vote === 1 &&
+				local_user_vote === 1 &&
 				post.users?.id &&
 				post.users.id !== $user_store.id
 			) {
-				await $api_store.notifications.insert({
-					recipient_id: post.users.id,
-					actor_id: $user_store.id,
-					type: 'post.liked',
-					resource_type: 'post',
-					resource_id: String(post.id),
-					payload: { post_id: post.id, post_title: post.title },
-					link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}`,
-				});
+				try {
+					await $api_store.notifications.insert({
+						recipient_id: post.users.id,
+						actor_id: $user_store.id,
+						type: 'post.liked',
+						resource_type: 'post',
+						resource_id: String(post.id),
+						payload: { post_id: post.id, post_title: post.title },
+						link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}`,
+					});
+				} catch (e) {
+					console.error('Failed to insert notification (post.liked):', e);
+				}
 			}
-		} catch (e) {
-			console.error('Failed to insert notification (post.liked):', e);
+		} catch (error) {
+			// API 호출 실패 시 UI 상태 롤백
+			console.error('Vote failed:', error);
+			local_user_vote = old_vote === 0 ? null : old_vote;
+			like_count = old_like_count;
+			show_toast('error', '투표 처리 중 오류가 발생했습니다.');
+		} finally {
+			is_voting = false;
 		}
 	};
 
