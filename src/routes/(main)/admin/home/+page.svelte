@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
+	import { smartGoBack } from '$lib/utils/navigation';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
@@ -8,7 +9,7 @@
 </script>
 
 <Header>
-	<button slot="left" onclick={() => goto('/')}>
+	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 </Header>

@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
@@ -52,7 +53,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => goto('/')}>
+	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">알림</h1>

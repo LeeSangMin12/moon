@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiHeartFill,
@@ -273,7 +274,7 @@
 <Header>
 	<div slot="left">
 		{#if $page.params.handle !== $user_store.handle}
-			<button class="flex items-center" onclick={() => goto('/')}>
+			<button class="flex items-center" onclick={smartGoBack}>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
 		{/if}

@@ -1,5 +1,6 @@
 <script>
 	import { goto, invalidateAll } from '$app/navigation';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiCheckLine,
@@ -117,7 +118,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => goto('/admin/home')}>
+	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 </Header>

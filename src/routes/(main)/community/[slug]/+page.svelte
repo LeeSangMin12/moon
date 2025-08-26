@@ -1,6 +1,7 @@
 <script>
 	import logo from '$lib/img/logo.png';
 	import { goto } from '$app/navigation';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiDeleteBinLine,
@@ -166,7 +167,7 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => goto('/community')}>
+		<button class="flex items-center" onclick={smartGoBack}>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>

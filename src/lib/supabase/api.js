@@ -24,6 +24,8 @@ import { create_topics_api } from '$lib/supabase/topics';
 import { create_user_follows_api } from '$lib/supabase/user_follows';
 import { create_user_reports_api } from '$lib/supabase/user_reports';
 import { create_users_api } from '$lib/supabase/users';
+import { create_expert_requests_api } from '$lib/supabase/expert_requests';
+import { create_expert_request_proposals_api } from '$lib/supabase/expert_request_proposals';
 
 export const create_api = (supabase) => ({
 	communities: create_communities_api(supabase),
@@ -48,6 +50,8 @@ export const create_api = (supabase) => ({
 	moon_point_transactions: create_moon_point_transactions_api(supabase),
 	moon_withdrawals: create_moon_withdrawals_api(supabase),
 	notifications: create_notifications_api(supabase),
+	expert_requests: create_expert_requests_api(supabase),
+	expert_request_proposals: create_expert_request_proposals_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

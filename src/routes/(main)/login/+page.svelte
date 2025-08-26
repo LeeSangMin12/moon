@@ -4,6 +4,7 @@
 	import kakao_login from '$lib/img/partials/login/kakao_login.png';
 	import landing_logo from '$lib/img/partials/login/landing_logo.jpg';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
+	import { smartGoBack } from '$lib/utils/navigation';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
@@ -34,7 +35,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => history.back()}>
+	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={28} color={colors.gray[800]} />
 	</button>
 </Header>
