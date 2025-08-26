@@ -37,13 +37,16 @@
 <div
 	class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm"
 >
-	<a href={`/service/${service.id}`} class="relative">
-		<img
-			src={service.images[0].uri ||
-				'https://img.daisyui.com/images/stock/photo-1625726411847-8cbb60cc71e6.webp'}
-			alt={service.title}
-			class="h-18 w-full object-cover"
-		/>
+	<a href={`/service/${service.id}`} class="relative block">
+		<div class="relative aspect-[4/3] w-full overflow-hidden">
+			<img
+				src={service.images[0].uri ||
+					'https://img.daisyui.com/images/stock/photo-1625726411847-8cbb60cc71e6.webp'}
+				alt={service.title}
+				class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+				loading="lazy"
+			/>
+		</div>
 	</a>
 	<div class="px-2 py-2">
 		<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">

@@ -18,7 +18,12 @@
 
 	// Utils & Stores
 	import colors from '$lib/js/colors';
-	import { check_login, comma, show_toast } from '$lib/js/common';
+	import {
+		check_login,
+		comma,
+		copy_to_clipboard,
+		show_toast,
+	} from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store';
 	import { user_store } from '$lib/store/user_store';
 
@@ -558,13 +563,14 @@
 			>
 				구매하기
 			</button>
-			<a
-				target="_blank"
-				href={service.inquiry_url}
+			<button
+				onclick={() => {
+					copy_to_clipboard(service.inquiry_url, '문의 링크가 복사되었습니다.');
+				}}
 				class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 			>
 				문의하기
-			</a>
+			</button>
 			{#if is_user_liked(service.id)}
 				<button
 					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"
