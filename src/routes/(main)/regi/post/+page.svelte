@@ -1,15 +1,16 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast, check_login } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -310,13 +311,16 @@
 		</div>
 
 		<div class="mt-2">
+			<SimpleEditor bind:content={post_form_data.content} />
+		</div>
+		<!-- <div class="mt-2">
 			<textarea
 				bind:value={post_form_data.content}
 				type="text"
 				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
 				placeholder="게시글 내용을 입력해주세요"
 			></textarea>
-		</div>
+		</div> -->
 	</div>
 </main>
 <div class="fixed bottom-0 w-full max-w-screen-md bg-white px-5 py-3.5">

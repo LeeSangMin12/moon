@@ -302,7 +302,7 @@
 					</figure>
 				{/if}
 			{/if}
-			<pre class="mt-2 text-sm whitespace-pre-wrap">{post.content}</pre>
+			<div class="mt-2 text-sm prose prose-sm max-w-none">{@html post.content}</div>
 		{:else if post.images?.length > 0}
 			{#if is_video(post.images[0].uri)}
 				<figure class="mt-2">
@@ -322,8 +322,7 @@
 			{/if}
 		{:else}
 			<a href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}>
-				<pre
-					class="mt-2 line-clamp-6 overflow-hidden text-sm whitespace-pre-wrap">{post.content}</pre>
+				<div class="mt-2 line-clamp-6 overflow-hidden text-sm prose prose-sm max-w-none">{@html post.content}</div>
 			</a>
 		{/if}
 
@@ -574,3 +573,85 @@
 	post_id={post.id}
 	on:gift_success={handle_gift_success}
 />
+
+<style>
+	/* Rich text content styles */
+	:global(.prose h1) {
+		font-size: 1.5rem !important;
+		font-weight: bold !important;
+		margin: 1rem 0 0.5rem 0 !important;
+		line-height: 1.2 !important;
+	}
+	
+	:global(.prose h2) {
+		font-size: 1.25rem !important;
+		font-weight: bold !important;
+		margin: 0.8rem 0 0.4rem 0 !important;
+		line-height: 1.3 !important;
+	}
+	
+	:global(.prose h3) {
+		font-size: 1.125rem !important;
+		font-weight: bold !important;
+		margin: 0.6rem 0 0.3rem 0 !important;
+		line-height: 1.4 !important;
+	}
+	
+	:global(.prose p) {
+		margin: 0.5rem 0 !important;
+		line-height: 1.6 !important;
+	}
+	
+	:global(.prose strong) {
+		font-weight: bold !important;
+	}
+	
+	:global(.prose em) {
+		font-style: italic !important;
+	}
+	
+	:global(.prose ul, .prose ol) {
+		padding-left: 1.5rem !important;
+		margin: 0.5rem 0 !important;
+	}
+	
+	:global(.prose li) {
+		margin: 0.25rem 0 !important;
+	}
+	
+	:global(.prose blockquote) {
+		border-left: 4px solid #e5e7eb !important;
+		padding-left: 1rem !important;
+		margin: 1rem 0 !important;
+		font-style: italic !important;
+		color: #6b7280 !important;
+	}
+	
+	:global(.prose img) {
+		max-width: 100% !important;
+		height: auto !important;
+		margin: 1rem auto !important;
+		border-radius: 0.5rem !important;
+		display: block !important;
+	}
+	
+	:global(.prose a) {
+		color: #3b82f6 !important;
+		text-decoration: underline !important;
+	}
+	
+	:global(.prose code) {
+		background-color: #f3f4f6 !important;
+		padding: 0.125rem 0.25rem !important;
+		border-radius: 0.25rem !important;
+		font-size: 0.875em !important;
+	}
+	
+	:global(.prose pre) {
+		background-color: #f3f4f6 !important;
+		padding: 1rem !important;
+		border-radius: 0.5rem !important;
+		overflow-x: auto !important;
+		margin: 1rem 0 !important;
+	}
+</style>
