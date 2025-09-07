@@ -1,13 +1,13 @@
 <script>
+	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast, check_login } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -26,7 +26,7 @@
 
 	const categories = [
 		'웹개발/프로그래밍',
-		'모바일 앱 개발', 
+		'모바일 앱 개발',
 		'디자인',
 		'마케팅/광고',
 		'번역/통역',
@@ -35,7 +35,7 @@
 		'음악/오디오',
 		'비즈니스 컨설팅',
 		'교육/과외',
-		'기타'
+		'기타',
 	];
 
 	onMount(() => {
@@ -89,19 +89,25 @@
 			}
 
 			// API 호출로 전문가 요청 저장
-			const new_request = await $api_store.expert_requests.insert({
-				title: request_form_data.title,
-				category: request_form_data.category || null,
-				description: request_form_data.description,
-				budget_min: request_form_data.budget_min ? parseInt(request_form_data.budget_min) : null,
-				budget_max: request_form_data.budget_max ? parseInt(request_form_data.budget_max) : null,
-				deadline: request_form_data.deadline || null
-			}, $user_store.id);
+			const new_request = await $api_store.expert_requests.insert(
+				{
+					title: request_form_data.title,
+					category: request_form_data.category || null,
+					description: request_form_data.description,
+					budget_min: request_form_data.budget_min
+						? parseInt(request_form_data.budget_min)
+						: null,
+					budget_max: request_form_data.budget_max
+						? parseInt(request_form_data.budget_max)
+						: null,
+					deadline: request_form_data.deadline || null,
+				},
+				$user_store.id,
+			);
 
 			// 성공 메시지 표시
 			show_toast('success', '전문가 찾기 요청이 등록되었습니다!');
 			goto('/service');
-
 		} catch (e) {
 			console.error('Error saving expert request:', e);
 			show_toast('error', '요청 등록 중 오류가 발생했습니다.');
@@ -139,26 +145,26 @@
 	<form class="space-y-6">
 		<!-- 제목 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				제목 <span class="text-red-500">*</span>
 			</label>
 			<input
 				type="text"
 				bind:value={request_form_data.title}
 				placeholder="예: 회사 홈페이지 제작을 도와주실 개발자 찾습니다"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 				maxlength="100"
 			/>
 		</div>
 
 		<!-- 카테고리 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				분야/카테고리
 			</label>
 			<select
 				bind:value={request_form_data.category}
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 			>
 				<option value="">분야를 선택해주세요</option>
 				{#each categories as category}
@@ -169,20 +175,20 @@
 
 		<!-- 상세 설명 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				상세 설명 <span class="text-red-500">*</span>
 			</label>
 			<textarea
 				bind:value={request_form_data.description}
 				placeholder="어떤 작업이 필요한지 자세히 설명해주세요.&#10;프로젝트의 목적, 요구사항, 원하는 결과물 등을 포함해주시면 더 정확한 제안을 받을 수 있습니다."
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 				rows="8"
 			></textarea>
 		</div>
 
 		<!-- 예산 범위 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				예산 범위 (원)
 			</label>
 			<div class="flex items-center space-x-2">
@@ -190,7 +196,7 @@
 					type="number"
 					bind:value={request_form_data.budget_min}
 					placeholder="최소 예산"
-					class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 					min="0"
 				/>
 				<span class="text-gray-500">~</span>
@@ -198,32 +204,36 @@
 					type="number"
 					bind:value={request_form_data.budget_max}
 					placeholder="최대 예산"
-					class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 					min="0"
 				/>
 			</div>
-			<p class="text-xs text-gray-500 mt-1">예산 범위를 입력하시면 더 정확한 제안을 받을 수 있습니다</p>
+			<p class="mt-1 text-xs text-gray-500">
+				예산 범위를 입력하시면 더 정확한 제안을 받을 수 있습니다
+			</p>
 		</div>
 
 		<!-- 완료 희망일 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				완료 희망일
 			</label>
 			<input
 				type="date"
 				bind:value={request_form_data.deadline}
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
 				min={new Date().toISOString().split('T')[0]}
 			/>
 		</div>
 
 		<!-- 첨부파일 -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label class="mb-2 block text-sm font-medium text-gray-700">
 				참고자료 첨부
 			</label>
-			<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+			<div
+				class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center"
+			>
 				<input
 					type="file"
 					multiple
@@ -234,11 +244,23 @@
 				/>
 				<label for="attachment-upload" class="cursor-pointer">
 					<div class="text-gray-400">
-						<svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+						<svg
+							class="mx-auto mb-2 h-8 w-8"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+							></path>
 						</svg>
 						<p class="text-sm">클릭하여 파일 업로드</p>
-						<p class="text-xs text-gray-500">이미지, PDF, 문서 파일 (최대 5개)</p>
+						<p class="text-xs text-gray-500">
+							이미지, PDF, 문서 파일 (최대 5개)
+						</p>
 					</div>
 				</label>
 			</div>
@@ -247,15 +269,27 @@
 			{#if request_form_data.attachments.length > 0}
 				<div class="mt-4 space-y-2">
 					{#each request_form_data.attachments as attachment, idx}
-						<div class="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-							<span class="text-sm truncate">{attachment.name}</span>
+						<div
+							class="flex items-center justify-between rounded-md bg-gray-50 p-2"
+						>
+							<span class="truncate text-sm">{attachment.name}</span>
 							<button
 								type="button"
 								onclick={() => delete_attachment(idx)}
 								class="text-red-500 hover:text-red-700"
 							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+								<svg
+									class="h-4 w-4"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 18L18 6M6 6l12 12"
+									></path>
 								</svg>
 							</button>
 						</div>
@@ -265,9 +299,9 @@
 		</div>
 
 		<!-- 주의사항 -->
-		<div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-			<h3 class="text-sm font-medium text-blue-800 mb-2">📝 작성 팁</h3>
-			<ul class="text-xs text-blue-700 space-y-1">
+		<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
+			<h3 class="mb-2 text-sm font-medium text-blue-800">📝 작성 팁</h3>
+			<ul class="space-y-1 text-xs text-blue-700">
 				<li>• 프로젝트의 목적과 목표를 명확히 설명해주세요</li>
 				<li>• 원하는 결과물이나 스타일을 구체적으로 기술해주세요</li>
 				<li>• 참고할 만한 사례나 자료가 있다면 첨부해주세요</li>

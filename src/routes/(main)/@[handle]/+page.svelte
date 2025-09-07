@@ -19,6 +19,7 @@
 	import Post from '$lib/components/Post/+page.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 	import Service from '$lib/components/Service/+page.svelte';
+	import CoffeeChatModal from '$lib/components/CoffeeChatModal/+page.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
@@ -64,6 +65,7 @@
 	let modal = $state({
 		user_config: false,
 		report: false,
+		coffee_chat: false,
 	});
 
 	let is_follow_modal_open = $state(false);
@@ -390,10 +392,13 @@
 					</button>
 				{/if}
 				<button
-					onclick={() => show_toast('success', '메시지 기능은 준비중입니다.')}
+					onclick={() => {
+						if (!check_login()) return;
+						modal.coffee_chat = true;
+					}}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 				>
-					메시지
+					커피챗
 				</button>
 				<button
 					onclick={() => {
@@ -661,3 +666,6 @@
 		{/if}
 	</div>
 </Modal>
+
+<!-- 커피챗 모달 -->
+<CoffeeChatModal bind:isOpen={modal.coffee_chat} recipientUser={user} />

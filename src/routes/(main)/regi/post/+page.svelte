@@ -1,15 +1,17 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
+	import CustomCarousel from '$lib/components/ui/Carousel/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
-	import { show_toast, check_login } from '$lib/js/common';
+	import { check_login, show_toast } from '$lib/js/common';
 	import { api_store } from '$lib/store/api_store.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
@@ -40,6 +42,48 @@
 	});
 
 	let upload_type = $state('image'); // 'image' 또는 'video'
+	let show_preview = $state(false);
+
+	const is_video = (uri) => {
+		return /\.(mp4|mov|webm|ogg)$/i.test(uri);
+	};
+
+	const generate_video_thumbnail = (video_file) => {
+		return new Promise((resolve) => {
+			const video = document.createElement('video');
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+
+			video.preload = 'metadata';
+			video.muted = true;
+			video.crossOrigin = 'anonymous';
+
+			video.onloadedmetadata = () => {
+				canvas.width = 80;
+				canvas.height = 80;
+
+				// 1초 지점으로 이동하되, 비디오가 1초보다 짧으면 중간 지점으로
+				video.currentTime = Math.min(1, video.duration / 2);
+			};
+
+			video.onseeked = () => {
+				try {
+					ctx.drawImage(video, 0, 0, 80, 80);
+					const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+					resolve(thumbnail);
+				} catch (error) {
+					console.error('Error generating video thumbnail:', error);
+					resolve(null);
+				}
+			};
+
+			video.onerror = (error) => {
+				console.error('Video loading error:', error);
+				resolve(null);
+			};
+			video.src = video_file.uri;
+		});
+	};
 
 	onMount(() => {
 		// Check if user is logged in when page loads
@@ -131,7 +175,7 @@
 		);
 	};
 
-	const add_file = (event) => {
+	const add_file = async (event) => {
 		console.log(event.target.files);
 		const selected_files = event.target.files;
 		let files_copy = [];
@@ -158,6 +202,17 @@
 				return;
 			}
 			selected_files[0].uri = URL.createObjectURL(selected_files[0]);
+
+			// 비디오 썸네일 생성
+			try {
+				const thumbnail = await generate_video_thumbnail(selected_files[0]);
+				if (thumbnail) {
+					selected_files[0].thumbnail = thumbnail;
+				}
+			} catch (error) {
+				console.error('Failed to generate video thumbnail:', error);
+			}
+
 			files_copy = [selected_files[0]];
 		}
 
@@ -193,7 +248,17 @@
 	</div>
 
 	<div class="mt-6">
-		<span class="ml-1 text-sm font-medium">안내이미지 (선택)</span>
+		<div class="flex items-center justify-between">
+			<span class="ml-1 text-sm font-medium">썸네일 이미지 (선택)</span>
+			{#if post_form_data.images.length > 0}
+				<button
+					class="btn btn-xs btn-outline"
+					onclick={() => (show_preview = !show_preview)}
+				>
+					{show_preview ? '목록 보기' : '미리보기'}
+				</button>
+			{/if}
+		</div>
 
 		<div class="my-3 flex gap-2">
 			<button
@@ -214,79 +279,158 @@
 			>
 		</div>
 
-		<div class="mt-2 flex overflow-x-auto">
-			<label for="input-file">
-				<input
-					type="file"
-					id="input-file"
-					onchange={add_file}
-					accept={upload_type === 'image' ? 'image/*' : 'video/*'}
-					multiple={upload_type === 'image'}
-					class="hidden"
-				/>
-				<div
-					class="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg bg-gray-50"
-				>
-					<svg
-						width="20"
-						height="20"
-						viewBox="0 0 24 21"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							d="M14.14 2.33333L16.275 4.66667H21V18.6667H2.33333V4.66667H7.05833L9.19333 2.33333H14.14ZM15.1667 0H8.16667L6.03167 2.33333H2.33333C1.05 2.33333 0 3.38333 0 4.66667V18.6667C0 19.95 1.05 21 2.33333 21H21C22.2833 21 23.3333 19.95 23.3333 18.6667V4.66667C23.3333 3.38333 22.2833 2.33333 21 2.33333H17.3017L15.1667 0ZM11.6667 8.16667C13.5917 8.16667 15.1667 9.74167 15.1667 11.6667C15.1667 13.5917 13.5917 15.1667 11.6667 15.1667C9.74167 15.1667 8.16667 13.5917 8.16667 11.6667C8.16667 9.74167 9.74167 8.16667 11.6667 8.16667ZM11.6667 5.83333C8.44667 5.83333 5.83333 8.44667 5.83333 11.6667C5.83333 14.8867 8.44667 17.5 11.6667 17.5C14.8867 17.5 17.5 14.8867 17.5 11.6667C17.5 8.44667 14.8867 5.83333 11.6667 5.83333Z"
-							fill="#A9A9A9"
-						/>
-					</svg>
-
-					<span class="text-xs text-gray-900">
-						{upload_type === 'image'
-							? `${post_form_data.images.length}/7`
-							: `${post_form_data.images.length}/1`}
-					</span>
-				</div>
-			</label>
-
-			<div class="flex flex-row">
-				{#each post_form_data.images as img, idx}
-					<div class="relative min-w-max">
-						{#if img.type && img.type.startsWith('video/')}
+		{#if show_preview && post_form_data.images.length > 0}
+			<div class="mt-2">
+				<div class="rounded-lg border border-gray-200 p-3">
+					<p class="mb-2 text-xs text-gray-500">
+						실제 게시물에서 이렇게 보입니다:
+					</p>
+					{#if is_video(post_form_data.images[0].uri)}
+						<figure class="relative">
 							<video
-								key={idx}
-								class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-								src={img.uri}
+								src={post_form_data.images[0].uri}
 								controls
-								alt={img.name}
+								class="w-full rounded-lg"
+								style="max-height: 320px;"
+								preload="metadata"
+								poster={post_form_data.images[0].thumbnail || ''}
 							>
-								<track kind="captions" src="" label="자막" />
+								<track kind="captions" label="No captions" />
 							</video>
-						{:else}
-							<img
-								key={idx}
-								class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-								src={img.uri}
-								alt={img.name}
+							<!-- 썸네일이 없는 경우 표시할 fallback -->
+							{#if !post_form_data.images[0].thumbnail}
+								<div
+									class="absolute inset-0 flex items-center justify-center rounded-lg bg-gray-800"
+								>
+									<div class="text-center text-white">
+										<svg
+											class="mx-auto mb-2 h-12 w-12"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14 9a2 2 0 11-4 0 2 2 0 014 0z"
+											/>
+										</svg>
+										<p class="text-xs">비디오 로딩 중...</p>
+									</div>
+								</div>
+							{/if}
+						</figure>
+					{:else}
+						<figure>
+							<CustomCarousel
+								images={post_form_data.images.map((image) => image.uri)}
 							/>
-						{/if}
-						<button onclick={() => delete_img(idx)} aria-label="삭제">
-							<svg
-								class="absolute top-[-2px] left-20"
-								xmlns="http://www.w3.org/2000/svg"
-								width="1.3rem"
-								height="1.3rem"
-								viewBox="0 0 24 24"
-							>
-								<path
-									fill={colors.gray[900]}
-									d="m8.4 17l3.6-3.6l3.6 3.6l1.4-1.4l-3.6-3.6L17 8.4L15.6 7L12 10.6L8.4 7L7 8.4l3.6 3.6L7 15.6zm3.6 5q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"
-								/>
-							</svg>
-						</button>
-					</div>
-				{/each}
+						</figure>
+					{/if}
+				</div>
 			</div>
-		</div>
+		{:else}
+			<div class="mt-2 flex overflow-x-auto">
+				<label for="input-file">
+					<input
+						type="file"
+						id="input-file"
+						onchange={add_file}
+						accept={upload_type === 'image' ? 'image/*' : 'video/*'}
+						multiple={upload_type === 'image'}
+						class="hidden"
+					/>
+					<div
+						class="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg bg-gray-50"
+					>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 21"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								d="M14.14 2.33333L16.275 4.66667H21V18.6667H2.33333V4.66667H7.05833L9.19333 2.33333H14.14ZM15.1667 0H8.16667L6.03167 2.33333H2.33333C1.05 2.33333 0 3.38333 0 4.66667V18.6667C0 19.95 1.05 21 2.33333 21H21C22.2833 21 23.3333 19.95 23.3333 18.6667V4.66667C23.3333 3.38333 22.2833 2.33333 21 2.33333H17.3017L15.1667 0ZM11.6667 8.16667C13.5917 8.16667 15.1667 9.74167 15.1667 11.6667C15.1667 13.5917 13.5917 15.1667 11.6667 15.1667C9.74167 15.1667 8.16667 13.5917 8.16667 11.6667C8.16667 9.74167 9.74167 8.16667 11.6667 8.16667ZM11.6667 5.83333C8.44667 5.83333 5.83333 8.44667 5.83333 11.6667C5.83333 14.8867 8.44667 17.5 11.6667 17.5C14.8867 17.5 17.5 14.8867 17.5 11.6667C17.5 8.44667 14.8867 5.83333 11.6667 5.83333Z"
+								fill="#A9A9A9"
+							/>
+						</svg>
+
+						<span class="text-xs text-gray-900">
+							{upload_type === 'image'
+								? `${post_form_data.images.length}/7`
+								: `${post_form_data.images.length}/1`}
+						</span>
+					</div>
+				</label>
+
+				<div class="flex flex-row">
+					{#each post_form_data.images as img, idx}
+						<div class="relative min-w-max">
+							{#if img.type && img.type.startsWith('video/')}
+								<div
+									class="relative ml-3 h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800"
+								>
+									{#if img.thumbnail}
+										<img
+											key={idx}
+											class="h-full w-full object-cover"
+											src={img.thumbnail}
+											alt={img.name}
+										/>
+									{:else}
+										<!-- Fallback: 단색 배경에 비디오 아이콘 -->
+										<div
+											class="flex h-full w-full items-center justify-center bg-gray-800"
+										>
+											<svg
+												class="h-8 w-8 text-white"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14 9a2 2 0 11-4 0 2 2 0 014 0z"
+												/>
+											</svg>
+										</div>
+									{/if}
+									<!-- 비디오 아이콘 오버레이 -->
+									<div
+										class="bg-opacity-30 absolute inset-0 flex items-center justify-center bg-black"
+									>
+										<svg
+											class="h-6 w-6 text-white"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path d="M8 5v10l7-5z" />
+										</svg>
+									</div>
+								</div>
+							{:else}
+								<img
+									key={idx}
+									class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
+									src={img.uri}
+									alt={img.name}
+								/>
+							{/if}
+							<button onclick={() => delete_img(idx)} aria-label="삭제">
+								<svg
+									class="absolute top-[-2px] left-20"
+									xmlns="http://www.w3.org/2000/svg"
+									width="1.3rem"
+									height="1.3rem"
+									viewBox="0 0 24 24"
+								>
+									<path
+										fill={colors.gray[900]}
+										d="m8.4 17l3.6-3.6l3.6 3.6l1.4-1.4l-3.6-3.6L17 8.4L15.6 7L12 10.6L8.4 7L7 8.4l3.6 3.6L7 15.6zm3.6 5q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"
+									/>
+								</svg>
+							</button>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<div class="mt-8">
@@ -310,13 +454,16 @@
 		</div>
 
 		<div class="mt-2">
+			<SimpleEditor bind:content={post_form_data.content} />
+		</div>
+		<!-- <div class="mt-2">
 			<textarea
 				bind:value={post_form_data.content}
 				type="text"
 				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
 				placeholder="게시글 내용을 입력해주세요"
 			></textarea>
-		</div>
+		</div> -->
 	</div>
 </main>
 <div class="fixed bottom-0 w-full max-w-screen-md bg-white px-5 py-3.5">
