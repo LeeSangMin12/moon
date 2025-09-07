@@ -12,6 +12,7 @@
 		RiTeamLine,
 		RiUserLine,
 		RiUserStarLine,
+		RiCupLine,
 	} from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -119,6 +120,15 @@
 			<RiTeamLine size={20} color={colors.gray[600]} class="mr-3" />
 
 			<p>참여 커뮤니티</p>
+		</a>
+
+		<a
+			class="flex items-center px-4"
+			href="/@{$user_store.handle}/accounts/coffee-chat"
+		>
+			<RiCupLine size={20} color={colors.gray[600]} class="mr-3" />
+
+			<p>커피챗</p>
 		</a>
 	</div>
 

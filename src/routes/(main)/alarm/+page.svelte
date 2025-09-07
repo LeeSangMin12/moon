@@ -154,6 +154,36 @@
 									<p class="text-sm">
 										선물을 받았습니다. (+{n.payload?.amount} 문)
 									</p>
+								{:else if n.type === 'coffee_chat.requested'}
+									<p class="text-sm">
+										<strong
+											>{n.actor?.name ||
+												'@' + (n.actor?.handle || '익명')}</strong
+										>님이 커피챗을 요청했습니다.
+									</p>
+									<p class="mt-1 truncate text-sm text-gray-600">
+										{n.payload?.subject}
+									</p>
+								{:else if n.type === 'coffee_chat.accepted'}
+									<p class="text-sm">
+										<strong
+											>{n.actor?.name ||
+												'@' + (n.actor?.handle || '익명')}</strong
+										>님이 커피챗 요청을 수락했습니다.
+									</p>
+									<p class="mt-1 truncate text-sm text-gray-600">
+										{n.payload?.subject}
+									</p>
+								{:else if n.type === 'coffee_chat.rejected'}
+									<p class="text-sm">
+										<strong
+											>{n.actor?.name ||
+												'@' + (n.actor?.handle || '익명')}</strong
+										>님이 커피챗 요청을 거절했습니다.
+									</p>
+									<p class="mt-1 truncate text-sm text-gray-600">
+										{n.payload?.subject}
+									</p>
 								{:else}
 									<p class="text-sm font-medium">{n.type}</p>
 								{/if}

@@ -1,9 +1,9 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -142,7 +142,7 @@
 	</div>
 
 	<div class="mt-6">
-		<span class="ml-1 text-sm font-medium">안내이미지 (선택)</span>
+		<span class="ml-1 text-sm font-medium">썸네일 이미지 (선택)</span>
 
 		<div class="mt-2 flex overflow-x-auto">
 			<label for="input-file">
