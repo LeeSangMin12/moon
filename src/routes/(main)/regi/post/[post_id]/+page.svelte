@@ -7,6 +7,7 @@
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
 	import { show_toast } from '$lib/js/common';
@@ -220,11 +221,7 @@
 		<p class="ml-1 text-sm font-medium">글 내용</p>
 
 		<div class="mt-2">
-			<textarea
-				bind:value={post_form_data.content}
-				type="text"
-				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
-			></textarea>
+			<SimpleEditor bind:content={post_form_data.content} />
 		</div>
 	</div>
 </main>
