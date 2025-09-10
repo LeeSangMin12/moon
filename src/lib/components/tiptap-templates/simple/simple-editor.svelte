@@ -5,6 +5,7 @@
 	import { Typography } from '@tiptap/extension-typography';
 	import StarterKit from '@tiptap/starter-kit';
 	import ImageResize from 'tiptap-extension-resize-image';
+	import { HardBreak } from '@tiptap/extension-hard-break';
 	import { onDestroy, onMount } from 'svelte';
 
 	let editorElement;
@@ -17,7 +18,14 @@
 		editor = new Editor({
 			element: editorElement,
 			extensions: [
-				StarterKit,
+				StarterKit.configure({
+					hardBreak: false, // StarterKit의 HardBreak를 비활성화
+				}),
+				HardBreak.configure({
+					HTMLAttributes: {
+						class: 'hard-break',
+					},
+				}),
 				Highlight.configure({
 					multicolor: true,
 				}),

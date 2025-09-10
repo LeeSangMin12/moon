@@ -302,7 +302,7 @@
 					</figure>
 				{/if}
 			{/if}
-			<div class="mt-2 text-sm prose prose-sm max-w-none">{@html post.content}</div>
+			<div class="mt-2 text-sm prose prose-sm max-w-none" style="white-space: pre-wrap;">{@html post.content}</div>
 		{:else if post.images?.length > 0}
 			{#if is_video(post.images[0].uri)}
 				<figure class="mt-2">
@@ -322,7 +322,10 @@
 			{/if}
 		{:else}
 			<a href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}>
-				<div class="mt-2 line-clamp-6 overflow-hidden text-sm prose prose-sm max-w-none">{@html post.content}</div>
+				<div class="mt-2 text-sm prose prose-sm max-w-none" style="max-height: 10rem; overflow: hidden; position: relative;">
+					{@html post.content}
+					<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 2rem; background: linear-gradient(transparent, white); pointer-events: none;"></div>
+				</div>
 			</a>
 		{/if}
 
@@ -598,8 +601,11 @@
 	}
 	
 	:global(.prose p) {
-		margin: 0.5rem 0 !important;
+		margin: 0.75rem 0 !important;
 		line-height: 1.6 !important;
+		white-space: normal !important;
+		display: block !important;
+		min-height: 1.2em !important;
 	}
 	
 	:global(.prose strong) {
@@ -653,5 +659,22 @@
 		border-radius: 0.5rem !important;
 		overflow-x: auto !important;
 		margin: 1rem 0 !important;
+	}
+	
+	:global(.prose br) {
+		display: block !important;
+		margin: 0.25rem 0 !important;
+		line-height: 0 !important;
+	}
+	
+	:global(.prose .hard-break) {
+		display: block !important;
+		height: 0.5rem !important;
+	}
+	
+	:global(.prose p:empty) {
+		margin: 0.75rem 0 !important;
+		min-height: 1.2em !important;
+		display: block !important;
 	}
 </style>
