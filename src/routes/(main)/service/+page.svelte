@@ -2,7 +2,6 @@
 	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import { api_store } from '$lib/store/api_store';
 	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
@@ -12,6 +11,8 @@
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
 	import ExpertRequestTab from '$lib/components/ExpertRequestTab/+page.svelte';
 	import ServiceTab from '$lib/components/ServiceTab/+page.svelte';
+
+	import { api_store } from '$lib/store/api_store';
 
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
@@ -94,14 +95,18 @@
 				serviceData.services[serviceData.services.length - 1]?.id || '';
 		} else {
 			if (searchText.trim()) {
-				const results = await $api_store.expert_requests.select_by_search(searchText);
+				const results =
+					await $api_store.expert_requests.select_by_search(searchText);
 				expertRequestData.expertRequests = results;
 			} else {
-				const response = await $api_store.expert_requests.select_infinite_scroll('', '');
+				const response =
+					await $api_store.expert_requests.select_infinite_scroll('', '');
 				expertRequestData.expertRequests = response.data || response;
 			}
 			expertInfiniteScroll.lastId =
-				expertRequestData.expertRequests[expertRequestData.expertRequests.length - 1]?.id || '';
+				expertRequestData.expertRequests[
+					expertRequestData.expertRequests.length - 1
+				]?.id || '';
 		}
 	};
 </script>
@@ -136,12 +141,12 @@
 	</section>
 
 	{#if selected_tab === 0}
-		<ServiceTab {serviceData} infiniteScroll={serviceInfiniteScroll} />
-	{:else}
 		<ExpertRequestTab
 			{expertRequestData}
 			infiniteScroll={expertInfiniteScroll}
 		/>
+	{:else}
+		<ServiceTab {serviceData} infiniteScroll={serviceInfiniteScroll} />
 	{/if}
 </main>
 
