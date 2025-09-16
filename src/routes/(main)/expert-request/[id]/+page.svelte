@@ -290,14 +290,14 @@
 					{#if expert_request.category}
 						<div class="mb-2">
 							<span
-								class="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium"
+								class="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600"
 							>
 								{expert_request.category}
 							</span>
 						</div>
 					{/if}
 					<h1
-						class="mt-4 line-clamp-2 text-2xl leading-tight font-bold text-gray-900"
+						class="mt-4 line-clamp-2 text-xl leading-tight font-semibold text-gray-900"
 					>
 						{expert_request.title}
 					</h1>
@@ -311,7 +311,7 @@
 
 			<!-- 보상금 -->
 			<div class="mb-8">
-				<span class="text-xl font-bold text-blue-600">
+				<span class="text-lg font-medium text-blue-600">
 					{comma(expert_request.reward_amount)}원
 				</span>
 			</div>
@@ -399,9 +399,9 @@
 	<div class="px-4 pb-6">
 		<div class="rounded-xl border border-gray-100/60 bg-white p-5">
 			<h3 class="mb-3 font-semibold text-gray-900">프로젝트 설명</h3>
-			<p class="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">
-				{expert_request.description}
-			</p>
+			<div class="prose prose-sm max-w-none text-sm leading-relaxed text-gray-600">
+				{@html expert_request.description}
+			</div>
 		</div>
 	</div>
 
@@ -592,7 +592,9 @@
 									</p>
 								</div>
 							{:else}
-								<p class="mb-3 text-sm leading-relaxed text-gray-600 break-words overflow-wrap-anywhere">
+								<p
+									class="overflow-wrap-anywhere mb-3 text-sm leading-relaxed break-words text-gray-600"
+								>
 									{proposal.message}
 								</p>
 							{/if}

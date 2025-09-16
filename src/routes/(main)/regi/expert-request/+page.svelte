@@ -9,6 +9,7 @@
 	import Date_range_picker from '$lib/components/ui/Date_range_picker/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
@@ -266,12 +267,15 @@
 					<label class="mb-2 block text-sm font-medium text-gray-700">
 						상세 설명
 					</label>
-					<textarea
+					<div class="mt-2">
+						<SimpleEditor bind:content={request_form_data.description} />
+					</div>
+					<!-- <textarea
 						bind:value={request_form_data.description}
 						placeholder="어떤 작업이 필요한지 자세히 설명해주세요.&#10;프로젝트의 목적, 요구사항, 원하는 결과물 등을 포함해주시면 더 정확한 제안을 받을 수 있습니다."
 						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
 						rows="8"
-					></textarea>
+					></textarea> -->
 				</div>
 			</div>
 		{:else if current_step === 2}
@@ -496,9 +500,13 @@
 						</div>
 						<div>
 							<p class="text-sm text-gray-600">상세 설명</p>
-							<p class="mt-1 leading-relaxed text-gray-900">
+
+							<div class="mt-1 prose prose-sm max-w-none leading-relaxed text-gray-900">
+								{@html request_form_data.description}
+							</div>
+							<!-- <p class="mt-1 leading-relaxed text-gray-900">
 								{request_form_data.description}
-							</p>
+							</p> -->
 						</div>
 					</div>
 				</div>

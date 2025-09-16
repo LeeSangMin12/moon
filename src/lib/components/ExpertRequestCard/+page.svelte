@@ -29,7 +29,7 @@
 			{#if request.category}
 				<div class="mb-2">
 					<span
-						class="inline-flex items-center rounded-md bg-gray-200 px-3 py-1 text-xs font-medium"
+						class="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600"
 					>
 						{request.category}
 					</span>
