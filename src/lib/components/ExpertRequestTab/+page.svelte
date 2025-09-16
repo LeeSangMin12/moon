@@ -17,9 +17,12 @@
 <div class="min-h-screen bg-white">
 	<div class="px-4 pb-20">
 		{#if expertRequestData.expertRequests && expertRequestData.expertRequests.length > 0}
-			<div class="mt-4 space-y-3">
+			<div class="mt-8 space-y-4">
 				{#each expertRequestData.expertRequests as request}
-					<ExpertRequestCard {request} />
+					<div class="hover:border-gray-200">
+						<ExpertRequestCard {request} />
+						<!-- <div class="h-0.5 w-full bg-gray-200" /> -->
+					</div>
 				{/each}
 			</div>
 		{:else}

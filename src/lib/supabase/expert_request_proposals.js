@@ -25,9 +25,13 @@ export const create_expert_request_proposals_api = (supabase) => ({
 					title, 
 					requester_id, 
 					status, 
-					budget_min, 
-					budget_max, 
+					reward_amount, 
 					category,
+					max_applicants,
+					work_location,
+					application_deadline,
+					work_start_date,
+					work_end_date,
 					created_at,
 					users:requester_id(id, handle, name, avatar_url)
 				)

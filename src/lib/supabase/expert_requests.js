@@ -8,11 +8,11 @@ export const create_expert_requests_api = (supabase) => ({
 				expert_request_proposals(
 					id,
 					expert_id,
-					proposed_budget,
-					proposed_timeline,
 					message,
 					status,
 					created_at,
+					contact_info,
+					is_secret,
 					users:expert_id(id, handle, name, avatar_url)
 				)
 			`)
@@ -32,11 +32,11 @@ export const create_expert_requests_api = (supabase) => ({
 				expert_request_proposals(
 					id,
 					expert_id,
-					proposed_budget,
-					proposed_timeline,
 					message,
 					status,
 					created_at,
+					contact_info,
+					is_secret,
 					users:expert_id(id, handle, name, avatar_url)
 				)
 			`)
@@ -151,7 +151,15 @@ export const create_expert_requests_api = (supabase) => ({
 
 		// 요청자 ID 설정 및 검증
 		const sanitized_data = {
-			...request_data,
+			title: request_data.title,
+			category: request_data.category,
+			description: request_data.description,
+			reward_amount: request_data.reward_amount,
+			application_deadline: request_data.application_deadline || null,
+			work_start_date: request_data.work_start_date || null,
+			work_end_date: request_data.work_end_date || null,
+			max_applicants: request_data.max_applicants,
+			work_location: request_data.work_location,
 			requester_id: user_id,
 			status: 'open',
 			created_at: new Date().toISOString(),
@@ -206,7 +214,15 @@ export const create_expert_requests_api = (supabase) => ({
 		}
 
 		const sanitized_data = {
-			...request_data,
+			title: request_data.title || existing_request.title,
+			category: request_data.category || existing_request.category,
+			description: request_data.description || existing_request.description,
+			reward_amount: request_data.reward_amount || existing_request.reward_amount,
+			application_deadline: request_data.application_deadline !== undefined ? request_data.application_deadline : existing_request.application_deadline,
+			work_start_date: request_data.work_start_date !== undefined ? request_data.work_start_date : existing_request.work_start_date,
+			work_end_date: request_data.work_end_date !== undefined ? request_data.work_end_date : existing_request.work_end_date,
+			max_applicants: request_data.max_applicants || existing_request.max_applicants,
+			work_location: request_data.work_location || existing_request.work_location,
 			updated_at: new Date().toISOString(),
 			// 중요 필드는 업데이트 불가
 			requester_id: existing_request.requester_id,
