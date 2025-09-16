@@ -74,7 +74,25 @@ export const getProposalStatusDisplay = (status) => {
 	};
 };
 
-// 예산 포맷팅
+// 보상금 포맷팅
+export const formatRewardAmount = (reward_amount) => {
+	if (!reward_amount) return '협의';
+	return `${comma(reward_amount)}원`;
+};
+
+// 모집인원 포맷팅
+export const formatMaxApplicants = (max_applicants) => {
+	if (!max_applicants) return '미정';
+	return `${max_applicants}명`;
+};
+
+// 근무지 포맷팅
+export const formatWorkLocation = (work_location) => {
+	if (!work_location) return '미정';
+	return work_location;
+};
+
+// 비호환성을 위한 기존 formatBudget 함수 유지 (다른 컴포넌트에서 사용 중일 수 있음)
 export const formatBudget = (min_budget, max_budget) => {
 	if (!min_budget && !max_budget) return '협의';
 	if (!min_budget) return `~${comma(max_budget)}원`;
@@ -82,30 +100,48 @@ export const formatBudget = (min_budget, max_budget) => {
 	return `${comma(min_budget)}-${comma(max_budget)}원`;
 };
 
-// 마감일 포맷팅 (상대적 시간)
-export const formatDeadlineRelative = (deadline) => {
-	if (!deadline) return '협의';
-	const date = new Date(deadline);
+// 모집 마감일 포맷팅 (상대적 시간)
+export const formatApplicationDeadlineRelative = (application_deadline) => {
+	if (!application_deadline) return '상시 모집';
+	const date = new Date(application_deadline);
 	const now = new Date();
 	const diffTime = date.getTime() - now.getTime();
 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-	if (diffDays < 0) return '기한 초과';
-	if (diffDays === 0) return '오늘까지';
-	if (diffDays <= 7) return `${diffDays}일 후`;
-	if (diffDays <= 30) return `${Math.ceil(diffDays / 7)}주 후`;
-	return `${Math.ceil(diffDays / 30)}개월 후`;
+	if (diffDays < 0) return '모집 마감';
+	if (diffDays === 0) return '오늘 마감';
+	if (diffDays <= 7) return `${diffDays}일 후 마감`;
+	if (diffDays <= 30) return `${Math.ceil(diffDays / 7)}주 후 마감`;
+	return `${Math.ceil(diffDays / 30)}개월 후 마감`;
 };
 
-// 마감일 포맷팅 (절대적 날짜)
-export const formatDeadlineAbsolute = (deadline) => {
-	if (!deadline) return '협의';
-	const date = new Date(deadline);
+// 업무 예상 기간 포맷팅
+export const formatWorkPeriod = (work_start_date, work_end_date) => {
+	if (!work_start_date && !work_end_date) return '협의 후 결정';
+	if (!work_start_date) return `~ ${new Date(work_end_date).toLocaleDateString('ko-KR')}`;
+	if (!work_end_date) return `${new Date(work_start_date).toLocaleDateString('ko-KR')} ~`;
+	return `${new Date(work_start_date).toLocaleDateString('ko-KR')} ~ ${new Date(work_end_date).toLocaleDateString('ko-KR')}`;
+};
+
+// 비호환성을 위한 기존 formatDeadlineRelative 함수 유지
+export const formatDeadlineRelative = (deadline) => {
+	return formatApplicationDeadlineRelative(deadline);
+};
+
+// 모집 마감일 포맷팅 (절대적 날짜)
+export const formatApplicationDeadlineAbsolute = (application_deadline) => {
+	if (!application_deadline) return '상시 모집';
+	const date = new Date(application_deadline);
 	return date.toLocaleDateString('ko-KR', { 
 		year: 'numeric', 
 		month: 'long', 
 		day: 'numeric' 
 	});
+};
+
+// 비호환성을 위한 기존 formatDeadlineAbsolute 함수 유지
+export const formatDeadlineAbsolute = (deadline) => {
+	return formatApplicationDeadlineAbsolute(deadline);
 };
 
 // 요청 데이터 유효성 검사
@@ -135,32 +171,59 @@ export const validateRequestData = (data) => {
 		errors.push('카테고리를 선택해주세요.');
 	}
 	
-	// 예산 검사
-	if (data.budget_min && data.budget_max && data.budget_min > data.budget_max) {
-		errors.push('최소 예산은 최대 예산보다 작거나 같아야 합니다.');
-	}
-	
-	if (data.budget_min && data.budget_min < 10000) {
-		errors.push('최소 예산은 10,000원 이상이어야 합니다.');
-	}
-	
-	if (data.budget_max && data.budget_max > 100000000) {
-		errors.push('최대 예산은 1억원 이하여야 합니다.');
-	}
-	
-	// 마감일 검사
-	if (data.deadline) {
-		const deadlineDate = new Date(data.deadline);
-		const now = new Date();
-		const minDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 최소 내일
-		const maxDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 최대 1년 후
-		
-		if (deadlineDate < minDate) {
-			errors.push('완료 희망일은 최소 내일 이후여야 합니다.');
+	// 보상금 검사
+	if (!data.reward_amount) {
+		errors.push('보상금을 입력해주세요.');
+	} else {
+		const reward = parseInt(data.reward_amount);
+		if (isNaN(reward) || reward < 10000) {
+			errors.push('보상금은 10,000원 이상이어야 합니다.');
 		}
+		if (reward > 100000000) {
+			errors.push('보상금은 1억원 이하여야 합니다.');
+		}
+	}
+	
+	// 모집인원 검사
+	if (!data.max_applicants) {
+		errors.push('모집인원을 입력해주세요.');
+	} else {
+		const applicants = parseInt(data.max_applicants);
+		if (isNaN(applicants) || applicants < 1) {
+			errors.push('모집인원은 1명 이상이어야 합니다.');
+		}
+		if (applicants > 100) {
+			errors.push('모집인원은 100명 이하여야 합니다.');
+		}
+	}
+	
+	// 근무지 검사
+	if (!data.work_location?.trim()) {
+		errors.push('근무지를 입력해주세요.');
+	} else if (data.work_location.trim().length < 2) {
+		errors.push('근무지는 최소 2글자 이상이어야 합니다.');
+	} else if (data.work_location.trim().length > 100) {
+		errors.push('근무지는 최대 100글자까지 가능합니다.');
+	}
+	
+	// 모집 마감일 검사
+	if (data.application_deadline) {
+		const deadlineDate = new Date(data.application_deadline);
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		
-		if (deadlineDate > maxDate) {
-			errors.push('완료 희망일은 최대 1년 후까지만 가능합니다.');
+		if (deadlineDate < today) {
+			errors.push('모집 마감일은 오늘 이후여야 합니다.');
+		}
+	}
+	
+	// 업무 일정 검사
+	if (data.work_start_date && data.work_end_date) {
+		const startDate = new Date(data.work_start_date);
+		const endDate = new Date(data.work_end_date);
+		
+		if (endDate < startDate) {
+			errors.push('업무 종료일은 시작일 이후여야 합니다.');
 		}
 	}
 	

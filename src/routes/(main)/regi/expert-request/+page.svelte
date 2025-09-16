@@ -1,10 +1,15 @@
 <script>
 	import { smartGoBack } from '$lib/utils/navigation';
+	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
+	import Date_picker from '$lib/components/ui/Date_picker/+page.svelte';
+	import Date_range_picker from '$lib/components/ui/Date_range_picker/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
@@ -12,31 +17,42 @@
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { user_store } from '$lib/store/user_store.js';
 
+	let is_date_range_modal = $state(false);
+	let is_date_picker_modal = $state(false);
+
+	const format_date = (date) => {
+		return `${date?.getFullYear() - 2000}년 ${date?.getMonth() + 1}월 ${date?.getDate()}일`;
+	};
+
 	const TITLE = '전문가 찾기 요청';
 
 	let request_form_data = $state({
 		title: '',
 		category: '',
 		description: '',
-		budget_min: '',
-		budget_max: '',
-		deadline: '',
-		attachments: [],
+		reward_amount: '',
+		application_deadline: null,
+		work_start_date: null,
+		work_end_date: null,
+		max_applicants: 1,
+		work_location: '',
 	});
 
 	const categories = [
-		'웹개발/프로그래밍',
-		'모바일 앱 개발',
-		'디자인',
-		'마케팅/광고',
-		'번역/통역',
-		'글쓰기/콘텐츠',
-		'영상/사진',
-		'음악/오디오',
-		'비즈니스 컨설팅',
-		'교육/과외',
-		'기타',
+		{ value: '웹개발/프로그래밍', label: '웹개발/프로그래밍' },
+		{ value: '모바일 앱 개발', label: '모바일 앱 개발' },
+		{ value: '디자인', label: '디자인' },
+		{ value: '마케팅/광고', label: '마케팅/광고' },
+		{ value: '번역/통역', label: '번역/통역' },
+		{ value: '글쓰기/콘텐츠', label: '글쓰기/콘텐츠' },
+		{ value: '영상/사진', label: '영상/사진' },
+		{ value: '음악/오디오', label: '음악/오디오' },
+		{ value: '비즈니스 컨설팅', label: '비즈니스 컨설팅' },
+		{ value: '교육/과외', label: '교육/과외' },
+		{ value: '기타', label: '기타' },
 	];
+
+	let selected_category = $state(null);
 
 	onMount(() => {
 		// Check if user is logged in when page loads
@@ -46,40 +62,92 @@
 		}
 	});
 
-	const add_attachments = (event) => {
-		const selected_files = event.target.files;
-		let attachments_copy = [...request_form_data.attachments];
+	let current_step = $state(1);
+	const total_steps = 4;
 
-		for (let i = 0; i < selected_files.length; i++) {
-			selected_files[i].uri = URL.createObjectURL(selected_files[i]);
-			attachments_copy.push(selected_files[i]);
+	const go_to_next_step = () => {
+		if (current_step < total_steps) {
+			current_step++;
 		}
-
-		if (attachments_copy.length > 5) {
-			show_toast('error', '첨부파일은 최대 5개까지 가능합니다.');
-			return;
-		}
-
-		request_form_data.attachments = attachments_copy;
 	};
 
-	const delete_attachment = (idx) => {
-		const updated_attachments = [...request_form_data.attachments];
-		updated_attachments.splice(idx, 1);
-		request_form_data.attachments = updated_attachments;
+	const go_to_prev_step = () => {
+		if (current_step > 1) {
+			current_step--;
+		}
+	};
+
+	const validate_step = (step) => {
+		switch (step) {
+			case 1:
+				if (!request_form_data.title.trim()) {
+					show_toast('error', '제목을 입력해주세요.');
+					return false;
+				}
+				if (!selected_category) {
+					show_toast('error', '카테고리를 선택해주세요.');
+					return false;
+				}
+				if (!request_form_data.description.trim()) {
+					show_toast('error', '상세 설명을 입력해주세요.');
+					return false;
+				}
+				return true;
+			case 2:
+				if (
+					!request_form_data.reward_amount ||
+					request_form_data.reward_amount === ''
+				) {
+					show_toast('error', '보상금을 입력해주세요.');
+					return false;
+				}
+				const reward = parseInt(request_form_data.reward_amount);
+				if (isNaN(reward) || reward < 10000) {
+					show_toast('error', '보상금은 10,000원 이상 입력해주세요.');
+					return false;
+				}
+				if (
+					!request_form_data.max_applicants ||
+					request_form_data.max_applicants === ''
+				) {
+					show_toast('error', '모집인원을 입력해주세요.');
+					return false;
+				}
+				const applicants = parseInt(request_form_data.max_applicants);
+				if (isNaN(applicants) || applicants < 1) {
+					show_toast('error', '모집인원은 1명 이상 입력해주세요.');
+					return false;
+				}
+				if (!request_form_data.work_location.trim()) {
+					show_toast('error', '근무지를 입력해주세요.');
+					return false;
+				}
+				return true;
+			case 3:
+				if (!request_form_data.application_deadline) {
+					show_toast('error', '모집 마감일을 선택해주세요.');
+					return false;
+				}
+				if (
+					!request_form_data.work_start_date ||
+					!request_form_data.work_end_date
+				) {
+					show_toast('error', '예상 업무 기간을 선택해주세요.');
+					return false;
+				}
+				return true;
+			default:
+				return true;
+		}
+	};
+
+	const handle_next = () => {
+		if (validate_step(current_step)) {
+			go_to_next_step();
+		}
 	};
 
 	const save_request = async () => {
-		// 필수 필드 검증
-		if (!request_form_data.title.trim()) {
-			show_toast('error', '제목을 입력해주세요.');
-			return;
-		}
-		if (!request_form_data.description.trim()) {
-			show_toast('error', '상세 설명을 입력해주세요.');
-			return;
-		}
-
 		update_global_store('loading', true);
 		try {
 			// Check if user is logged in
@@ -92,15 +160,16 @@
 			const new_request = await $api_store.expert_requests.insert(
 				{
 					title: request_form_data.title,
-					category: request_form_data.category || null,
+					category: selected_category?.value,
 					description: request_form_data.description,
-					budget_min: request_form_data.budget_min
-						? parseInt(request_form_data.budget_min)
+					reward_amount: parseInt(request_form_data.reward_amount),
+					application_deadline: request_form_data.application_deadline
+						? request_form_data.application_deadline.toISOString().split('T')[0]
 						: null,
-					budget_max: request_form_data.budget_max
-						? parseInt(request_form_data.budget_max)
-						: null,
-					deadline: request_form_data.deadline || null,
+					work_start_date: request_form_data.work_start_date || null,
+					work_end_date: request_form_data.work_end_date || null,
+					max_applicants: parseInt(request_form_data.max_applicants),
+					work_location: request_form_data.work_location,
 				},
 				$user_store.id,
 			);
@@ -126,187 +195,432 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button
+		slot="left"
+		onclick={() => {
+			if (current_step > 1) {
+				go_to_prev_step();
+			} else {
+				smartGoBack();
+			}
+		}}
+	>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
-
-	<button
-		slot="right"
-		onclick={save_request}
-		class="text-sm font-medium text-blue-600 hover:text-blue-700"
-	>
-		등록
-	</button>
 </Header>
+<!-- Progress bar -->
+<div class="mb-4">
+	<div class="h-1 w-full rounded-full bg-gray-200">
+		<div
+			class="h-1 rounded-lg bg-blue-600 transition-all duration-300"
+			style="width: {(current_step / total_steps) * 100}%"
+		></div>
+	</div>
+</div>
 
 <main class="p-4">
 	<form class="space-y-6">
-		<!-- 제목 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				제목 <span class="text-red-500">*</span>
-			</label>
-			<input
-				type="text"
-				bind:value={request_form_data.title}
-				placeholder="예: 회사 홈페이지 제작을 도와주실 개발자 찾습니다"
-				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-				maxlength="100"
-			/>
-		</div>
+		{#if current_step === 1}
+			<!-- Step 1: 기본 정보 -->
+			<div class="space-y-6">
+				<h2 class="mb-4 text-lg font-semibold text-gray-900">
+					찾으시는 전문가의
+					<br />
+					기본 정보를 작성해주세요
+				</h2>
 
-		<!-- 카테고리 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				분야/카테고리
-			</label>
-			<select
-				bind:value={request_form_data.category}
-				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-			>
-				<option value="">분야를 선택해주세요</option>
-				{#each categories as category}
-					<option value={category}>{category}</option>
-				{/each}
-			</select>
-		</div>
+				<!-- 카테고리 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						분야/카테고리
+					</label>
+					<Select
+						items={categories}
+						bind:value={selected_category}
+						placeholder="분야를 선택해주세요"
+						clearable={false}
+						searchable={true}
+						--border="1px solid #d1d5db"
+						--border-radius="6px"
+						--border-focused="1px solid #3b82f6"
+					/>
+				</div>
 
-		<!-- 상세 설명 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				상세 설명 <span class="text-red-500">*</span>
-			</label>
-			<textarea
-				bind:value={request_form_data.description}
-				placeholder="어떤 작업이 필요한지 자세히 설명해주세요.&#10;프로젝트의 목적, 요구사항, 원하는 결과물 등을 포함해주시면 더 정확한 제안을 받을 수 있습니다."
-				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-				rows="8"
-			></textarea>
-		</div>
+				<!-- 제목 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						프로젝트 제목
+					</label>
+					<input
+						type="text"
+						bind:value={request_form_data.title}
+						placeholder="예: 회사 홈페이지 제작을 도와주실 개발자 찾습니다"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						maxlength="100"
+					/>
+				</div>
 
-		<!-- 예산 범위 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				예산 범위 (원)
-			</label>
-			<div class="flex items-center space-x-2">
-				<input
-					type="number"
-					bind:value={request_form_data.budget_min}
-					placeholder="최소 예산"
-					class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-					min="0"
-				/>
-				<span class="text-gray-500">~</span>
-				<input
-					type="number"
-					bind:value={request_form_data.budget_max}
-					placeholder="최대 예산"
-					class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-					min="0"
-				/>
+				<!-- 상세 설명 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						상세 설명
+					</label>
+					<div class="mt-2">
+						<SimpleEditor bind:content={request_form_data.description} />
+					</div>
+					<!-- <textarea
+						bind:value={request_form_data.description}
+						placeholder="어떤 작업이 필요한지 자세히 설명해주세요.&#10;프로젝트의 목적, 요구사항, 원하는 결과물 등을 포함해주시면 더 정확한 제안을 받을 수 있습니다."
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						rows="8"
+					></textarea> -->
+				</div>
 			</div>
-			<p class="mt-1 text-xs text-gray-500">
-				예산 범위를 입력하시면 더 정확한 제안을 받을 수 있습니다
-			</p>
-		</div>
+		{:else if current_step === 2}
+			<!-- Step 2: 조건 설정 -->
+			<div class="space-y-6">
+				<h2 class="mb-4 text-lg font-semibold text-gray-900">
+					찾으시는 전문가의 <br /> 조건을 설정해주세요
+				</h2>
 
-		<!-- 완료 희망일 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				완료 희망일
-			</label>
-			<input
-				type="date"
-				bind:value={request_form_data.deadline}
-				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500 focus:outline-none"
-				min={new Date().toISOString().split('T')[0]}
-			/>
-		</div>
+				<!-- 보상금 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						보상금 (원)
+					</label>
+					<input
+						type="number"
+						bind:value={request_form_data.reward_amount}
+						placeholder="예: 500000"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						min="10000"
+					/>
+					<p class="mt-1 text-xs text-gray-500">
+						최소 10,000원 이상 입력해주세요
+					</p>
+				</div>
 
-		<!-- 첨부파일 -->
-		<div>
-			<label class="mb-2 block text-sm font-medium text-gray-700">
-				참고자료 첨부
-			</label>
-			<div
-				class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center"
-			>
-				<input
-					type="file"
-					multiple
-					accept="image/*,.pdf,.doc,.docx,.txt"
-					onchange={add_attachments}
-					class="hidden"
-					id="attachment-upload"
-				/>
-				<label for="attachment-upload" class="cursor-pointer">
-					<div class="text-gray-400">
+				<!-- 모집인원 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						모집인원
+					</label>
+					<input
+						type="number"
+						bind:value={request_form_data.max_applicants}
+						placeholder="예: 1"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						min="1"
+						max="100"
+					/>
+				</div>
+
+				<!-- 근무지 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						근무지
+					</label>
+					<input
+						type="text"
+						bind:value={request_form_data.work_location}
+						placeholder="예: 서울시 강남구, 원격근무, 온라인"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						maxlength="100"
+					/>
+				</div>
+			</div>
+		{:else if current_step === 3}
+			<!-- Step 3: 일정 설정 -->
+			<div class="space-y-6">
+				<h2 class="mb-4 text-lg font-semibold text-gray-900">
+					프로젝트 일정을 설정해주세요
+				</h2>
+
+				<!-- 모집 마감일 -->
+				<button
+					onclick={() => (is_date_picker_modal = true)}
+					class="flex w-full flex-col border-b border-gray-300 pb-2"
+				>
+					<p class="mb-4 block self-start text-sm font-medium text-gray-700">
+						모집 마감일
+					</p>
+
+					<div class="flex w-full items-center justify-between text-gray-900">
+						{#if request_form_data.application_deadline !== null}
+							<p>
+								{format_date(request_form_data.application_deadline)}
+							</p>
+						{:else}
+							<p class="text-gray-500">선택중..</p>
+						{/if}
 						<svg
-							class="mx-auto mb-2 h-8 w-8"
+							width="7"
+							height="13"
+							viewBox="0 0 7 13"
 							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
 						>
 							<path
+								d="M0.998535 11.1914L5.99853 6.19141L0.998535 1.19141"
+								stroke="#909090"
+								stroke-width="2"
 								stroke-linecap="round"
 								stroke-linejoin="round"
-								stroke-width="2"
-								d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-							></path>
+							/>
 						</svg>
-						<p class="text-sm">클릭하여 파일 업로드</p>
-						<p class="text-xs text-gray-500">
-							이미지, PDF, 문서 파일 (최대 5개)
-						</p>
 					</div>
-				</label>
-			</div>
+				</button>
 
-			<!-- 첨부파일 미리보기 -->
-			{#if request_form_data.attachments.length > 0}
-				<div class="mt-4 space-y-2">
-					{#each request_form_data.attachments as attachment, idx}
-						<div
-							class="flex items-center justify-between rounded-md bg-gray-50 p-2"
+				<button
+					onclick={() => (is_date_range_modal = true)}
+					class="mt-6 flex w-full flex-col border-b border-gray-300 pb-2"
+				>
+					<p class="mb-4 block self-start text-sm font-medium text-gray-700">
+						예상 업무 기간
+					</p>
+
+					<div class="flex w-full items-center justify-between text-gray-900">
+						{#if request_form_data.work_start_date !== null && request_form_data.work_end_date !== null}
+							<p>
+								{format_date(request_form_data.work_start_date)} ~
+								{format_date(request_form_data.work_end_date)}
+							</p>
+						{:else}
+							<p class="text-gray-500">선택중..</p>
+						{/if}
+						<svg
+							width="7"
+							height="13"
+							viewBox="0 0 7 13"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
 						>
-							<span class="truncate text-sm">{attachment.name}</span>
-							<button
-								type="button"
-								onclick={() => delete_attachment(idx)}
-								class="text-red-500 hover:text-red-700"
-							>
-								<svg
-									class="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M6 18L18 6M6 6l12 12"
-									></path>
-								</svg>
-							</button>
+							<path
+								d="M0.998535 11.1914L5.99853 6.19141L0.998535 1.19141"
+								stroke="#909090"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</div>
+				</button>
+
+				<!-- 업무 예상 시작일 -->
+				<!-- <div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						업무 예상 시작일
+					</label>
+					<input
+						type="date"
+						bind:value={request_form_data.work_start_date}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						min={new Date().toISOString().split('T')[0]}
+					/>
+				</div> -->
+
+				<!-- 업무 예상 종료일 -->
+				<!-- <div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						업무 예상 종료일
+					</label>
+					<input
+						type="date"
+						bind:value={request_form_data.work_end_date}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						min={request_form_data.work_start_date ||
+							new Date().toISOString().split('T')[0]}
+					/>
+				</div> -->
+
+				<!-- 요약 정보 -->
+				<!-- <div class="rounded-md border border-blue-200 bg-blue-50 p-4">
+					<h3 class="mb-2 text-sm font-medium text-blue-800">
+						📋 요청 정보 확인
+					</h3>
+					<div class="space-y-2 text-xs text-blue-700">
+						<div>
+							<strong>제목:</strong>
+							{request_form_data.title || '미입력'}
 						</div>
-					{/each}
+						<div>
+							<strong>카테고리:</strong>
+							{selected_category?.label || '미선택'}
+						</div>
+						<div>
+							<strong>보상금:</strong>
+							{request_form_data.reward_amount
+								? `${parseInt(request_form_data.reward_amount).toLocaleString()}원`
+								: '미입력'}
+						</div>
+						<div>
+							<strong>모집인원:</strong>
+							{request_form_data.max_applicants || '미입력'}명
+						</div>
+						<div>
+							<strong>근무지:</strong>
+							{request_form_data.work_location || '미입력'}
+						</div>
+					</div>
+				</div> -->
+			</div>
+		{:else if current_step === 4}
+			<!-- Step 4: 요청 정보 확인 -->
+			<div class="space-y-6">
+				<div class="mb-6">
+					<h2 class="mb-4 text-lg font-semibold text-gray-900">
+						요청 정보를<br />
+						확인해주세요
+					</h2>
 				</div>
+
+				<!-- 기본 정보 카드 -->
+				<div class="rounded-2xl bg-gray-50 p-6">
+					<h3 class="mb-4 text-base font-semibold text-gray-900">기본 정보</h3>
+
+					<!-- 카테고리 칩 -->
+					{#if selected_category}
+						<div class="mb-4">
+							<span
+								class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800"
+							>
+								{selected_category.label}
+							</span>
+						</div>
+					{/if}
+
+					<div class="space-y-3">
+						<div>
+							<p class="text-sm text-gray-600">프로젝트 제목</p>
+							<p class="mt-1 font-medium text-gray-900">
+								{request_form_data.title}
+							</p>
+						</div>
+						<div>
+							<p class="text-sm text-gray-600">상세 설명</p>
+
+							<div class="mt-1 prose prose-sm max-w-none leading-relaxed text-gray-900">
+								{@html request_form_data.description}
+							</div>
+							<!-- <p class="mt-1 leading-relaxed text-gray-900">
+								{request_form_data.description}
+							</p> -->
+						</div>
+					</div>
+				</div>
+
+				<!-- 조건 정보 카드 -->
+				<div class="rounded-2xl bg-gray-50 p-6">
+					<h3 class="mb-4 text-base font-semibold text-gray-900">조건 정보</h3>
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+						<div class="rounded-xl bg-white p-4">
+							<p class="text-sm text-gray-600">보상금</p>
+							<p class="mt-1 text-lg font-bold text-gray-900">
+								{parseInt(request_form_data.reward_amount).toLocaleString()}원
+							</p>
+						</div>
+						<div class="rounded-xl bg-white p-4">
+							<p class="text-sm text-gray-600">모집인원</p>
+							<p class="mt-1 text-lg font-bold text-gray-900">
+								{request_form_data.max_applicants}명
+							</p>
+						</div>
+						<div class="rounded-xl bg-white p-4">
+							<p class="text-sm text-gray-600">근무지</p>
+							<p class="mt-1 text-lg font-bold text-gray-900">
+								{request_form_data.work_location}
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 일정 정보 카드 -->
+				<div class="rounded-2xl bg-gray-50 p-6">
+					<h3 class="mb-4 text-base font-semibold text-gray-900">일정 정보</h3>
+					<div class="space-y-4">
+						{#if request_form_data.application_deadline}
+							<div class="rounded-xl bg-white p-4">
+								<p class="text-sm text-gray-600">모집 마감일</p>
+								<p class="mt-1 font-medium text-gray-900">
+									{format_date(request_form_data.application_deadline)}
+								</p>
+							</div>
+						{/if}
+						{#if request_form_data.work_start_date && request_form_data.work_end_date}
+							<div class="rounded-xl bg-white p-4">
+								<p class="text-sm text-gray-600">예상 업무 기간</p>
+								<p class="mt-1 font-medium text-gray-900">
+									{format_date(request_form_data.work_start_date)} ~ {format_date(
+										request_form_data.work_end_date,
+									)}
+								</p>
+							</div>
+						{/if}
+						{#if !request_form_data.application_deadline && (!request_form_data.work_start_date || !request_form_data.work_end_date)}
+							<div
+								class="rounded-xl border-2 border-dashed border-gray-300 p-4 text-center"
+							>
+								<p class="text-gray-500">설정된 일정이 없습니다</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+	</form>
+
+	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">
+		<div class="pb-safe">
+			{#if current_step === total_steps}
+				<button onclick={save_request} class="btn btn-primary w-full">
+					등록
+				</button>
+			{:else}
+				<button onclick={handle_next} class="btn btn-primary w-full">
+					다음
+				</button>
 			{/if}
 		</div>
-
-		<!-- 주의사항 -->
-		<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-			<h3 class="mb-2 text-sm font-medium text-blue-800">📝 작성 팁</h3>
-			<ul class="space-y-1 text-xs text-blue-700">
-				<li>• 프로젝트의 목적과 목표를 명확히 설명해주세요</li>
-				<li>• 원하는 결과물이나 스타일을 구체적으로 기술해주세요</li>
-				<li>• 참고할 만한 사례나 자료가 있다면 첨부해주세요</li>
-				<li>• 예산과 일정을 미리 정해두시면 더 나은 제안을 받을 수 있어요</li>
-			</ul>
-		</div>
-	</form>
+	</div>
 </main>
+
+<Modal bind:is_modal_open={is_date_range_modal} modal_position="bottom">
+	<div class="flex flex-col items-center">
+		<p class="mt-10 text-lg font-semibold">조사기간</p>
+
+		<div class="mt-6 w-full max-w-96 px-5">
+			<Date_range_picker
+				bind:start_date={request_form_data.work_start_date}
+				bind:end_date={request_form_data.work_end_date}
+			/>
+		</div>
+
+		<div class="pb-safe mt-12 mb-3.5 w-full px-5">
+			<button
+				onclick={() => (is_date_range_modal = false)}
+				class="btn btn-primary w-full">확인</button
+			>
+		</div>
+	</div>
+</Modal>
+
+<Modal bind:is_modal_open={is_date_picker_modal} modal_position="bottom">
+	<div class="flex flex-col items-center">
+		<p class="mt-10 text-lg font-semibold">모집 마감일</p>
+
+		<div class="mt-6 w-full max-w-96 px-5">
+			<Date_picker
+				bind:selected_date={request_form_data.application_deadline}
+			/>
+		</div>
+
+		<div class="pb-safe mt-12 mb-3.5 w-full px-5">
+			<button
+				onclick={() => (is_date_picker_modal = false)}
+				class="btn btn-primary w-full">확인</button
+			>
+		</div>
+	</div>
+</Modal>

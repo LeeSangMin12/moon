@@ -21,7 +21,7 @@
 
 	let { data } = $props();
 
-	const tabs = ['서비스 찾기', '전문가 찾기'];
+	const tabs = ['사이드잡 지원', '전문가 찾기'];
 	let selected_tab = $state(0);
 
 	const images = [

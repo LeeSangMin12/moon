@@ -19,12 +19,7 @@
 			element: editorElement,
 			extensions: [
 				StarterKit.configure({
-					hardBreak: false, // StarterKit의 HardBreak를 비활성화
-				}),
-				HardBreak.configure({
-					HTMLAttributes: {
-						class: 'hard-break',
-					},
+					hardBreak: true, // HardBreak 활성화
 				}),
 				Highlight.configure({
 					multicolor: true,

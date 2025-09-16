@@ -36,9 +36,8 @@
 	let show_proposal_modal = $state(false);
 	let proposal_form = $state({
 		message: '',
-		proposed_budget: '',
-		proposed_timeline: '',
 		contact_info: '',
+		is_secret: false,
 	});
 
 	// 구매하기 모달 상태
@@ -60,11 +59,8 @@
 				{
 					request_id: expert_request.id,
 					message: proposal_form.message,
-					proposed_budget: proposal_form.proposed_budget
-						? parseInt(proposal_form.proposed_budget)
-						: null,
-					proposed_timeline: proposal_form.proposed_timeline || null,
 					contact_info: proposal_form.contact_info || null,
+					is_secret: proposal_form.is_secret,
 				},
 				user.id,
 			);
@@ -81,9 +77,8 @@
 			// 폼 초기화
 			proposal_form = {
 				message: '',
-				proposed_budget: '',
-				proposed_timeline: '',
 				contact_info: '',
+				is_secret: false,
 			};
 		} catch (error) {
 			console.error('Proposal submission error:', error);
@@ -287,39 +282,89 @@
 	<!-- 요청 정보 -->
 	<div class="px-4 pt-4 pb-6">
 		<div
-			class="rounded-xl border border-gray-100/60 bg-white p-5 transition-all hover:shadow-md"
+			class="rounded-xl border border-gray-100/60 bg-white p-5 transition-all"
 		>
-			<!-- 제목과 상태 -->
-			<div class="mb-3 flex items-center justify-between">
-				<h1 class="line-clamp-2 flex-1 pr-3 text-lg font-bold text-gray-900">
-					{expert_request.title}
-				</h1>
+			<!-- 카테고리 칩과 상태 -->
+			<div class="mb-3 flex items-start justify-between">
+				<div class="flex-1">
+					{#if expert_request.category}
+						<div class="mb-2">
+							<span
+								class="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600"
+							>
+								{expert_request.category}
+							</span>
+						</div>
+					{/if}
+					<h1
+						class="mt-4 line-clamp-2 text-xl leading-tight font-semibold text-gray-900"
+					>
+						{expert_request.title}
+					</h1>
+				</div>
 				<span
-					class={`rounded-full px-2.5 py-1 text-xs font-medium ${getRequestStatusDisplay(expert_request.status).bgColor} ${getRequestStatusDisplay(expert_request.status).textColor}`}
+					class={`ml-3 flex-shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${getRequestStatusDisplay(expert_request.status).bgColor} ${getRequestStatusDisplay(expert_request.status).textColor}`}
 				>
 					{getRequestStatusDisplay(expert_request.status).text}
 				</span>
 			</div>
 
-			<!-- 예산 -->
-			<div class="mb-3">
-				<span class="text-lg font-bold text-blue-600">
-					{formatBudget(expert_request.budget_min, expert_request.budget_max)}
+			<!-- 보상금 -->
+			<div class="mb-8">
+				<span class="text-lg font-medium text-blue-600">
+					{comma(expert_request.reward_amount)}원
 				</span>
 			</div>
 
 			<!-- 메타 정보 -->
-			<div class="mb-4 flex items-center gap-4 text-sm text-gray-500">
-				<span>{formatDeadlineAbsolute(expert_request.deadline)}</span>
-				{#if expert_request.category}
-					<span>•</span>
-					<span>{expert_request.category}</span>
+			<div class="mb-4 space-y-3">
+				{#if expert_request.application_deadline}
+					<div class="flex items-center text-sm">
+						<span class="w-20 text-gray-500">마감일</span>
+						<span class="font-medium text-gray-900">
+							{new Date(expert_request.application_deadline).toLocaleDateString(
+								'ko-KR',
+							)}
+						</span>
+					</div>
+				{/if}
+
+				<div class="flex items-center text-sm">
+					<span class="w-20 text-gray-500">모집인원</span>
+					<span class="font-medium text-gray-900">
+						{expert_request.max_applicants}명
+					</span>
+				</div>
+
+				<div class="flex items-center text-sm">
+					<span class="w-20 text-gray-500">근무지</span>
+					<span class="font-medium text-gray-900">
+						{expert_request.work_location}
+					</span>
+				</div>
+
+				{#if expert_request.work_start_date && expert_request.work_end_date}
+					<div class="flex items-center text-sm">
+						<span class="w-20 text-gray-500">예상 기간</span>
+						<span class="font-medium text-gray-900">
+							{new Date(expert_request.work_start_date).toLocaleDateString(
+								'ko-KR',
+							)} ~ {new Date(expert_request.work_end_date).toLocaleDateString(
+								'ko-KR',
+							)}
+						</span>
+					</div>
 				{/if}
 			</div>
 
 			<!-- 요청자 정보 -->
-			<div class="flex items-center justify-between text-sm">
-				<div class="flex items-center gap-2">
+			<div class="mt-8 flex items-center justify-between text-sm">
+				<button
+					class="-m-1 flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-gray-50"
+					onclick={() =>
+						expert_request.users?.handle &&
+						goto(`/@${expert_request.users.handle}`)}
+				>
 					{#if expert_request.users?.avatar_url}
 						<img
 							src={expert_request.users.avatar_url}
@@ -339,7 +384,7 @@
 					<span class="font-medium text-gray-700">
 						{expert_request.users?.name || expert_request.users?.handle}
 					</span>
-				</div>
+				</button>
 				<span class="text-gray-400">
 					{new Date(expert_request.created_at).toLocaleDateString('ko-KR', {
 						month: 'short',
@@ -353,10 +398,10 @@
 	<!-- 상세 설명 -->
 	<div class="px-4 pb-6">
 		<div class="rounded-xl border border-gray-100/60 bg-white p-5">
-			<h3 class="mb-3 font-semibold text-gray-900">상세 설명</h3>
-			<p class="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">
-				{expert_request.description}
-			</p>
+			<h3 class="mb-3 font-semibold text-gray-900">프로젝트 설명</h3>
+			<div class="prose prose-sm max-w-none text-sm leading-relaxed text-gray-600">
+				{@html expert_request.description}
+			</div>
 		</div>
 	</div>
 
@@ -427,8 +472,11 @@
 							class="rounded-xl border border-gray-100 p-4 transition-colors hover:bg-gray-50/50"
 						>
 							<div class="mb-3 flex items-start gap-3">
-								<div
-									class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200"
+								<button
+									class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 transition-opacity hover:opacity-80"
+									onclick={() =>
+										proposal.users?.handle &&
+										goto(`/@${proposal.users.handle}`)}
 								>
 									{#if proposal.users?.avatar_url}
 										<img
@@ -442,11 +490,36 @@
 												proposal.users?.handle)?.[0]?.toUpperCase()}
 										</span>
 									{/if}
-								</div>
+								</button>
 								<div class="flex-1">
-									<p class="text-sm font-medium text-gray-900">
-										{proposal.users?.name || proposal.users?.handle}
-									</p>
+									<div class="flex items-center gap-2">
+										<button
+											class="text-sm font-medium text-gray-900 transition-colors hover:text-blue-600"
+											onclick={() =>
+												proposal.users?.handle &&
+												goto(`/@${proposal.users.handle}`)}
+										>
+											{proposal.users?.name || proposal.users?.handle}
+										</button>
+										{#if proposal.is_secret}
+											<span
+												class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"
+											>
+												<svg
+													class="mr-1 h-3 w-3"
+													fill="currentColor"
+													viewBox="0 0 20 20"
+												>
+													<path
+														fill-rule="evenodd"
+														d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+														clip-rule="evenodd"
+													/>
+												</svg>
+												비밀
+											</span>
+										{/if}
+									</div>
 									<p class="text-xs text-gray-500">
 										{new Date(proposal.created_at).toLocaleDateString('ko-KR', {
 											month: 'short',
@@ -493,32 +566,46 @@
 								</div>
 							</div>
 
-							<p class="mb-3 text-sm leading-relaxed text-gray-600">
-								{proposal.message}
-							</p>
+							<!-- 제안 내용 표시 (비밀제안 처리) -->
+							{#if proposal.is_secret && !is_requester() && proposal.status !== 'accepted'}
+								<div
+									class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
+								>
+									<div class="flex items-center gap-2">
+										<svg
+											class="h-4 w-4 text-gray-500"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fill-rule="evenodd"
+												d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+												clip-rule="evenodd"
+											/>
+										</svg>
+										<span class="text-sm font-medium text-gray-600"
+											>비밀제안</span
+										>
+									</div>
+									<p class="mt-2 text-xs text-gray-500">
+										이 제안은 의뢰인만 내용을 확인할 수 있습니다.
+									</p>
+								</div>
+							{:else}
+								<p
+									class="overflow-wrap-anywhere mb-3 text-sm leading-relaxed break-words text-gray-600"
+								>
+									{proposal.message}
+								</p>
+							{/if}
 
-							{#if proposal.proposed_budget || proposal.proposed_timeline || (proposal.contact_info && (is_requester() || proposal.status === 'accepted'))}
+							<!-- 제안 세부 정보 (비밀제안일 때 조건부 표시) -->
+							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
 								<div class="flex items-center gap-4 text-xs text-gray-500">
-									{#if proposal.proposed_budget}
-										<span class="flex items-center gap-1">
-											<span>💰</span>
-											<span class="font-medium text-blue-600"
-												>{comma(proposal.proposed_budget)}원</span
-											>
-										</span>
-									{/if}
-									{#if proposal.proposed_timeline}
-										<span class="flex items-center gap-1">
-											<span>📅</span>
-											<span>{proposal.proposed_timeline}</span>
-										</span>
-									{/if}
-									{#if proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
-										<span class="flex items-center gap-1">
-											<span>📞</span>
-											<span class="font-medium">{proposal.contact_info}</span>
-										</span>
-									{/if}
+									<span class="flex items-center gap-1">
+										<span>📞</span>
+										<span class="font-medium">{proposal.contact_info}</span>
+									</span>
 								</div>
 							{/if}
 						</div>
@@ -591,31 +678,6 @@
 
 					<div>
 						<label class="mb-2 block text-sm font-medium text-gray-700">
-							제안 예산 (원)
-						</label>
-						<input
-							type="number"
-							bind:value={proposal_form.proposed_budget}
-							placeholder="예: 1000000"
-							class="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
-							min="0"
-						/>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-sm font-medium text-gray-700">
-							예상 작업 기간
-						</label>
-						<input
-							type="text"
-							bind:value={proposal_form.proposed_timeline}
-							placeholder="예: 2주, 1개월"
-							class="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
-						/>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-sm font-medium text-gray-700">
 							연락처 <span class="text-red-500">*</span>
 						</label>
 						<input
@@ -628,6 +690,26 @@
 						<p class="mt-1 text-xs text-gray-500">
 							제안이 수락되면 의뢰인이 이 연락처로 연락을 드릴 예정입니다.
 						</p>
+					</div>
+
+					<!-- 비밀제안 옵션 -->
+					<div class="rounded-lg border border-gray-200 p-4">
+						<div class="flex items-start gap-3">
+							<input
+								type="checkbox"
+								id="secret_proposal"
+								bind:checked={proposal_form.is_secret}
+								class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							/>
+							<div class="flex-1">
+								<label
+									for="secret_proposal"
+									class="cursor-pointer text-sm font-medium text-gray-700"
+								>
+									비밀제안
+								</label>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -767,36 +849,10 @@
 			<div class="my-4 h-px bg-gray-200"></div>
 
 			<div class="space-y-2">
-				<div class="flex justify-between">
-					<p class="text-sm text-gray-600">전문가 서비스 금액</p>
-					<p class="text-sm">
-						₩{selected_proposal.proposed_budget
-							? comma(selected_proposal.proposed_budget)
-							: '협의'}
-					</p>
+				<div class="flex justify-between border-t pt-2">
+					<p class="font-semibold">서비스 금액</p>
+					<p class="text-primary text-lg font-bold">협의 후 결정</p>
 				</div>
-				{#if selected_proposal.proposed_budget}
-					<div class="flex justify-between">
-						<p class="text-sm text-gray-600">플랫폼 수수료 (5%)</p>
-						<p class="text-sm text-gray-500">
-							+₩{comma(Math.floor(selected_proposal.proposed_budget * 0.05))}
-						</p>
-					</div>
-					<div class="flex justify-between border-t pt-2">
-						<p class="font-semibold">총 결제 금액</p>
-						<p class="text-primary text-lg font-bold">
-							₩{comma(
-								selected_proposal.proposed_budget +
-									Math.floor(selected_proposal.proposed_budget * 0.05),
-							)}
-						</p>
-					</div>
-				{:else}
-					<div class="flex justify-between border-t pt-2">
-						<p class="font-semibold">총 결제 금액</p>
-						<p class="text-primary text-lg font-bold">협의 후 결정</p>
-					</div>
-				{/if}
 			</div>
 
 			<!-- 입금 계좌 안내 박스 -->

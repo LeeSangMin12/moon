@@ -32,9 +32,12 @@
  * @property {string} title - 제목 (10-100자)
  * @property {string} description - 상세 설명 (50-2000자)
  * @property {RequestCategory} category - 카테고리
- * @property {number|null} budget_min - 최소 예산
- * @property {number|null} budget_max - 최대 예산
- * @property {string|null} deadline - 완료 희망일 (ISO 날짜 문자열)
+ * @property {number} reward_amount - 보상금
+ * @property {string|null} application_deadline - 모집 마감일 (ISO 날짜 문자열)
+ * @property {string|null} work_start_date - 업무 예상 시작일 (ISO 날짜 문자열)
+ * @property {string|null} work_end_date - 업무 예상 종료일 (ISO 날짜 문자열)
+ * @property {number} max_applicants - 모집인원
+ * @property {string} work_location - 근무지
  * @property {RequestStatus} status - 요청 상태
  * @property {string} requester_id - 요청자 ID
  * @property {string} created_at - 생성일 (ISO 날짜 문자열)
@@ -66,9 +69,12 @@
  * @property {string} title - 제목
  * @property {string} description - 상세 설명
  * @property {RequestCategory} category - 카테고리
- * @property {string} budget_min - 최소 예산 (문자열)
- * @property {string} budget_max - 최대 예산 (문자열)
- * @property {string} deadline - 완료 희망일
+ * @property {string} reward_amount - 보상금 (문자열)
+ * @property {string} application_deadline - 모집 마감일
+ * @property {string} work_start_date - 업무 예상 시작일
+ * @property {string} work_end_date - 업무 예상 종료일
+ * @property {string} max_applicants - 모집인원 (문자열)
+ * @property {string} work_location - 근무지
  */
 
 /**
@@ -182,12 +188,30 @@ export function isValidISODate(dateString) {
 }
 
 /**
- * 예산이 유효한 범위인지 검사
- * @param {number} budget 
+ * 보상금이 유효한 범위인지 검사
+ * @param {number} reward_amount 
  * @returns {boolean}
  */
-export function isValidBudget(budget) {
-	return typeof budget === 'number' && budget >= 10000 && budget <= 100000000;
+export function isValidRewardAmount(reward_amount) {
+	return typeof reward_amount === 'number' && reward_amount >= 10000 && reward_amount <= 100000000;
+}
+
+/**
+ * 모집인원이 유효한 범위인지 검사
+ * @param {number} max_applicants 
+ * @returns {boolean}
+ */
+export function isValidMaxApplicants(max_applicants) {
+	return typeof max_applicants === 'number' && max_applicants >= 1 && max_applicants <= 100;
+}
+
+/**
+ * 근무지가 유효한지 검사
+ * @param {string} work_location 
+ * @returns {boolean}
+ */
+export function isValidWorkLocation(work_location) {
+	return typeof work_location === 'string' && work_location.trim().length >= 2 && work_location.trim().length <= 100;
 }
 
 /**
