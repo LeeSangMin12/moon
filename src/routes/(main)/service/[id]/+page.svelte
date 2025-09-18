@@ -450,18 +450,44 @@
 		{/key}
 
 		<!-- Service Price -->
-		<p class="text-primary mt-6 text-xl font-bold">₩{comma(service.price)}</p>
+		<p class="text-primary mt-4 text-xl font-bold">₩{comma(service.price)}</p>
 
 		<!-- Service Description -->
-		<div class="mt-4">
-			<!-- <div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
+
+		<!-- <div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
 				<div class="text-sm whitespace-pre-wrap">{@html service.content}</div>
 			</div> -->
 
-			<div class="prose prose-sm max-w-none leading-relaxed">
-				{@html service.content}
-			</div>
+		<div
+			class="prose prose-sm mt-6 max-w-none leading-relaxed"
+			style="white-space: pre-line;"
+		>
+			{@html service.content}
 		</div>
+
+		<style>
+			.prose p {
+				margin-bottom: 1rem;
+				min-height: 1rem;
+			}
+			.prose h3 {
+				margin-top: 1.5rem;
+				margin-bottom: 0.75rem;
+				font-size: 1.125rem;
+				font-weight: 600;
+			}
+			.prose ul, .prose ol {
+				margin-bottom: 1rem;
+				padding-left: 1.5rem;
+			}
+			.prose li {
+				margin-bottom: 0.5rem;
+			}
+			.prose strong {
+				font-weight: 600;
+			}
+		</style>
+
 		<!-- <iframe
 			title="service_description"
 			src={service.content}
