@@ -21,7 +21,7 @@
 
 	let { data } = $props();
 
-	const tabs = ['사이드잡 지원', '전문가 찾기'];
+	const tabs = ['전문가 찾기', '사이드잡 지원'];
 	let selected_tab = $state(0);
 
 	const images = [
@@ -130,8 +130,8 @@
 
 	<SearchInput
 		placeholder={selected_tab === 0
-			? '원하는 판매 서비스를 검색해보세요'
-			: '원하는 전문가 서비스를 검색해보세요'}
+			? '원하는 전문가 서비스를 검색해보세요'
+			: '원하는 판매 서비스를 검색해보세요'}
 		bind:value={searchText}
 		onSearch={handleSearch}
 	/>
@@ -141,12 +141,12 @@
 	</section>
 
 	{#if selected_tab === 0}
+		<ServiceTab {serviceData} infiniteScroll={serviceInfiniteScroll} />
+	{:else}
 		<ExpertRequestTab
 			{expertRequestData}
 			infiniteScroll={expertInfiniteScroll}
 		/>
-	{:else}
-		<ServiceTab {serviceData} infiniteScroll={serviceInfiniteScroll} />
 	{/if}
 </main>
 
