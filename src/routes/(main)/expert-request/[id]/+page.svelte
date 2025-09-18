@@ -1,4 +1,5 @@
 <script>
+	import { servicemark } from '@tiptap/extension-typography';
 	import {
 		ERROR_MESSAGES,
 		formatBudget,
@@ -399,7 +400,9 @@
 	<div class="px-4 pb-6">
 		<div class="rounded-xl border border-gray-100/60 bg-white p-5">
 			<h3 class="mb-3 font-semibold text-gray-900">프로젝트 설명</h3>
-			<div class="prose prose-sm max-w-none text-sm leading-relaxed text-gray-600">
+			<div
+				class="prose prose-sm max-w-none text-sm leading-relaxed text-gray-600"
+			>
 				{@html expert_request.description}
 			</div>
 		</div>
@@ -593,7 +596,7 @@
 								</div>
 							{:else}
 								<p
-									class="overflow-wrap-anywhere mb-3 text-sm leading-relaxed break-words text-gray-600"
+									class="overflow-wrap-anywhere mb-3 text-sm leading-relaxed break-words whitespace-pre-line text-gray-600"
 								>
 									{proposal.message}
 								</p>
@@ -851,33 +854,37 @@
 			<div class="space-y-2">
 				<div class="flex justify-between border-t pt-2">
 					<p class="font-semibold">서비스 금액</p>
-					<p class="text-primary text-lg font-bold">협의 후 결정</p>
+					<p class="text-primary text-lg font-bold">
+						{comma(expert_request.reward_amount)}원
+					</p>
 				</div>
 			</div>
 
 			<!-- 입금 계좌 안내 박스 -->
 			<div
-				class="mt-4 mb-6 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900"
+				class="mt-4 mb-6 rounded-md border border-gray-100 bg-gray-50 p-3 text-sm"
 			>
-				<span class="font-bold">💡 입금 계좌 안내</span><br />
-				은행: <span class="font-semibold">국민은행</span><br />
-				예금주: <span class="font-semibold">이상민</span><br />
-				계좌번호: <span class="font-semibold">939302-00-616198</span>
-			</div>
-
-			<div
-				class="mt-2 flex flex-col justify-center bg-gray-50 px-4 py-2 text-sm text-gray-900"
-			>
-				<p>
-					아직은 계좌이체만 지원되고 있어요!<br />
-					더 편리한 결제를 위해 다양한 수단을 준비 중이니 조금만 기다려주세요 😊
-				</p>
+				<div>
+					<p class="mb-3 text-base font-semibold">입금 계좌 안내</p>
+					<div class="flex">
+						<div class="mr-4 flex flex-col gap-1 text-gray-500">
+							<p>은행:</p>
+							<p>예금주:</p>
+							<p>계좌번호:</p>
+						</div>
+						<div class="flex flex-col gap-1 font-semibold text-gray-900">
+							<p>국민은행</p>
+							<p>이상민</p>
+							<p>939302-00-616198</p>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<button
 				onclick={process_payment_and_accept}
 				disabled={!is_order_form_valid}
-				class="mt-4 w-full rounded-xl bg-gray-900 py-4 font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+				class=" w-full rounded-xl bg-gray-900 py-4 font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				주문하기
 			</button>
