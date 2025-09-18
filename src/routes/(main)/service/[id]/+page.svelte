@@ -454,8 +454,12 @@
 
 		<!-- Service Description -->
 		<div class="mt-4">
-			<div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
-				<div class="text-sm whitespace-pre-wrap">{service.content}</div>
+			<!-- <div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
+				<div class="text-sm whitespace-pre-wrap">{@html service.content}</div>
+			</div> -->
+
+			<div class="prose prose-sm max-w-none leading-relaxed">
+				{@html service.content}
 			</div>
 		</div>
 		<!-- <iframe
@@ -565,7 +569,10 @@
 			</button>
 			<button
 				onclick={() => {
-					copy_to_clipboard(service.inquiry_url, '문의 링크가 복사되었습니다.');
+					copy_to_clipboard(
+						service.contact_info,
+						'문의 링크가 복사되었습니다.',
+					);
 				}}
 				class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 			>
