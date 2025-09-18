@@ -7,6 +7,7 @@
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
@@ -229,18 +230,6 @@
 		</div>
 	</div>
 
-	<div class="mt-4 flex flex-col">
-		<p class="ml-1 text-sm font-medium">서비스 내용</p>
-
-		<div class="mt-2">
-			<textarea
-				bind:value={service_form_data.content}
-				type="text"
-				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
-			></textarea>
-		</div>
-	</div>
-
 	<div class="mt-4">
 		<p class="ml-1 text-sm font-medium">서비스 가격</p>
 
@@ -254,9 +243,7 @@
 	</div>
 
 	<div class="mt-4">
-		<p class="ml-1 text-sm font-medium">
-			문의 연락처 <span class="text-red-500">*</span>
-		</p>
+		<p class="ml-1 text-sm font-medium">문의 연락처</p>
 		<p class="mt-1 ml-1 text-xs text-gray-500">
 			고객이 서비스 문의 시 연락할 수 있는 연락처를 입력해주세요
 		</p>
@@ -268,6 +255,14 @@
 				placeholder="예: 010-1234-5678, 카카오톡 링크, 인스타그램 링크"
 				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 			/>
+		</div>
+	</div>
+
+	<div class="mt-4 flex flex-col">
+		<p class="ml-1 text-sm font-medium">서비스 내용</p>
+
+		<div class="mt-2">
+			<SimpleEditor bind:content={service_form_data.content} />
 		</div>
 	</div>
 </main>
