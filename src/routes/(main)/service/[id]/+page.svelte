@@ -675,21 +675,23 @@
 
 		<!-- 입금 계좌 안내 박스 -->
 		<div
-			class="mt-4 mb-6 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900"
+			class="mt-4 mb-6 rounded-md border border-gray-100 bg-gray-50 p-3 text-sm"
 		>
-			<span class="font-bold">💡 입금 계좌 안내</span><br />
-			은행: <span class="font-semibold">국민은행</span><br />
-			예금주: <span class="font-semibold">이상민</span><br />
-			계좌번호: <span class="font-semibold">939302-00-616198</span>
-		</div>
-
-		<div
-			class="mt-2 flex flex-col justify-center bg-gray-50 px-4 py-2 text-sm text-gray-900"
-		>
-			<p>
-				아직은 계좌이체만 지원되고 있어요!<br />
-				더 편리한 결제를 위해 다양한 수단을 준비 중이니 조금만 기다려주세요 😊
-			</p>
+			<div>
+				<p class="mb-3 text-base font-semibold">입금 계좌 안내</p>
+				<div class="flex">
+					<div class="mr-4 flex flex-col gap-1 text-gray-500">
+						<p>은행:</p>
+						<p>예금주:</p>
+						<p>계좌번호:</p>
+					</div>
+					<div class="flex flex-col gap-1 font-semibold text-gray-900">
+						<p>국민은행</p>
+						<p>이상민</p>
+						<p>939302-00-616198</p>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<button
