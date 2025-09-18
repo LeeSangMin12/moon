@@ -454,8 +454,12 @@
 
 		<!-- Service Description -->
 		<div class="mt-4">
-			<div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
-				<div class="text-sm whitespace-pre-wrap">{service.content}</div>
+			<!-- <div class="min-h-[184px] w-full rounded-[7px] bg-gray-50 px-5 py-4">
+				<div class="text-sm whitespace-pre-wrap">{@html service.content}</div>
+			</div> -->
+
+			<div class="prose prose-sm max-w-none leading-relaxed">
+				{@html service.content}
 			</div>
 		</div>
 		<!-- <iframe
