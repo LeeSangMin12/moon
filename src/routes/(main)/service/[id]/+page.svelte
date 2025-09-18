@@ -565,7 +565,10 @@
 			</button>
 			<button
 				onclick={() => {
-					copy_to_clipboard(service.inquiry_url, '문의 링크가 복사되었습니다.');
+					copy_to_clipboard(
+						service.contact_info,
+						'문의 링크가 복사되었습니다.',
+					);
 				}}
 				class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
 			>
