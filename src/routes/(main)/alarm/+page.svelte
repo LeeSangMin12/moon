@@ -71,8 +71,8 @@
 						class="w-full text-left"
 						onclick={() => open_notification(n)}
 					>
-						<div class="flex items-start justify-between">
-							<div class="mr-3 flex flex-1 flex-col gap-1">
+						<div class="flex items-start justify-between gap-2">
+							<div class="flex flex-1 flex-col gap-1 min-w-0">
 								{#if n.type === 'post.liked'}
 									<p class="text-sm">
 										<strong
@@ -80,7 +80,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 게시글을 좋아했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.post_title}
 									</p>
 								{:else if n.type === 'service.liked'}
@@ -90,7 +90,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 서비스를 좋아했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.service_title}
 									</p>
 								{:else if n.type === 'comment.created'}
@@ -100,7 +100,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 댓글을 남겼습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.preview}
 									</p>
 								{:else if n.type === 'comment.reply'}
@@ -110,7 +110,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 답글을 남겼습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.preview}
 									</p>
 								{:else if n.type === 'follow.created'}
@@ -122,22 +122,22 @@
 									</p>
 								{:else if n.type === 'order.created'}
 									<p class="text-sm">새 주문이 접수되었습니다.</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.service_title}
 									</p>
 								{:else if n.type === 'order.approved'}
 									<p class="text-sm">주문이 결제 승인되었습니다.</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.service_title}
 									</p>
 								{:else if n.type === 'order.completed'}
 									<p class="text-sm">서비스가 완료되었습니다.</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.service_title}
 									</p>
 								{:else if n.type === 'order.cancelled'}
 									<p class="text-sm">주문이 취소되었습니다.</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.service_title}
 									</p>
 								{:else if n.type === 'review.created'}
@@ -147,7 +147,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 리뷰를 작성했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.title}
 									</p>
 								{:else if n.type === 'expert_review.created'}
@@ -157,7 +157,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 전문가 요청 리뷰를 작성했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.request_title}
 									</p>
 									<div class="mt-1 flex items-center gap-1">
@@ -175,6 +175,16 @@
 											</svg>
 										{/each}
 									</div>
+								{:else if n.type === 'proposal.accepted'}
+									<p class="text-sm">
+										<strong
+											>{n.actor?.name ||
+												'@' + (n.actor?.handle || '익명')}</strong
+										>님이 회원님의 제안을 수락했습니다!
+									</p>
+									<p class="mt-1 text-sm text-gray-600 break-words">
+										{n.payload?.request_title}
+									</p>
 								{:else if n.type === 'gift.received'}
 									<p class="text-sm">
 										선물을 받았습니다. (+{n.payload?.amount} 문)
@@ -186,7 +196,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 커피챗을 요청했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.subject}
 									</p>
 								{:else if n.type === 'coffee_chat.accepted'}
@@ -196,7 +206,7 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 커피챗 요청을 수락했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.subject}
 									</p>
 								{:else if n.type === 'coffee_chat.rejected'}
@@ -206,14 +216,14 @@
 												'@' + (n.actor?.handle || '익명')}</strong
 										>님이 커피챗 요청을 거절했습니다.
 									</p>
-									<p class="mt-1 truncate text-sm text-gray-600">
+									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.subject}
 									</p>
 								{:else}
 									<p class="text-sm font-medium">{n.type}</p>
 								{/if}
 							</div>
-							<div class="mt-0.5 text-xs text-gray-500">
+							<div class="shrink-0 text-xs text-gray-500 whitespace-nowrap self-start">
 								{format_datetime(n.created_at)}
 							</div>
 						</div>
