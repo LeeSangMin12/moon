@@ -26,6 +26,7 @@ import { create_user_reports_api } from '$lib/supabase/user_reports';
 import { create_users_api } from '$lib/supabase/users';
 import { create_expert_requests_api } from '$lib/supabase/expert_requests';
 import { create_expert_request_proposals_api } from '$lib/supabase/expert_request_proposals';
+import { create_expert_request_reviews_api } from '$lib/supabase/expert_request_reviews';
 import { create_proposal_attachments_api } from '$lib/supabase/proposal_attachments';
 import { create_coffee_chats_api } from '$lib/supabase/coffee_chats';
 import { create_proposal_attachments_bucket_api } from '$lib/supabase/bucket/proposals/attachments';
@@ -55,6 +56,7 @@ export const create_api = (supabase) => ({
 	notifications: create_notifications_api(supabase),
 	expert_requests: create_expert_requests_api(supabase),
 	expert_request_proposals: create_expert_request_proposals_api(supabase),
+	expert_request_reviews: create_expert_request_reviews_api(supabase),
 	proposal_attachments: create_proposal_attachments_api(supabase),
 	coffee_chats: create_coffee_chats_api(supabase),
 	//bucket

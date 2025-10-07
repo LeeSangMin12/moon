@@ -2,7 +2,8 @@ export const create_expert_requests_api = (supabase) => ({
 	select: async () => {
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(
@@ -15,18 +16,21 @@ export const create_expert_requests_api = (supabase) => ({
 					is_secret,
 					users:expert_id(id, handle, name, avatar_url)
 				)
-			`)
+			`,
+			)
 			.is('deleted_at', null)
 			.order('created_at', { ascending: false });
 
-		if (error) throw new Error(`Failed to select expert_requests: ${error.message}`);
+		if (error)
+			throw new Error(`Failed to select expert_requests: ${error.message}`);
 		return data;
 	},
 
 	select_by_id: async (id) => {
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(
@@ -39,66 +43,93 @@ export const create_expert_requests_api = (supabase) => ({
 					is_secret,
 					users:expert_id(id, handle, name, avatar_url)
 				)
-			`)
+			`,
+			)
 			.eq('id', id)
 			.is('deleted_at', null)
 			.single();
 
-		if (error) throw new Error(`Failed to select expert_request by id: ${error.message}`);
+		if (error)
+			throw new Error(
+				`Failed to select expert_request by id: ${error.message}`,
+			);
 		return data;
 	},
 
 	select_by_category: async (category) => {
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(count)
-			`)
+			`,
+			)
 			.eq('category', category)
 			.eq('status', 'open')
 			.is('deleted_at', null)
 			.order('created_at', { ascending: false });
 
-		if (error) throw new Error(`Failed to select expert_requests by category: ${error.message}`);
+		if (error)
+			throw new Error(
+				`Failed to select expert_requests by category: ${error.message}`,
+			);
 		return data;
 	},
 
 	select_by_search: async (search_text) => {
 		// SQL 인젝션 방지를 위한 검색어 정제
 		const sanitizedSearch = search_text.replace(/[%_\\]/g, '\\$&');
-		
+
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(count)
-			`)
-			.or(`title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%,category.ilike.%${sanitizedSearch}%`)
+			`,
+			)
+			.or(
+				`title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%,category.ilike.%${sanitizedSearch}%`,
+			)
 			.eq('status', 'open')
 			.is('deleted_at', null)
 			.order('created_at', { ascending: false });
 
-		if (error) throw new Error(`Failed to select expert_requests by search: ${error.message}`);
+		if (error)
+			throw new Error(
+				`Failed to select expert_requests by search: ${error.message}`,
+			);
 		return data;
 	},
 
-	select_infinite_scroll: async (last_request_id, category = '', limit = 20, job_type = '') => {
+	select_infinite_scroll: async (
+		last_request_id,
+		category = '',
+		limit = 20,
+		job_type = '',
+	) => {
 		// 보안을 위한 limit 제한
 		const MAX_LIMIT = 50;
-		const sanitizedLimit = Math.min(Math.max(1, parseInt(limit) || 20), MAX_LIMIT);
+		const sanitizedLimit = Math.min(
+			Math.max(1, parseInt(limit) || 20),
+			MAX_LIMIT,
+		);
 
 		let query = supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(count)
-			`)
+			`,
+			)
 			.eq('status', 'open')
 			.is('deleted_at', null)
+			.gte('application_deadline', new Date().toISOString())
 			.order('created_at', { ascending: false })
 			.limit(sanitizedLimit);
 
@@ -119,7 +150,10 @@ export const create_expert_requests_api = (supabase) => ({
 
 		const { data, error } = await query;
 
-		if (error) throw new Error(`Failed to select_infinite_scroll expert_requests: ${error.message}`);
+		if (error)
+			throw new Error(
+				`Failed to select_infinite_scroll expert_requests: ${error.message}`,
+			);
 
 		// 결과가 요청한 limit보다 적으면 더 이상 데이터가 없음을 표시
 		const hasMore = data.length === sanitizedLimit;
@@ -127,23 +161,28 @@ export const create_expert_requests_api = (supabase) => ({
 		return {
 			data: data || [],
 			hasMore,
-			nextCursor: data && data.length > 0 ? data[data.length - 1].id : null
+			nextCursor: data && data.length > 0 ? data[data.length - 1].id : null,
 		};
 	},
 
 	select_by_requester_id: async (requester_id) => {
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.select(`
+			.select(
+				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
 				expert_request_proposals(count)
-			`)
+			`,
+			)
 			.eq('requester_id', requester_id)
 			.is('deleted_at', null)
 			.order('created_at', { ascending: false });
 
-		if (error) throw new Error(`Failed to select expert_requests by requester_id: ${error.message}`);
+		if (error)
+			throw new Error(
+				`Failed to select expert_requests by requester_id: ${error.message}`,
+			);
 		return data;
 	},
 
@@ -168,7 +207,7 @@ export const create_expert_requests_api = (supabase) => ({
 			requester_id: user_id,
 			status: 'open',
 			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString()
+			updated_at: new Date().toISOString(),
 		};
 
 		// 권한 검증 - 자신의 요청만 생성 가능
@@ -183,7 +222,8 @@ export const create_expert_requests_api = (supabase) => ({
 			.single();
 
 		if (error) {
-			if (error.code === '23505') { // Unique violation
+			if (error.code === '23505') {
+				// Unique violation
 				throw new Error('이미 동일한 요청이 존재합니다.');
 			}
 			throw new Error(`전문가 요청 생성 실패: ${error.message}`);
@@ -222,16 +262,28 @@ export const create_expert_requests_api = (supabase) => ({
 			title: request_data.title || existing_request.title,
 			category: request_data.category || existing_request.category,
 			description: request_data.description || existing_request.description,
-			reward_amount: request_data.reward_amount || existing_request.reward_amount,
-			application_deadline: request_data.application_deadline !== undefined ? request_data.application_deadline : existing_request.application_deadline,
-			work_start_date: request_data.work_start_date !== undefined ? request_data.work_start_date : existing_request.work_start_date,
-			work_end_date: request_data.work_end_date !== undefined ? request_data.work_end_date : existing_request.work_end_date,
-			max_applicants: request_data.max_applicants || existing_request.max_applicants,
-			work_location: request_data.work_location || existing_request.work_location,
+			reward_amount:
+				request_data.reward_amount || existing_request.reward_amount,
+			application_deadline:
+				request_data.application_deadline !== undefined
+					? request_data.application_deadline
+					: existing_request.application_deadline,
+			work_start_date:
+				request_data.work_start_date !== undefined
+					? request_data.work_start_date
+					: existing_request.work_start_date,
+			work_end_date:
+				request_data.work_end_date !== undefined
+					? request_data.work_end_date
+					: existing_request.work_end_date,
+			max_applicants:
+				request_data.max_applicants || existing_request.max_applicants,
+			work_location:
+				request_data.work_location || existing_request.work_location,
 			updated_at: new Date().toISOString(),
 			// 중요 필드는 업데이트 불가
 			requester_id: existing_request.requester_id,
-			status: existing_request.status
+			status: existing_request.status,
 		};
 
 		const { data, error } = await supabase
@@ -278,9 +330,9 @@ export const create_expert_requests_api = (supabase) => ({
 		// Soft delete 수행
 		const { error } = await supabase
 			.from('expert_requests')
-			.update({ 
+			.update({
 				deleted_at: new Date().toISOString(),
-				status: 'cancelled'
+				status: 'cancelled',
 			})
 			.eq('id', request_id);
 
@@ -292,11 +344,11 @@ export const create_expert_requests_api = (supabase) => ({
 	// 프로젝트 완료
 	complete_project: async (request_id) => {
 		const { error } = await supabase.rpc('complete_project', {
-			request_id_param: request_id
+			request_id_param: request_id,
 		});
 
 		if (error) {
 			throw new Error(`프로젝트 완료 실패: ${error.message}`);
 		}
-	}
+	},
 });

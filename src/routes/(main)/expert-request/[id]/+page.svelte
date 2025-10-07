@@ -24,6 +24,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, comma, show_toast } from '$lib/js/common';
@@ -31,7 +32,15 @@
 	import { user_store } from '$lib/store/user_store';
 
 	let { data } = $props();
-	let { expert_request, proposals, user } = $state(data);
+	let {
+		expert_request,
+		proposals,
+		user,
+		can_write_review,
+		review_proposal_id,
+		review_expert_id,
+		my_review,
+	} = $state(data);
 
 	// 첨부파일 맵 (proposal_id -> attachments[])
 	let proposal_attachments_map = $state({});
@@ -49,6 +58,15 @@
 	// 구매하기 모달 상태
 	let show_payment_modal = $state(false);
 	let selected_proposal = $state(null);
+
+	// 리뷰 모달 상태
+	let show_review_modal = $state(false);
+	let is_submitting_review = $state(false);
+	let review_form = $state({
+		rating: 0,
+		title: '',
+		content: '',
+	});
 
 	// 파일 선택 처리
 	const handle_file_select = (e) => {
@@ -354,6 +372,119 @@
 		}
 	};
 
+	// 리뷰 관련 함수들
+	const reset_review_form = () => {
+		review_form = {
+			rating: 0,
+			title: '',
+			content: '',
+		};
+	};
+
+	const validate_review_form = () => {
+		if (review_form.rating === 0) {
+			show_toast('error', '별점을 선택해주세요.');
+			return false;
+		}
+		if (!review_form.title.trim()) {
+			show_toast('error', '리뷰 제목을 입력해주세요.');
+			return false;
+		}
+		if (!review_form.content.trim()) {
+			show_toast('error', '리뷰 내용을 입력해주세요.');
+			return false;
+		}
+		return true;
+	};
+
+	const handle_review_submit = async () => {
+		if (!check_login() || is_submitting_review || !validate_review_form())
+			return;
+
+		try {
+			is_submitting_review = true;
+
+			if (!my_review && can_write_review) {
+				// 새 리뷰 작성
+				const review_data = {
+					request_id: expert_request.id,
+					proposal_id: review_proposal_id,
+					reviewer_id: user.id,
+					expert_id: review_expert_id,
+					rating: review_form.rating,
+					title: review_form.title.trim(),
+					content: review_form.content.trim(),
+				};
+				await $api_store.expert_request_reviews.insert(review_data);
+
+				// 알림 생성: 전문가에게 리뷰 작성 알림
+				try {
+					if (review_expert_id && review_expert_id !== user.id) {
+						await $api_store.notifications.insert({
+							recipient_id: review_expert_id,
+							actor_id: user.id,
+							type: 'expert_review.created',
+							resource_type: 'expert_request',
+							resource_id: String(expert_request.id),
+							payload: {
+								request_id: expert_request.id,
+								request_title: expert_request.title,
+								rating: review_form.rating,
+								title: review_form.title,
+							},
+							link_url: `/expert-request/${expert_request.id}`,
+						});
+					}
+				} catch (e) {
+					console.error(
+						'Failed to insert notification (expert_review.created):',
+						e,
+					);
+				}
+
+				show_toast('success', '리뷰가 작성되었습니다.');
+			} else if (my_review) {
+				// 기존 리뷰 수정
+				await $api_store.expert_request_reviews.update(my_review.id, {
+					rating: review_form.rating,
+					title: review_form.title.trim(),
+					content: review_form.content.trim(),
+				});
+				show_toast('success', '리뷰가 수정되었습니다.');
+			}
+
+			// 데이터 새로고침
+			my_review =
+				await $api_store.expert_request_reviews.select_by_request_and_reviewer(
+					expert_request.id,
+					user.id,
+				);
+
+			show_review_modal = false;
+			reset_review_form();
+		} catch (error) {
+			console.error('리뷰 작성/수정 실패:', error);
+			show_toast('error', '리뷰 작성에 실패했습니다. 다시 시도해주세요.');
+		} finally {
+			is_submitting_review = false;
+		}
+	};
+
+	const open_review_modal = () => {
+		if (my_review) {
+			// 기존 리뷰 수정 모드
+			review_form = {
+				rating: my_review.rating,
+				title: my_review.title || '',
+				content: my_review.content || '',
+			};
+		} else {
+			// 새 리뷰 작성 모드
+			reset_review_form();
+		}
+		show_review_modal = true;
+	};
+
 	// 각 제안의 첨부파일 로드
 	const load_attachments = async () => {
 		try {
@@ -523,8 +654,8 @@
 		</div>
 	</div>
 
-	<!-- 수락된 제안 알림 -->
-	{#if proposals.some((p) => p.status === 'accepted')}
+	<!-- 수락된 제안 알림 (요청자에게만 표시) -->
+	{#if user && is_requester() && proposals.some((p) => p.status === 'accepted')}
 		<div class="mb-4 px-4">
 			<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
 				<div class="flex items-center gap-3">
@@ -552,7 +683,7 @@
 						</p>
 					</div>
 
-					{#if is_requester() && expert_request.status === 'in_progress'}
+					{#if expert_request.status === 'in_progress'}
 						<button
 							onclick={() => complete_project()}
 							class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
@@ -561,6 +692,59 @@
 						</button>
 					{/if}
 				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 리뷰 섹션 (의뢰인용, 프로젝트 완료 후) -->
+	{#if is_requester() && expert_request.status === 'completed'}
+		<div class="mb-4 px-4">
+			<div class="rounded-xl border border-gray-200 bg-white p-4">
+				<div class="mb-3 flex items-center justify-between">
+					<h3 class="font-semibold text-gray-900">전문가 리뷰</h3>
+					{#if !my_review && can_write_review}
+						<button
+							onclick={open_review_modal}
+							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						>
+							리뷰 작성
+						</button>
+					{/if}
+				</div>
+
+				{#if my_review}
+					<div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+						<div class="mb-2 flex items-center gap-2">
+							<StarRating rating={my_review.rating} readonly={true} />
+							<span class="text-sm font-medium text-gray-600">
+								{my_review.rating}.0
+							</span>
+						</div>
+						<h4 class="mb-2 font-semibold text-gray-900">{my_review.title}</h4>
+						<p class="mb-3 text-sm text-gray-600">{my_review.content}</p>
+						<div
+							class="flex items-center justify-between text-xs text-gray-400"
+						>
+							<span>
+								{new Date(my_review.created_at).toLocaleDateString('ko-KR')}
+							</span>
+							<button
+								onclick={open_review_modal}
+								class="text-blue-600 hover:text-blue-700"
+							>
+								수정
+							</button>
+						</div>
+					</div>
+				{:else if !can_write_review}
+					<p class="text-sm text-gray-600">
+						리뷰를 작성하려면 프로젝트가 완료되어야 합니다.
+					</p>
+				{:else}
+					<p class="text-sm text-gray-600">
+						프로젝트가 완료되었습니다. 전문가에게 리뷰를 남겨주세요!
+					</p>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -1110,6 +1294,106 @@
 			>
 				주문하기
 			</button>
+		</div>
+	</Modal>
+{/if}
+
+<!-- 리뷰 작성 모달 -->
+{#if show_review_modal}
+	<Modal
+		is_modal_open={show_review_modal}
+		modal_position="bottom"
+		on:modal_close={() => (show_review_modal = false)}
+	>
+		<div class="p-6">
+			<div class="mb-6 flex items-center justify-between">
+				<h3 class="text-lg font-bold text-gray-900">
+					{my_review ? '리뷰 수정' : '리뷰 작성'}
+				</h3>
+				<button
+					onclick={() => (show_review_modal = false)}
+					class="text-gray-400 hover:text-gray-600"
+				>
+					<RiCloseLine size={24} />
+				</button>
+			</div>
+
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handle_review_submit();
+				}}
+			>
+				<div class="space-y-4">
+					<!-- 별점 선택 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							별점 <span class="text-red-500">*</span>
+						</label>
+						<div class="flex items-center gap-2">
+							<StarRating
+								bind:rating={review_form.rating}
+								readonly={false}
+								size={28}
+							/>
+						</div>
+					</div>
+
+					<!-- 리뷰 제목 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							리뷰 제목 <span class="text-red-500">*</span>
+						</label>
+						<input
+							type="text"
+							bind:value={review_form.title}
+							placeholder="리뷰 제목을 입력해주세요"
+							class="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
+							required
+							maxlength="100"
+						/>
+					</div>
+
+					<!-- 리뷰 내용 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							리뷰 내용 <span class="text-red-500">*</span>
+						</label>
+						<textarea
+							bind:value={review_form.content}
+							placeholder="전문가의 서비스에 대한 솔직한 평가를 남겨주세요"
+							class="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
+							rows="6"
+							required
+							maxlength="1000"
+						></textarea>
+						<p class="mt-1 text-xs text-gray-500">
+							{review_form.content.length} / 1000자
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-6 flex gap-3">
+					<button
+						type="button"
+						onclick={() => (show_review_modal = false)}
+						class="flex-1 rounded-lg bg-gray-100 py-3 font-medium text-gray-600 transition-colors hover:bg-gray-200"
+					>
+						취소
+					</button>
+					<button
+						type="submit"
+						disabled={is_submitting_review}
+						class="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+					>
+						{is_submitting_review
+							? '제출 중...'
+							: my_review
+								? '수정하기'
+								: '작성하기'}
+					</button>
+				</div>
+			</form>
 		</div>
 	</Modal>
 {/if}
