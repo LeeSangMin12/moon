@@ -3,12 +3,19 @@
 	import logo from '$lib/img/logo.png';
 	import kakao_login from '$lib/img/partials/login/kakao_login.png';
 	import landing_logo from '$lib/img/partials/login/landing_logo.jpg';
-	import { RiArrowLeftSLine } from 'svelte-remixicon';
 	import { smartGoBack } from '$lib/utils/navigation';
+	import { goto } from '$app/navigation';
+	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Modal from '$lib/components/ui/Modal/+page.svelte';
 
 	import colors from '$lib/js/colors';
+	import { show_toast } from '$lib/js/common';
+
+	let is_corporation_login = $state(false);
+	let corporation_login_id = $state('');
+	let corporation_login_pw = $state('');
 
 	const TITLE = '문';
 
@@ -23,6 +30,21 @@
 				redirectTo: `${PUBLIC_WEB_CLIENT_URL}/auth/callback`,
 			},
 		});
+	};
+
+	const corporation_login = async () => {
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email: corporation_login_id,
+			password: corporation_login_pw,
+		});
+
+		if (error) {
+			show_toast('error', error.message);
+			return;
+		}
+
+		show_toast('success', '로그인 완료');
+		location.href = '/';
 	};
 </script>
 
@@ -54,12 +76,59 @@
 		<h2 class="text-center text-gray-500">후원, 서비스 판매, 채용 연계까지!</h2>
 	</div>
 
-	<button onclick={sign_in_with_kakao}>
-		<img
-			id="kakao_login_for_ga4"
-			class="h-12 w-80"
-			src={kakao_login}
-			alt="카카오 로그인 버튼"
-		/>
-	</button>
+	<div class="flex flex-col items-center justify-center gap-3">
+		<button onclick={sign_in_with_kakao}>
+			<img
+				id="kakao_login_for_ga4"
+				class="h-12 w-80"
+				src={kakao_login}
+				alt="카카오 로그인 버튼"
+			/>
+		</button>
+
+		<button
+			class="btn btn-gray h-12 w-80"
+			onclick={() => (is_corporation_login = true)}>기업 로그인</button
+		>
+	</div>
 </main>
+
+<Modal bind:is_modal_open={is_corporation_login} modal_position="bottom">
+	<div class="flex flex-col items-center p-4">
+		<div class=" h-1 w-10 self-center bg-gray-300" />
+
+		<h3 class="mt-6 text-lg font-bold">기업 로그인</h3>
+
+		<div class="flex w-full flex-col">
+			<div class="mx-5 mt-4">
+				<p class="ml-1">id</p>
+
+				<div class="mt-2.5">
+					<input
+						type="text"
+						bind:value={corporation_login_id}
+						class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+					/>
+				</div>
+			</div>
+
+			<div class="mx-5 mt-4">
+				<p class="ml-1">비밀번호</p>
+
+				<div class="mt-2.5">
+					<input
+						type="password"
+						bind:value={corporation_login_pw}
+						class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+					/>
+				</div>
+			</div>
+
+			<div class="pb-safe mx-5 mt-10">
+				<button class="btn btn-primary w-full" onclick={corporation_login}
+					>로그인</button
+				>
+			</div>
+		</div>
+	</div>
+</Modal>
