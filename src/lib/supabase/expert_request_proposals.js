@@ -90,7 +90,11 @@ export const create_expert_request_proposals_api = (supabase) => ({
 			.select('id')
 			.eq('request_id', proposal_data.request_id)
 			.eq('expert_id', user_id)
-			.single();
+			.maybeSingle();
+
+		if (existing_error) {
+			console.error('Error checking existing proposal:', existing_error);
+		}
 
 		if (existing_proposal) {
 			throw new Error('이미 해당 요청에 제안을 제출했습니다.');

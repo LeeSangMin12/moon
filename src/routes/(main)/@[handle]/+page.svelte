@@ -48,6 +48,7 @@
 		services: [],
 		service_likes: [],
 		service_reviews: [],
+		expert_request_reviews: [],
 	});
 
 	// posts가 변경될 때 selected_data.posts도 업데이트
@@ -164,9 +165,13 @@
 			selected_data.service_likes =
 				await $api_store.service_likes.select_by_user_id(user.id);
 		} else if (tab_index === 3) {
-			// 받은리뷰 탭
-			selected_data.service_reviews =
-				await $api_store.service_reviews.select_by_service_author_id(user.id);
+			// 받은리뷰 탭 - 서비스 리뷰와 전문가 리뷰 모두 조회
+			const [service_reviews, expert_reviews] = await Promise.all([
+				$api_store.service_reviews.select_by_service_author_id(user.id),
+				$api_store.expert_request_reviews.select_by_expert_id(user.id),
+			]);
+			selected_data.service_reviews = service_reviews;
+			selected_data.expert_request_reviews = expert_reviews;
 		}
 	};
 
@@ -504,16 +509,84 @@
 				<Service {service} service_likes={selected_data.service_likes} />
 			{/each}
 		</div>
-	{:else if selected === 3 && selected_data.service_reviews.length > 0}
+	{:else if selected === 3 && (selected_data.service_reviews.length > 0 || selected_data.expert_request_reviews.length > 0)}
 		<!-- 받은리뷰 탭 -->
 		<div class="mx-4 mt-4 space-y-3">
+			<!-- 전문가 요청 리뷰 -->
+			{#each selected_data.expert_request_reviews as review}
+				<div class="rounded-lg border border-gray-200 bg-white p-4">
+					<!-- 리뷰받은 전문가 요청 정보 -->
+					{#if review.request}
+						<div class="mb-3 rounded bg-emerald-50 p-3">
+							<p class="mb-1 text-xs text-emerald-700">전문가 요청 리뷰</p>
+							<p class="text-sm font-medium text-gray-900">
+								{review.request.title || '제목 없음'}
+							</p>
+							<button
+								onclick={() => goto(`/expert-request/${review.request.id}`)}
+								class="mt-1 text-xs text-emerald-600 hover:underline"
+							>
+								요청 보기 →
+							</button>
+						</div>
+					{/if}
+
+					<!-- 리뷰 내용 -->
+					<div class="flex items-start space-x-3">
+						{#if review.reviewer?.avatar_url}
+							<img
+								src={review.reviewer.avatar_url}
+								alt={review.reviewer.name || '익명'}
+								class="h-8 w-8 rounded-full"
+							/>
+						{:else}
+							<img src={profile_png} alt="익명" class="h-8 w-8 rounded-full" />
+						{/if}
+						<div class="flex-1">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center space-x-2">
+									{#if review.reviewer?.handle}
+										<p class="text-sm font-medium">@{review.reviewer.handle}</p>
+									{:else}
+										<p class="text-sm font-medium">익명 사용자</p>
+									{/if}
+									<div class="flex items-center">
+										{#each Array(5) as _, i}
+											<Icon
+												attribute="star"
+												size={14}
+												color={i < review.rating
+													? colors.primary
+													: colors.gray[300]}
+											/>
+										{/each}
+									</div>
+								</div>
+								<span class="text-xs text-gray-500">
+									{new Date(review.created_at).toLocaleDateString('ko-KR')}
+								</span>
+							</div>
+
+							{#if review.title}
+								<h3 class="mt-2 text-sm font-medium">{review.title}</h3>
+							{/if}
+
+							<p class="mt-1 text-sm whitespace-pre-wrap text-gray-700">
+								{review.content}
+							</p>
+						</div>
+					</div>
+				</div>
+			{/each}
+
+			<!-- 서비스 리뷰 -->
 			{#each selected_data.service_reviews as review}
 				<div class="rounded-lg border border-gray-200 bg-white p-4">
 					<!-- 리뷰받은 서비스 정보 -->
 					{#if review.service}
-						<div class="mb-3 rounded bg-gray-50 p-3">
-							<p class="mb-1 text-xs text-gray-500">받은 리뷰</p>
-							<p class="text-sm font-medium">
+						<div class="mb-3 rounded bg-blue-50 p-3">
+							<p class="mb-1 text-xs text-blue-700">서비스 리뷰</p>
+							<p class="text-sm font-medium text-gray-900">
 								{review.service.title || '제목 없음'}
 							</p>
 							<button

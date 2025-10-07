@@ -21,7 +21,7 @@
 
 	let { data } = $props();
 
-	const tabs = ['전문가 찾기', '사이드잡 지원'];
+	const tabs = ['전문가 찾기', '사이드잡', '풀타임잡'];
 	let selected_tab = $state(0);
 
 	const images = [
@@ -34,11 +34,6 @@
 			title: 'sell_service',
 			src: sell_service_png,
 			url: '/regi/service',
-		},
-		{
-			title: 'free_lawyer',
-			src: free_lawyer_png,
-			url: 'https://www.notion.so/2494cb364b428057bfdced50db5e0353',
 		},
 	];
 
@@ -142,10 +137,17 @@
 
 	{#if selected_tab === 0}
 		<ServiceTab {serviceData} infiniteScroll={serviceInfiniteScroll} />
-	{:else}
+	{:else if selected_tab === 1}
 		<ExpertRequestTab
 			{expertRequestData}
 			infiniteScroll={expertInfiniteScroll}
+			jobType="sidejob"
+		/>
+	{:else if selected_tab === 2}
+		<ExpertRequestTab
+			{expertRequestData}
+			infiniteScroll={expertInfiniteScroll}
+			jobType="fulltime"
 		/>
 	{/if}
 </main>

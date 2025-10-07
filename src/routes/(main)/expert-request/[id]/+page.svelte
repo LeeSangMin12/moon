@@ -24,6 +24,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
 
 	import colors from '$lib/js/colors';
 	import { check_login, comma, show_toast } from '$lib/js/common';
@@ -31,7 +32,18 @@
 	import { user_store } from '$lib/store/user_store';
 
 	let { data } = $props();
-	let { expert_request, proposals, user } = $state(data);
+	let {
+		expert_request,
+		proposals,
+		user,
+		can_write_review,
+		review_proposal_id,
+		review_expert_id,
+		my_review,
+	} = $state(data);
+
+	// 첨부파일 맵 (proposal_id -> attachments[])
+	let proposal_attachments_map = $state({});
 
 	// 제안서 작성 모달 상태
 	let show_proposal_modal = $state(false);
@@ -40,10 +52,66 @@
 		contact_info: '',
 		is_secret: false,
 	});
+	let attached_files = $state([]);
+	let file_input;
 
 	// 구매하기 모달 상태
 	let show_payment_modal = $state(false);
 	let selected_proposal = $state(null);
+
+	// 리뷰 모달 상태
+	let show_review_modal = $state(false);
+	let is_submitting_review = $state(false);
+	let review_form = $state({
+		rating: 0,
+		title: '',
+		content: '',
+	});
+
+	// 파일 선택 처리
+	const handle_file_select = (e) => {
+		const files = Array.from(e.target.files || []);
+		const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+		const MAX_FILES = 5;
+
+		if (attached_files.length + files.length > MAX_FILES) {
+			show_toast('error', `최대 ${MAX_FILES}개의 파일만 첨부할 수 있습니다.`);
+			return;
+		}
+
+		const valid_files = files.filter((file) => {
+			if (file.size > MAX_FILE_SIZE) {
+				show_toast('error', `${file.name}은(는) 10MB를 초과합니다.`);
+				return false;
+			}
+			return true;
+		});
+
+		attached_files = [...attached_files, ...valid_files];
+	};
+
+	// 파일 제거
+	const remove_file = (index) => {
+		attached_files = attached_files.filter((_, i) => i !== index);
+	};
+
+	// 파일 크기 포맷
+	const format_file_size = (bytes) => {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const sizes = ['Bytes', 'KB', 'MB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+	};
+
+	// 파일명 안전하게 변환 (UUID로 대체, 원본명은 DB에 저장)
+	const sanitize_filename = (filename, index) => {
+		const ext = filename.substring(filename.lastIndexOf('.'));
+		const uuid =
+			Math.random().toString(36).substring(2, 15) +
+			Math.random().toString(36).substring(2, 15);
+		return `${index}_${uuid}${ext}`;
+	};
 
 	const submit_proposal = async () => {
 		if (!check_login()) return;
@@ -56,7 +124,8 @@
 		}
 
 		try {
-			await $api_store.expert_request_proposals.insert(
+			// 1. 제안서 생성
+			const new_proposal = await $api_store.expert_request_proposals.insert(
 				{
 					request_id: expert_request.id,
 					message: proposal_form.message,
@@ -65,6 +134,42 @@
 				},
 				user.id,
 			);
+
+			// 2. 파일이 있으면 업로드
+			if (attached_files.length > 0) {
+				const timestamp = Date.now();
+				const files_with_paths = attached_files.map((file, index) => ({
+					path: `${user.id}/${new_proposal.id}/${timestamp}_${sanitize_filename(file.name, index)}`,
+					file: file,
+				}));
+
+				// Storage에 업로드
+				const upload_result =
+					await $api_store.proposal_attachments_bucket.upload_multiple(
+						files_with_paths,
+					);
+
+				// DB에 첨부파일 정보 저장
+				if (upload_result.successful_uploads.length > 0) {
+					const attachments_data = upload_result.successful_uploads.map(
+						(upload) => {
+							const file = attached_files[upload.index];
+							return {
+								proposal_id: new_proposal.id,
+								file_url: upload.path,
+								file_name: file.name,
+								file_size: file.size,
+								file_type: file.type,
+							};
+						},
+					);
+
+					await $api_store.proposal_attachments.insert_multiple(
+						attachments_data,
+						user.id,
+					);
+				}
+			}
 
 			show_toast('success', SUCCESS_MESSAGES.PROPOSAL_SUBMITTED);
 			show_proposal_modal = false;
@@ -81,6 +186,7 @@
 				contact_info: '',
 				is_secret: false,
 			};
+			attached_files = [];
 		} catch (error) {
 			console.error('Proposal submission error:', error);
 
@@ -265,6 +371,146 @@
 			show_toast('error', errorMessage);
 		}
 	};
+
+	// 리뷰 관련 함수들
+	const reset_review_form = () => {
+		review_form = {
+			rating: 0,
+			title: '',
+			content: '',
+		};
+	};
+
+	const validate_review_form = () => {
+		if (review_form.rating === 0) {
+			show_toast('error', '별점을 선택해주세요.');
+			return false;
+		}
+		if (!review_form.title.trim()) {
+			show_toast('error', '리뷰 제목을 입력해주세요.');
+			return false;
+		}
+		if (!review_form.content.trim()) {
+			show_toast('error', '리뷰 내용을 입력해주세요.');
+			return false;
+		}
+		return true;
+	};
+
+	const handle_review_submit = async () => {
+		if (!check_login() || is_submitting_review || !validate_review_form())
+			return;
+
+		try {
+			is_submitting_review = true;
+
+			if (!my_review && can_write_review) {
+				// 새 리뷰 작성
+				const review_data = {
+					request_id: expert_request.id,
+					proposal_id: review_proposal_id,
+					reviewer_id: user.id,
+					expert_id: review_expert_id,
+					rating: review_form.rating,
+					title: review_form.title.trim(),
+					content: review_form.content.trim(),
+				};
+				await $api_store.expert_request_reviews.insert(review_data);
+
+				// 알림 생성: 전문가에게 리뷰 작성 알림
+				try {
+					if (review_expert_id && review_expert_id !== user.id) {
+						await $api_store.notifications.insert({
+							recipient_id: review_expert_id,
+							actor_id: user.id,
+							type: 'expert_review.created',
+							resource_type: 'expert_request',
+							resource_id: String(expert_request.id),
+							payload: {
+								request_id: expert_request.id,
+								request_title: expert_request.title,
+								rating: review_form.rating,
+								title: review_form.title,
+							},
+							link_url: `/expert-request/${expert_request.id}`,
+						});
+					}
+				} catch (e) {
+					console.error(
+						'Failed to insert notification (expert_review.created):',
+						e,
+					);
+				}
+
+				show_toast('success', '리뷰가 작성되었습니다.');
+			} else if (my_review) {
+				// 기존 리뷰 수정
+				await $api_store.expert_request_reviews.update(my_review.id, {
+					rating: review_form.rating,
+					title: review_form.title.trim(),
+					content: review_form.content.trim(),
+				});
+				show_toast('success', '리뷰가 수정되었습니다.');
+			}
+
+			// 데이터 새로고침
+			my_review =
+				await $api_store.expert_request_reviews.select_by_request_and_reviewer(
+					expert_request.id,
+					user.id,
+				);
+
+			show_review_modal = false;
+			reset_review_form();
+		} catch (error) {
+			console.error('리뷰 작성/수정 실패:', error);
+			show_toast('error', '리뷰 작성에 실패했습니다. 다시 시도해주세요.');
+		} finally {
+			is_submitting_review = false;
+		}
+	};
+
+	const open_review_modal = () => {
+		if (my_review) {
+			// 기존 리뷰 수정 모드
+			review_form = {
+				rating: my_review.rating,
+				title: my_review.title || '',
+				content: my_review.content || '',
+			};
+		} else {
+			// 새 리뷰 작성 모드
+			reset_review_form();
+		}
+		show_review_modal = true;
+	};
+
+	// 각 제안의 첨부파일 로드
+	const load_attachments = async () => {
+		try {
+			const attachments_promises = proposals.map(async (proposal) => {
+				const attachments =
+					await $api_store.proposal_attachments.select_by_proposal_id(
+						proposal.id,
+					);
+				return { proposal_id: proposal.id, attachments };
+			});
+
+			const results = await Promise.all(attachments_promises);
+			const new_map = {};
+			results.forEach((result) => {
+				new_map[result.proposal_id] = result.attachments;
+			});
+			proposal_attachments_map = new_map;
+		} catch (error) {
+			console.error('Failed to load attachments:', error);
+		}
+	};
+
+	// 페이지 로드 시 첨부파일 로드
+	onMount(() => {
+		load_attachments();
+	});
 </script>
 
 <svelte:head>
@@ -408,8 +654,8 @@
 		</div>
 	</div>
 
-	<!-- 수락된 제안 알림 -->
-	{#if proposals.some((p) => p.status === 'accepted')}
+	<!-- 수락된 제안 알림 (요청자에게만 표시) -->
+	{#if user && is_requester() && proposals.some((p) => p.status === 'accepted')}
 		<div class="mb-4 px-4">
 			<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
 				<div class="flex items-center gap-3">
@@ -437,7 +683,7 @@
 						</p>
 					</div>
 
-					{#if is_requester() && expert_request.status === 'in_progress'}
+					{#if expert_request.status === 'in_progress'}
 						<button
 							onclick={() => complete_project()}
 							class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
@@ -446,6 +692,59 @@
 						</button>
 					{/if}
 				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 리뷰 섹션 (의뢰인용, 프로젝트 완료 후) -->
+	{#if is_requester() && expert_request.status === 'completed'}
+		<div class="mb-4 px-4">
+			<div class="rounded-xl border border-gray-200 bg-white p-4">
+				<div class="mb-3 flex items-center justify-between">
+					<h3 class="font-semibold text-gray-900">전문가 리뷰</h3>
+					{#if !my_review && can_write_review}
+						<button
+							onclick={open_review_modal}
+							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						>
+							리뷰 작성
+						</button>
+					{/if}
+				</div>
+
+				{#if my_review}
+					<div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+						<div class="mb-2 flex items-center gap-2">
+							<StarRating rating={my_review.rating} readonly={true} />
+							<span class="text-sm font-medium text-gray-600">
+								{my_review.rating}.0
+							</span>
+						</div>
+						<h4 class="mb-2 font-semibold text-gray-900">{my_review.title}</h4>
+						<p class="mb-3 text-sm text-gray-600">{my_review.content}</p>
+						<div
+							class="flex items-center justify-between text-xs text-gray-400"
+						>
+							<span>
+								{new Date(my_review.created_at).toLocaleDateString('ko-KR')}
+							</span>
+							<button
+								onclick={open_review_modal}
+								class="text-blue-600 hover:text-blue-700"
+							>
+								수정
+							</button>
+						</div>
+					</div>
+				{:else if !can_write_review}
+					<p class="text-sm text-gray-600">
+						리뷰를 작성하려면 프로젝트가 완료되어야 합니다.
+					</p>
+				{:else}
+					<p class="text-sm text-gray-600">
+						프로젝트가 완료되었습니다. 전문가에게 리뷰를 남겨주세요!
+					</p>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -602,6 +901,48 @@
 								</p>
 							{/if}
 
+							<!-- 첨부파일 표시 -->
+							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal_attachments_map[proposal.id]?.length > 0}
+								<div class="mb-3">
+									<p class="mb-2 text-xs font-medium text-gray-600">첨부파일</p>
+									<div class="space-y-2">
+										{#each proposal_attachments_map[proposal.id] as attachment}
+											<a
+												href={$api_store.proposal_attachments_bucket.get_public_url(
+													attachment.file_url,
+												)}
+												download={attachment.file_name}
+												target="_blank"
+												class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition-colors hover:bg-gray-100"
+											>
+												<span class="text-base">📄</span>
+												<div class="min-w-0 flex-1">
+													<p class="truncate text-xs font-medium text-gray-700">
+														{attachment.file_name}
+													</p>
+													<p class="text-xs text-gray-500">
+														{format_file_size(attachment.file_size)}
+													</p>
+												</div>
+												<svg
+													class="h-4 w-4 text-gray-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+													/>
+												</svg>
+											</a>
+										{/each}
+									</div>
+								</div>
+							{/if}
+
 							<!-- 제안 세부 정보 (비밀제안일 때 조건부 표시) -->
 							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
 								<div class="flex items-center gap-4 text-xs text-gray-500">
@@ -693,6 +1034,71 @@
 						<p class="mt-1 text-xs text-gray-500">
 							제안이 수락되면 의뢰인이 이 연락처로 연락을 드릴 예정입니다.
 						</p>
+					</div>
+
+					<!-- 파일 첨부 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							이력서/포트폴리오 첨부
+						</label>
+						<input
+							type="file"
+							bind:this={file_input}
+							onchange={handle_file_select}
+							multiple
+							accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+							class="hidden"
+						/>
+						<button
+							type="button"
+							onclick={() => file_input?.click()}
+							class="w-full rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-100"
+						>
+							📎 파일 선택 (최대 5개, 각 10MB 이하)
+						</button>
+						<p class="mt-1 text-xs text-gray-500">
+							PDF, Word, 이미지 파일을 첨부할 수 있습니다.
+						</p>
+
+						<!-- 첨부된 파일 목록 -->
+						{#if attached_files.length > 0}
+							<div class="mt-3 space-y-2">
+								{#each attached_files as file, index}
+									<div
+										class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+									>
+										<div class="flex min-w-0 flex-1 items-center gap-2">
+											<span class="text-lg">📄</span>
+											<div class="min-w-0 flex-1">
+												<p class="truncate text-sm font-medium text-gray-700">
+													{file.name}
+												</p>
+												<p class="text-xs text-gray-500">
+													{format_file_size(file.size)}
+												</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											onclick={() => remove_file(index)}
+											class="ml-2 text-gray-400 hover:text-red-600"
+										>
+											<svg
+												class="h-5 w-5"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fill-rule="evenodd"
+													d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 
 					<!-- 비밀제안 옵션 -->
@@ -888,6 +1294,106 @@
 			>
 				주문하기
 			</button>
+		</div>
+	</Modal>
+{/if}
+
+<!-- 리뷰 작성 모달 -->
+{#if show_review_modal}
+	<Modal
+		is_modal_open={show_review_modal}
+		modal_position="bottom"
+		on:modal_close={() => (show_review_modal = false)}
+	>
+		<div class="p-6">
+			<div class="mb-6 flex items-center justify-between">
+				<h3 class="text-lg font-bold text-gray-900">
+					{my_review ? '리뷰 수정' : '리뷰 작성'}
+				</h3>
+				<button
+					onclick={() => (show_review_modal = false)}
+					class="text-gray-400 hover:text-gray-600"
+				>
+					<RiCloseLine size={24} />
+				</button>
+			</div>
+
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handle_review_submit();
+				}}
+			>
+				<div class="space-y-4">
+					<!-- 별점 선택 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							별점 <span class="text-red-500">*</span>
+						</label>
+						<div class="flex items-center gap-2">
+							<StarRating
+								bind:rating={review_form.rating}
+								readonly={false}
+								size={28}
+							/>
+						</div>
+					</div>
+
+					<!-- 리뷰 제목 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							리뷰 제목 <span class="text-red-500">*</span>
+						</label>
+						<input
+							type="text"
+							bind:value={review_form.title}
+							placeholder="리뷰 제목을 입력해주세요"
+							class="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
+							required
+							maxlength="100"
+						/>
+					</div>
+
+					<!-- 리뷰 내용 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							리뷰 내용 <span class="text-red-500">*</span>
+						</label>
+						<textarea
+							bind:value={review_form.content}
+							placeholder="전문가의 서비스에 대한 솔직한 평가를 남겨주세요"
+							class="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
+							rows="6"
+							required
+							maxlength="1000"
+						></textarea>
+						<p class="mt-1 text-xs text-gray-500">
+							{review_form.content.length} / 1000자
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-6 flex gap-3">
+					<button
+						type="button"
+						onclick={() => (show_review_modal = false)}
+						class="flex-1 rounded-lg bg-gray-100 py-3 font-medium text-gray-600 transition-colors hover:bg-gray-200"
+					>
+						취소
+					</button>
+					<button
+						type="submit"
+						disabled={is_submitting_review}
+						class="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+					>
+						{is_submitting_review
+							? '제출 중...'
+							: my_review
+								? '수정하기'
+								: '작성하기'}
+					</button>
+				</div>
+			</form>
 		</div>
 	</Modal>
 {/if}
