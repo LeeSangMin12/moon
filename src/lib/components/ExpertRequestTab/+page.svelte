@@ -6,7 +6,14 @@
 	import FloatingActionButton from '$lib/components/FloatingActionButton/+page.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner/+page.svelte';
 
-	let { expertRequestData, infiniteScroll } = $props();
+	let { expertRequestData, infiniteScroll, jobType = null } = $props();
+
+	// jobType에 따라 필터링된 요청만 표시
+	const filteredRequests = $derived(
+		jobType
+			? expertRequestData.expertRequests.filter((req) => req.job_type === jobType)
+			: expertRequestData.expertRequests
+	);
 
 	onMount(() => {
 		infiniteScroll.initializeLastId();
@@ -16,9 +23,9 @@
 
 <div class="min-h-screen bg-white">
 	<div class="px-4 pb-20">
-		{#if expertRequestData.expertRequests && expertRequestData.expertRequests.length > 0}
+		{#if filteredRequests && filteredRequests.length > 0}
 			<div class="mt-8 space-y-4">
-				{#each expertRequestData.expertRequests as request}
+				{#each filteredRequests as request}
 					<div class="hover:border-gray-200">
 						<ExpertRequestCard {request} />
 						<!-- <div class="h-0.5 w-full bg-gray-200" /> -->
@@ -37,4 +44,4 @@
 	<LoadingSpinner isLoading={expertRequestData.isInfiniteLoading} />
 </div>
 
-<FloatingActionButton href="/regi/expert-request" />
+<FloatingActionButton href={`/regi/expert-request?job_type=${jobType || 'sidejob'}`} />

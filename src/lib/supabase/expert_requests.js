@@ -85,7 +85,7 @@ export const create_expert_requests_api = (supabase) => ({
 		return data;
 	},
 
-	select_infinite_scroll: async (last_request_id, category = '', limit = 20) => {
+	select_infinite_scroll: async (last_request_id, category = '', limit = 20, job_type = '') => {
 		// 보안을 위한 limit 제한
 		const MAX_LIMIT = 50;
 		const sanitizedLimit = Math.min(Math.max(1, parseInt(limit) || 20), MAX_LIMIT);
@@ -106,6 +106,10 @@ export const create_expert_requests_api = (supabase) => ({
 			query = query.eq('category', category);
 		}
 
+		if (job_type !== '') {
+			query = query.eq('job_type', job_type);
+		}
+
 		if (last_request_id !== '') {
 			const lastId = parseInt(last_request_id);
 			if (!isNaN(lastId) && lastId > 0) {
@@ -116,10 +120,10 @@ export const create_expert_requests_api = (supabase) => ({
 		const { data, error } = await query;
 
 		if (error) throw new Error(`Failed to select_infinite_scroll expert_requests: ${error.message}`);
-		
+
 		// 결과가 요청한 limit보다 적으면 더 이상 데이터가 없음을 표시
 		const hasMore = data.length === sanitizedLimit;
-		
+
 		return {
 			data: data || [],
 			hasMore,
@@ -160,6 +164,7 @@ export const create_expert_requests_api = (supabase) => ({
 			work_end_date: request_data.work_end_date || null,
 			max_applicants: request_data.max_applicants,
 			work_location: request_data.work_location,
+			job_type: request_data.job_type || 'sidejob',
 			requester_id: user_id,
 			status: 'open',
 			created_at: new Date().toISOString(),

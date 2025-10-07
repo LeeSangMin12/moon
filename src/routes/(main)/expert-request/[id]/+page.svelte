@@ -33,6 +33,9 @@
 	let { data } = $props();
 	let { expert_request, proposals, user } = $state(data);
 
+	// 첨부파일 맵 (proposal_id -> attachments[])
+	let proposal_attachments_map = $state({});
+
 	// 제안서 작성 모달 상태
 	let show_proposal_modal = $state(false);
 	let proposal_form = $state({
@@ -40,10 +43,57 @@
 		contact_info: '',
 		is_secret: false,
 	});
+	let attached_files = $state([]);
+	let file_input;
 
 	// 구매하기 모달 상태
 	let show_payment_modal = $state(false);
 	let selected_proposal = $state(null);
+
+	// 파일 선택 처리
+	const handle_file_select = (e) => {
+		const files = Array.from(e.target.files || []);
+		const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+		const MAX_FILES = 5;
+
+		if (attached_files.length + files.length > MAX_FILES) {
+			show_toast('error', `최대 ${MAX_FILES}개의 파일만 첨부할 수 있습니다.`);
+			return;
+		}
+
+		const valid_files = files.filter((file) => {
+			if (file.size > MAX_FILE_SIZE) {
+				show_toast('error', `${file.name}은(는) 10MB를 초과합니다.`);
+				return false;
+			}
+			return true;
+		});
+
+		attached_files = [...attached_files, ...valid_files];
+	};
+
+	// 파일 제거
+	const remove_file = (index) => {
+		attached_files = attached_files.filter((_, i) => i !== index);
+	};
+
+	// 파일 크기 포맷
+	const format_file_size = (bytes) => {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const sizes = ['Bytes', 'KB', 'MB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+	};
+
+	// 파일명 안전하게 변환 (UUID로 대체, 원본명은 DB에 저장)
+	const sanitize_filename = (filename, index) => {
+		const ext = filename.substring(filename.lastIndexOf('.'));
+		const uuid =
+			Math.random().toString(36).substring(2, 15) +
+			Math.random().toString(36).substring(2, 15);
+		return `${index}_${uuid}${ext}`;
+	};
 
 	const submit_proposal = async () => {
 		if (!check_login()) return;
@@ -56,7 +106,8 @@
 		}
 
 		try {
-			await $api_store.expert_request_proposals.insert(
+			// 1. 제안서 생성
+			const new_proposal = await $api_store.expert_request_proposals.insert(
 				{
 					request_id: expert_request.id,
 					message: proposal_form.message,
@@ -65,6 +116,42 @@
 				},
 				user.id,
 			);
+
+			// 2. 파일이 있으면 업로드
+			if (attached_files.length > 0) {
+				const timestamp = Date.now();
+				const files_with_paths = attached_files.map((file, index) => ({
+					path: `${user.id}/${new_proposal.id}/${timestamp}_${sanitize_filename(file.name, index)}`,
+					file: file,
+				}));
+
+				// Storage에 업로드
+				const upload_result =
+					await $api_store.proposal_attachments_bucket.upload_multiple(
+						files_with_paths,
+					);
+
+				// DB에 첨부파일 정보 저장
+				if (upload_result.successful_uploads.length > 0) {
+					const attachments_data = upload_result.successful_uploads.map(
+						(upload) => {
+							const file = attached_files[upload.index];
+							return {
+								proposal_id: new_proposal.id,
+								file_url: upload.path,
+								file_name: file.name,
+								file_size: file.size,
+								file_type: file.type,
+							};
+						},
+					);
+
+					await $api_store.proposal_attachments.insert_multiple(
+						attachments_data,
+						user.id,
+					);
+				}
+			}
 
 			show_toast('success', SUCCESS_MESSAGES.PROPOSAL_SUBMITTED);
 			show_proposal_modal = false;
@@ -81,6 +168,7 @@
 				contact_info: '',
 				is_secret: false,
 			};
+			attached_files = [];
 		} catch (error) {
 			console.error('Proposal submission error:', error);
 
@@ -265,6 +353,33 @@
 			show_toast('error', errorMessage);
 		}
 	};
+
+	// 각 제안의 첨부파일 로드
+	const load_attachments = async () => {
+		try {
+			const attachments_promises = proposals.map(async (proposal) => {
+				const attachments =
+					await $api_store.proposal_attachments.select_by_proposal_id(
+						proposal.id,
+					);
+				return { proposal_id: proposal.id, attachments };
+			});
+
+			const results = await Promise.all(attachments_promises);
+			const new_map = {};
+			results.forEach((result) => {
+				new_map[result.proposal_id] = result.attachments;
+			});
+			proposal_attachments_map = new_map;
+		} catch (error) {
+			console.error('Failed to load attachments:', error);
+		}
+	};
+
+	// 페이지 로드 시 첨부파일 로드
+	onMount(() => {
+		load_attachments();
+	});
 </script>
 
 <svelte:head>
@@ -602,6 +717,48 @@
 								</p>
 							{/if}
 
+							<!-- 첨부파일 표시 -->
+							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal_attachments_map[proposal.id]?.length > 0}
+								<div class="mb-3">
+									<p class="mb-2 text-xs font-medium text-gray-600">첨부파일</p>
+									<div class="space-y-2">
+										{#each proposal_attachments_map[proposal.id] as attachment}
+											<a
+												href={$api_store.proposal_attachments_bucket.get_public_url(
+													attachment.file_url,
+												)}
+												download={attachment.file_name}
+												target="_blank"
+												class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition-colors hover:bg-gray-100"
+											>
+												<span class="text-base">📄</span>
+												<div class="min-w-0 flex-1">
+													<p class="truncate text-xs font-medium text-gray-700">
+														{attachment.file_name}
+													</p>
+													<p class="text-xs text-gray-500">
+														{format_file_size(attachment.file_size)}
+													</p>
+												</div>
+												<svg
+													class="h-4 w-4 text-gray-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+													/>
+												</svg>
+											</a>
+										{/each}
+									</div>
+								</div>
+							{/if}
+
 							<!-- 제안 세부 정보 (비밀제안일 때 조건부 표시) -->
 							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
 								<div class="flex items-center gap-4 text-xs text-gray-500">
@@ -693,6 +850,71 @@
 						<p class="mt-1 text-xs text-gray-500">
 							제안이 수락되면 의뢰인이 이 연락처로 연락을 드릴 예정입니다.
 						</p>
+					</div>
+
+					<!-- 파일 첨부 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							이력서/포트폴리오 첨부
+						</label>
+						<input
+							type="file"
+							bind:this={file_input}
+							onchange={handle_file_select}
+							multiple
+							accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+							class="hidden"
+						/>
+						<button
+							type="button"
+							onclick={() => file_input?.click()}
+							class="w-full rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-100"
+						>
+							📎 파일 선택 (최대 5개, 각 10MB 이하)
+						</button>
+						<p class="mt-1 text-xs text-gray-500">
+							PDF, Word, 이미지 파일을 첨부할 수 있습니다.
+						</p>
+
+						<!-- 첨부된 파일 목록 -->
+						{#if attached_files.length > 0}
+							<div class="mt-3 space-y-2">
+								{#each attached_files as file, index}
+									<div
+										class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+									>
+										<div class="flex min-w-0 flex-1 items-center gap-2">
+											<span class="text-lg">📄</span>
+											<div class="min-w-0 flex-1">
+												<p class="truncate text-sm font-medium text-gray-700">
+													{file.name}
+												</p>
+												<p class="text-xs text-gray-500">
+													{format_file_size(file.size)}
+												</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											onclick={() => remove_file(index)}
+											class="ml-2 text-gray-400 hover:text-red-600"
+										>
+											<svg
+												class="h-5 w-5"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fill-rule="evenodd"
+													d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 
 					<!-- 비밀제안 옵션 -->

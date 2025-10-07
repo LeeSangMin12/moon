@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
+	import { page } from '$app/stores';
 
 	import Date_picker from '$lib/components/ui/Date_picker/+page.svelte';
 	import Date_range_picker from '$lib/components/ui/Date_range_picker/+page.svelte';
@@ -36,6 +37,7 @@
 		work_end_date: null,
 		max_applicants: 1,
 		work_location: '',
+		job_type: 'sidejob',
 	});
 
 	const categories = [
@@ -52,13 +54,29 @@
 		{ value: '기타', label: '기타' },
 	];
 
+	const job_types = [
+		{ value: 'sidejob', label: '사이드잡' },
+		{ value: 'fulltime', label: '풀타임잡' },
+	];
+
 	let selected_category = $state(null);
+	let selected_job_type = $state(job_types[0]);
 
 	onMount(() => {
 		// Check if user is logged in when page loads
 		if (!check_login()) {
 			goto('/login');
 			return;
+		}
+
+		// URL 파라미터에서 job_type 읽기
+		const job_type_param = $page.url.searchParams.get('job_type');
+		if (job_type_param) {
+			const matching_job_type = job_types.find(jt => jt.value === job_type_param);
+			if (matching_job_type) {
+				selected_job_type = matching_job_type;
+				request_form_data.job_type = job_type_param;
+			}
 		}
 	});
 
@@ -170,6 +188,7 @@
 					work_end_date: request_form_data.work_end_date || null,
 					max_applicants: parseInt(request_form_data.max_applicants),
 					work_location: request_form_data.work_location,
+					job_type: selected_job_type?.value || 'sidejob',
 				},
 				$user_store.id,
 			);
@@ -230,6 +249,23 @@
 					<br />
 					기본 정보를 작성해주세요
 				</h2>
+
+				<!-- 작업 유형 -->
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700">
+						작업 유형
+					</label>
+					<Select
+						items={job_types}
+						bind:value={selected_job_type}
+						placeholder="작업 유형을 선택해주세요"
+						clearable={false}
+						searchable={false}
+						--border="1px solid #d1d5db"
+						--border-radius="6px"
+						--border-focused="1px solid #3b82f6"
+					/>
+				</div>
 
 				<!-- 카테고리 -->
 				<div>

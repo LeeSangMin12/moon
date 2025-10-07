@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 # IDE
 .cursor/
 .cursorrules
+
+# MCP configuration (contains tokens)
+.mcp.json
+.claude/
+.env.local
