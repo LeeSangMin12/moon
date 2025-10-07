@@ -261,6 +261,28 @@
 		return user && expert_request.requester_id === user.id;
 	};
 
+	// 제안 작성자인지 확인
+	const is_proposal_author = (proposal) => {
+		return user && proposal.expert_id === user.id;
+	};
+
+	// 비밀 제안 내용을 볼 수 있는지 확인
+	const can_view_secret_proposal = (proposal) => {
+		if (!proposal.is_secret) return true;
+		if (!user) return false; // 로그인하지 않은 경우 비밀 제안 볼 수 없음
+		const result = is_requester() || is_proposal_author(proposal);
+		console.log('can_view_secret_proposal:', {
+			proposal_id: proposal.id,
+			is_secret: proposal.is_secret,
+			expert_id: proposal.expert_id,
+			user_id: user?.id,
+			is_requester: is_requester(),
+			is_author: is_proposal_author(proposal),
+			result,
+		});
+		return result;
+	};
+
 	const accept_proposal = async (proposal_id) => {
 		// 제안을 선택하고 결제 모달 표시
 		selected_proposal = proposals.find((p) => p.id === proposal_id);
@@ -276,6 +298,31 @@
 				selected_proposal.id,
 				expert_request.id,
 			);
+
+			// 전문가에게 알림 전송
+			try {
+				if (
+					selected_proposal.expert_id &&
+					selected_proposal.expert_id !== user.id
+				) {
+					await $api_store.notifications.insert({
+						recipient_id: selected_proposal.expert_id,
+						actor_id: user.id,
+						type: 'proposal.accepted',
+						resource_type: 'expert_request',
+						resource_id: String(expert_request.id),
+						payload: {
+							request_id: expert_request.id,
+							request_title: expert_request.title,
+							proposal_id: selected_proposal.id,
+						},
+						link_url: `/expert-request/${expert_request.id}`,
+					});
+				}
+			} catch (e) {
+				console.error('Failed to insert notification (proposal.accepted):', e);
+			}
+
 			show_toast(
 				'success',
 				'결제가 완료되었습니다! 전문가가 연락을 드릴 예정입니다.',
@@ -770,6 +817,7 @@
 			{#if proposals.length > 0}
 				<div class="space-y-3">
 					{#each proposals as proposal}
+						<!-- Debug: {JSON.stringify({ is_secret: proposal.is_secret, expert_id: proposal.expert_id, user_id: user?.id, can_view: can_view_secret_proposal(proposal) })} -->
 						<div
 							class="rounded-xl border border-gray-100 p-4 transition-colors hover:bg-gray-50/50"
 						>
@@ -869,7 +917,7 @@
 							</div>
 
 							<!-- 제안 내용 표시 (비밀제안 처리) -->
-							{#if proposal.is_secret && !is_requester() && proposal.status !== 'accepted'}
+							{#if proposal.is_secret && !can_view_secret_proposal(proposal)}
 								<div
 									class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
 								>
@@ -890,7 +938,7 @@
 										>
 									</div>
 									<p class="mt-2 text-xs text-gray-500">
-										이 제안은 의뢰인만 내용을 확인할 수 있습니다.
+										이 제안은 의뢰인과 제안 작성자만 내용을 확인할 수 있습니다.
 									</p>
 								</div>
 							{:else}
@@ -902,7 +950,7 @@
 							{/if}
 
 							<!-- 첨부파일 표시 -->
-							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal_attachments_map[proposal.id]?.length > 0}
+							{#if can_view_secret_proposal(proposal) && proposal_attachments_map[proposal.id]?.length > 0}
 								<div class="mb-3">
 									<p class="mb-2 text-xs font-medium text-gray-600">첨부파일</p>
 									<div class="space-y-2">
@@ -944,7 +992,7 @@
 							{/if}
 
 							<!-- 제안 세부 정보 (비밀제안일 때 조건부 표시) -->
-							{#if (!proposal.is_secret || is_requester() || proposal.status === 'accepted') && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
+							{#if can_view_secret_proposal(proposal) && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
 								<div class="flex items-center gap-4 text-xs text-gray-500">
 									<span class="flex items-center gap-1">
 										<span>📞</span>
@@ -1171,7 +1219,7 @@
 						<img
 							src={selected_proposal.users.avatar_url}
 							alt=""
-							class="h-8 w-8 rounded-full object-cover"
+							class="aspect-square h-8 w-8 rounded-full object-cover object-center"
 						/>
 					{:else}
 						<div
@@ -1190,7 +1238,7 @@
 						<p class="text-xs text-gray-500">전문가</p>
 					</div>
 				</div>
-				<p class="mb-2 text-sm text-gray-600">
+				<p class="mb-2 line-clamp-2 text-sm text-gray-600">
 					{selected_proposal.message.substring(0, 100)}{selected_proposal
 						.message.length > 100
 						? '...'
