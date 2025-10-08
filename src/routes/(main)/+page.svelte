@@ -42,7 +42,7 @@
 	});
 
 	// 사용자 변경 시 미읽음 카운트 갱신
-	$effect(async () => {
+	$effect(() => {
 		const uid = $user_store.id;
 		if (!uid) return;
 		refresh_unread_count();
@@ -59,20 +59,34 @@
 		}
 	};
 
-	$effect(async () => {
-		// Track dependencies explicitly
-		selected;
-		joined_communities;
+	// Cache posts by community to avoid unnecessary API calls
+	let posts_cache = $state(new Map());
 
+	$effect(() => {
+		// Track dependencies
+		const current_selected = selected;
+		const current_communities = joined_communities;
+
+		// Use untrack to prevent infinite loops
 		const community_id =
-			selected === 0 ? '' : (joined_communities[selected - 1]?.id ?? '');
-		const initial_posts = await $api_store.posts.select_infinite_scroll(
-			'',
-			community_id,
-			20,
-		);
-		posts = initial_posts;
-		last_post_id = initial_posts.at(-1)?.id ?? '';
+			current_selected === 0 ? '' : (current_communities[current_selected - 1]?.id ?? '');
+
+		// Check cache first
+		const cache_key = community_id || 'all';
+		if (posts_cache.has(cache_key)) {
+			const cached = posts_cache.get(cache_key);
+			posts = cached.posts;
+			last_post_id = cached.last_post_id;
+			return;
+		}
+
+		// Load from API only if not cached
+		$api_store.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
+			posts = initial_posts;
+			last_post_id = initial_posts.at(-1)?.id ?? '';
+			// Update cache
+			posts_cache.set(cache_key, { posts: initial_posts, last_post_id: initial_posts.at(-1)?.id ?? '' });
+		});
 	});
 
 	/**
@@ -93,7 +107,7 @@
 					if (
 						entry.isIntersecting &&
 						!is_infinite_loading &&
-						posts.length >= 20
+						posts.length >= 10
 					) {
 						is_infinite_loading = true;
 						load_more_data().finally(() => {
@@ -127,7 +141,7 @@
 		const available_post = await $api_store.posts.select_infinite_scroll(
 			last_post_id,
 			community_id,
-			20,
+			10,
 		);
 		is_infinite_loading = false;
 

@@ -23,6 +23,7 @@
 
 	const tabs = ['전문가 찾기', '사이드잡', '풀타임잡'];
 	let selected_tab = $state(0);
+	let expert_requests_loaded = $state(false);
 
 	const images = [
 		{
@@ -39,6 +40,16 @@
 
 	const serviceData = createServiceData(data);
 	const expertRequestData = createExpertRequestData(data);
+
+	// Lazy load expert requests when switching to tab 1 or 2
+	$effect(() => {
+		if ((selected_tab === 1 || selected_tab === 2) && !expert_requests_loaded) {
+			expert_requests_loaded = true;
+			$api_store.expert_requests.select_infinite_scroll('').then(response => {
+				expertRequestData.expertRequests = response.data || response;
+			});
+		}
+	});
 
 	const serviceInfiniteScroll = createInfiniteScroll({
 		items: {

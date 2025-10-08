@@ -16,9 +16,14 @@ export const create_posts_api = (supabase) => ({
 		let query = supabase
 			.from('posts')
 			.select(
-				'*, users:author_id(id, handle, name, avatar_url), communities(id, title, slug), post_votes(user_id, vote), post_bookmarks(user_id), post_comments(count)',
+				// Optimized: only fetch necessary fields, post_comments(count) is heavy
+				'id, title, content, created_at, author_id, community_id, like_count, ' +
+				'users:author_id(id, handle, name, avatar_url), ' +
+				'communities(id, title, slug), ' +
+				'post_votes(user_id, vote), ' +
+				'post_bookmarks(user_id)'
 			)
-			.order('created_at', { ascending: false }) // 최신순 정렬
+			.order('created_at', { ascending: false })
 			.limit(limit);
 
 		if (community_id !== '') {

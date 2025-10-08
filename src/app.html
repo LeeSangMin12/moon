@@ -56,64 +56,11 @@
 		<link rel="dns-prefetch" href="//fonts.googleapis.com" />
 
 		<!-- Preconnect to external domains -->
-		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-		<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+		<link rel="preconnect" href="https://www.googletagmanager.com" />
+		<link rel="dns-prefetch" href="//www.googletagmanager.com" />
 
-		<script src="https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"></script>
-		<script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.8.0-min.js.gz"></script>
-		<script>
-			window.amplitude.add(window.sessionReplay.plugin({ sampleRate: 1 }));
-			window.amplitude.init('abb3d09663149abdab499a9f7a871fe1', {
-				autocapture: { elementInteractions: true },
-			});
-		</script>
-
-		<!-- Meta Pixel Code -->
-		<script>
-			!(function (f, b, e, v, n, t, s) {
-				if (f.fbq) return;
-				n = f.fbq = function () {
-					n.callMethod
-						? n.callMethod.apply(n, arguments)
-						: n.queue.push(arguments);
-				};
-				if (!f._fbq) f._fbq = n;
-				n.push = n;
-				n.loaded = !0;
-				n.version = '2.0';
-				n.queue = [];
-				t = b.createElement(e);
-				t.async = !0;
-				t.src = v;
-				s = b.getElementsByTagName(e)[0];
-				s.parentNode.insertBefore(t, s);
-			})(
-				window,
-				document,
-				'script',
-				'https://connect.facebook.net/en_US/fbevents.js',
-			);
-			fbq('init', '760227866906257');
-			fbq('track', 'PageView');
-		</script>
-		<noscript
-			><img
-				height="1"
-				width="1"
-				style="display: none"
-				src="https://www.facebook.com/tr?id=760227866906257&ev=PageView&noscript=1"
-		/></noscript>
-		<!-- End Meta Pixel Code -->
-		<noscript
-			><img
-				height="1"
-				width="1"
-				style="display: none"
-				src="https://www.facebook.com/tr?id=1459836121892213&ev=PageView&noscript=1"
-		/></noscript>
-		<!-- End Meta Pixel Code -->
-
-		<!-- Google Tag Manager -->
+		<!-- Google Tag Manager - Single analytics solution -->
+		<!-- Configure Amplitude, Facebook Pixel, and GA4 inside GTM dashboard -->
 		<script>
 			(function (w, d, s, l, i) {
 				w[l] = w[l] || [];
@@ -128,25 +75,10 @@
 		</script>
 		<!-- End Google Tag Manager -->
 
-		<!-- Google tag (gtag.js) -->
-		<script
-			async
-			src="https://www.googletagmanager.com/gtag/js?id=G-NW4YCE6L55"
-		></script>
-		<script>
-			window.dataLayer = window.dataLayer || [];
-			function gtag() {
-				dataLayer.push(arguments);
-			}
-			gtag('js', new Date());
-
-			gtag('config', 'G-NW4YCE6L55');
-		</script>
-
 		%sveltekit.head%
 	</head>
 
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="tap">
 		<!-- Google Tag Manager (noscript) -->
 		<noscript
 			><iframe
