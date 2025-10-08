@@ -17,7 +17,7 @@ export const create_posts_api = (supabase) => ({
 			.from('posts')
 			.select(
 				// Optimized: only fetch necessary fields, post_comments(count) is heavy
-				'id, title, content, created_at, author_id, community_id, like_count, ' +
+				'id, title, content, created_at, author_id, community_id, like_count, images, ' +
 				'users:author_id(id, handle, name, avatar_url), ' +
 				'communities(id, title, slug), ' +
 				'post_votes(user_id, vote), ' +
