@@ -1,15 +1,24 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { goto, preloadData } from '$app/navigation';
 	import { page } from '$app/stores';
 
 	import colors from '$lib/js/colors';
 	import { user_store } from '$lib/store/user_store';
+
+	// Preload data on hover/mouseenter for faster navigation
+	const handlePreload = (path) => {
+		preloadData(path);
+	};
 </script>
 
 <nav
 	class=" btm-nav fixed bottom-0 z-10 flex h-[calc(53px+env(safe-area-inset-bottom))] w-full max-w-screen-md items-center justify-evenly bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
 >
-	<button onclick={() => goto('/')} class="flex flex-col items-center gap-0.5">
+	<button
+		onclick={() => goto('/')}
+		onmouseenter={() => handlePreload('/')}
+		ontouchstart={() => handlePreload('/')}
+		class="flex flex-col items-center gap-0.5">
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			height="20px"
@@ -30,6 +39,8 @@
 
 	<button
 		onclick={() => goto('/community')}
+		onmouseenter={() => handlePreload('/community')}
+		ontouchstart={() => handlePreload('/community')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -54,6 +65,8 @@
 
 	<button
 		onclick={() => goto('/search')}
+		onmouseenter={() => handlePreload('/search')}
+		ontouchstart={() => handlePreload('/search')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg
@@ -78,6 +91,8 @@
 
 	<button
 		onclick={() => goto('/service')}
+		onmouseenter={() => handlePreload('/service')}
+		ontouchstart={() => handlePreload('/service')}
 		class="flex flex-col items-center gap-0.5"
 	>
 		<svg

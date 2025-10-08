@@ -242,6 +242,7 @@
 				src={post.users?.avatar_url ?? profile_png}
 				alt={post.users?.name || 'Unknown User'}
 				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
+				loading="lazy"
 			/>
 
 			<p class="pr-3 text-sm font-medium">

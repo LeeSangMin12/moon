@@ -268,6 +268,7 @@
 					src={comment_state.users?.avatar_url ?? profile_png}
 					alt="프로필"
 					class="block aspect-square h-full w-full rounded-full object-cover"
+					loading="lazy"
 				/>
 			</a>
 			<div class="w-full">

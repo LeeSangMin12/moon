@@ -9,6 +9,17 @@ export default defineConfig({
 	server: {
 		allowedHosts: ['1e49f49088ad.ngrok-free.app'],
 	},
+	build: {
+		rollupOptions: {
+			onwarn(warning, warn) {
+				// Suppress circular dependency warnings from Svelte internals
+				if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message.includes('node_modules/svelte')) {
+					return;
+				}
+				warn(warning);
+			}
+		}
+	},
 	test: {
 		workspace: [
 			{

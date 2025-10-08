@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { dev } from '$app/environment';
 
 	let performanceData = $state({
 		lcp: 0,
@@ -9,6 +10,9 @@
 	});
 
 	onMount(() => {
+		// Only monitor performance in development mode
+		if (!dev) return;
+
 		// Monitor LCP (Largest Contentful Paint)
 		if ('PerformanceObserver' in window) {
 			const lcpObserver = new PerformanceObserver((list) => {
@@ -53,5 +57,7 @@
 	});
 </script>
 
-<!-- This component is invisible but monitors performance -->
-<div style="display: none;">Performance Monitor Active</div>
+{#if dev}
+	<!-- This component is invisible but monitors performance in dev mode -->
+	<div style="display: none;">Performance Monitor Active</div>
+{/if}

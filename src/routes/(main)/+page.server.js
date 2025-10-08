@@ -9,13 +9,12 @@ export const load = async ({ parent, locals: { supabase }, setHeaders }) => {
 		'Cache-Control': 'public, max-age=60, s-maxage=300',
 	});
 
-	// Load only first 5 posts initially for faster LCP
-	const posts = await api.posts.select_infinite_scroll('', '', 20);
-
+	// Load initial data in parallel for faster response
 	if (user?.id) {
-		const joined_communities = await api.community_members.select_by_user_id(
-			user.id,
-		);
+		const [posts, joined_communities] = await Promise.all([
+			api.posts.select_infinite_scroll('', '', 10), // Reduced from 20 to 10 for faster LCP
+			api.community_members.select_by_user_id(user.id)
+		]);
 
 		return {
 			joined_communities: joined_communities.map((cm) => cm.communities),
@@ -23,5 +22,7 @@ export const load = async ({ parent, locals: { supabase }, setHeaders }) => {
 		};
 	}
 
-	return { posts };
+	// For non-logged-in users, only load minimal posts
+	const posts = await api.posts.select_infinite_scroll('', '', 10);
+	return { posts, joined_communities: [] };
 };

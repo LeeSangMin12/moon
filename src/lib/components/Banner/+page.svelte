@@ -49,6 +49,7 @@
 					{src}
 					alt={title}
 					class="h-[100px] w-full rounded-[14px] object-cover drop-shadow-sm"
+					loading={index === 0 ? 'eager' : 'lazy'}
 				/>
 
 				<p
@@ -81,6 +82,7 @@
 					{src}
 					alt={title}
 					class="h-[101px] w-80 object-contain drop-shadow-sm"
+					loading={index === 0 ? 'eager' : 'lazy'}
 				/>
 			</a>
 		{/each}

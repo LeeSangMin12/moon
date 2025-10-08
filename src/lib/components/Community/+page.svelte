@@ -49,6 +49,7 @@
 				src={community.avatar_url || logo}
 				alt="커뮤니티 아바타"
 				class="mr-2 h-12 w-12 rounded-full object-cover"
+				loading="lazy"
 			/>
 			<div class="flex flex-col justify-between">
 				<p class="line-clamp-2 pr-4 font-medium">

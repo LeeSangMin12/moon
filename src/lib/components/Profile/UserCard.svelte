@@ -35,6 +35,7 @@
 			src={profile.avatar_url || profile_png}
 			alt={profile.handle}
 			class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
+			loading="lazy"
 		/>
 		<div class="flex flex-col">
 			<p class="pr-4 text-sm font-medium">{profile.name}</p>
