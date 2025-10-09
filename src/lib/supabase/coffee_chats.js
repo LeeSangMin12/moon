@@ -24,11 +24,11 @@ export const create_coffee_chats_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('coffee_chats')
 			.select(`
-				*,
+				id, status, message, created_at,
 				sender:sender_id(id, name, handle, avatar_url)
 			`)
 			.eq('recipient_id', user_id)
-			.order('created_at', { ascending: false });
+			.order('id', { ascending: false });
 
 		if (error) {
 			console.error('Error fetching received coffee chats:', error);
@@ -45,11 +45,11 @@ export const create_coffee_chats_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('coffee_chats')
 			.select(`
-				*,
+				id, status, message, created_at,
 				recipient:recipient_id(id, name, handle, avatar_url)
 			`)
 			.eq('sender_id', user_id)
-			.order('created_at', { ascending: false });
+			.order('id', { ascending: false });
 
 		if (error) {
 			console.error('Error fetching sent coffee chats:', error);

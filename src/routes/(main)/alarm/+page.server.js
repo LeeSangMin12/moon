@@ -1,13 +1,17 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ parent, locals: { supabase } }) {
-	const { user } = await parent();
+export async function load({ parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
-	if (!user) {
-		return { notifications: [] };
-	}
+	setHeaders({
+		'Cache-Control': 'private, max-age=0, must-revalidate',
+	});
 
-	const notifications = await api.notifications.select_list(user.id, 50);
-	return { notifications };
+	const { user } = await parent();
+
+	const notifications = user ? await api.notifications.select_list(user.id, 50) : [];
+
+	return {
+		notifications,
+	};
 }

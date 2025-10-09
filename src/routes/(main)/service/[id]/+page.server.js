@@ -1,24 +1,21 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ params, parent, locals: { supabase } }) {
-	const { user } = await parent();
+export async function load({ params, parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
-	const service = await api.services.select_by_id(params.id);
-	const service_likes = await api.service_likes.select_by_user_id(user?.id);
-	const service_reviews = await api.service_reviews.select_by_service_id(
-		params.id,
-	);
+	setHeaders({
+		'Cache-Control': 'public, max-age=30, s-maxage=60',
+	});
 
-	const review_permission = user
-		? await api.service_reviews.can_write_review(params.id, user.id)
-		: { can_write: false, order_id: null };
-	const my_review = user
-		? await api.service_reviews.select_by_service_and_reviewer(
-				params.id,
-				user.id,
-			)
-		: null;
+	const { user } = await parent();
+
+	const [service, service_likes, service_reviews, review_permission, my_review] = await Promise.all([
+		api.services.select_by_id(params.id),
+		user ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([]),
+		api.service_reviews.select_by_service_id(params.id),
+		user ? api.service_reviews.can_write_review(params.id, user.id) : Promise.resolve({ can_write: false, order_id: null }),
+		user ? api.service_reviews.select_by_service_and_reviewer(params.id, user.id) : Promise.resolve(null)
+	]);
 
 	return {
 		service,

@@ -35,9 +35,10 @@ export const create_users_api = (supabase) => ({
 	select_by_search: async (search_text) => {
 		let { data, error } = await supabase
 			.from('users')
-			.select('*')
+			.select('id, handle, name, avatar_url, bio, created_at')
 			.or(`handle.ilike.%${search_text}%,name.ilike.%${search_text}%`)
-			.order('created_at', { ascending: false });
+			.order('id', { ascending: false })
+			.limit(20);
 
 		if (error) throw new Error(`Failed to select_by_search: ${error.message}`);
 		return data || null;

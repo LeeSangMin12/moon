@@ -5,9 +5,12 @@
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import PostSkeleton from '$lib/components/ui/PostSkeleton/+page.svelte';
+
+	// Dynamic imports for code splitting
+	let Post = $state();
+	let Icon = $state();
 
 	import colors from '$lib/js/colors';
 	import { check_login } from '$lib/js/common';
@@ -18,7 +21,9 @@
 	const TITLE = '문';
 
 	let { data } = $props();
-	let { joined_communities = [], posts = [] } = $state(data);
+	// Handle streamed data - convert promises to reactive state
+	let joined_communities = $state([]);
+	let posts = $state([]);
 
 	let tabs = $state(['최신']);
 	let selected = $state(0);
@@ -30,11 +35,21 @@
 	let observer = $state(null);
 
 	onMount(async () => {
-		if (joined_communities) {
-			tabs = ['최신', ...joined_communities.map((c) => c.title)];
-		}
+		// Dynamic import components
+		const [PostModule, IconModule] = await Promise.all([
+			import('$lib/components/Post/+page.svelte'),
+			import('$lib/components/ui/Icon/+page.svelte')
+		]);
+		Post = PostModule.default;
+		Icon = IconModule.default;
 
+		// Initialize data (no longer using streaming)
+		posts = data.posts || [];
 		last_post_id = posts[posts.length - 1]?.id || '';
+
+		joined_communities = data.joined_communities || [];
+		tabs = ['최신', ...joined_communities.map((c) => c.title)];
+
 		infinite_scroll();
 
 		// 초기 알림 미읽음 카운트 로드
@@ -196,11 +211,20 @@
 <main>
 	<TabSelector {tabs} bind:selected />
 
-	{#each posts as post}
-		<div class="mt-4">
-			<Post {post} on:gift_comment_added={handle_gift_comment_added} />
-		</div>
-	{/each}
+	{#if posts.length === 0}
+		<!-- Loading skeleton -->
+		{#each Array(5) as _, i}
+			<div class="mt-4">
+				<PostSkeleton />
+			</div>
+		{/each}
+	{:else}
+		{#each posts as post}
+			<div class="mt-4">
+				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+			</div>
+		{/each}
+	{/if}
 
 	<div id="infinite_scroll"></div>
 

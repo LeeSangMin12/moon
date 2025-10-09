@@ -3,12 +3,12 @@ export const create_expert_request_proposals_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('expert_request_proposals')
 			.select(`
-				*,
+				id, message, price, delivery_days, status, created_at,
 				users:expert_id(id, handle, name, avatar_url),
 				expert_requests:request_id(id, title)
 			`)
 			.eq('request_id', request_id)
-			.order('created_at', { ascending: false });
+			.order('id', { ascending: false });
 
 		if (error) throw new Error(`Failed to select proposals by request_id: ${error.message}`);
 		return data;

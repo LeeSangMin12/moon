@@ -63,9 +63,9 @@ export const create_service_reviews_api = (supabase) => ({
 	select_by_service_id: async (service_id) => {
 		const { data, error } = await supabase
 			.from('service_reviews')
-			.select(`*, reviewer:reviewer_id(id, name, handle, avatar_url)`)
+			.select(`id, rating, title, content, created_at, service_id, reviewer:reviewer_id(id, name, handle, avatar_url)`)
 			.eq('service_id', service_id)
-			.order('created_at', { ascending: false });
+			.order('id', { ascending: false });
 
 		if (error)
 			throw new Error(
@@ -222,17 +222,17 @@ export const create_service_reviews_api = (supabase) => ({
 	},
 
 	// 최근 리뷰 조회 (무한 스크롤용)
-	select_infinite_scroll: async (service_id, last_review_id, limit = 20) => {
+	select_infinite_scroll: async (service_id, last_review_id, limit = 10) => {
 		let query = supabase
 			.from('service_reviews')
 			.select(
 				`
-				*,
+				id, rating, title, content, created_at,
 				reviewer:reviewer_id(id, name, handle, avatar_url)
 			`,
 			)
 			.eq('service_id', service_id)
-			.order('created_at', { ascending: false })
+			.order('id', { ascending: false })
 			.limit(limit);
 
 		if (last_review_id !== '') {

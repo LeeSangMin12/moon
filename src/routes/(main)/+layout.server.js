@@ -1,19 +1,15 @@
 import { create_api } from '$lib/supabase/api';
 
 export const load = async ({ locals: { get_user, supabase }, cookies }) => {
-	const { auth_user } = await get_user();
 	const api = create_api(supabase);
 
-	if (!auth_user?.id) {
-		return {
-			user: null,
-			cookies: cookies.getAll(),
-		};
-	}
+	// STREAMING: Return user promise immediately, don't block
+	const userPromise = get_user().then(({ auth_user }) =>
+		auth_user?.id ? api.users.select(auth_user.id) : null
+	);
 
-	const user = await api.users.select(auth_user?.id);
 	return {
-		user,
+		user: userPromise,
 		cookies: cookies.getAll(),
 	};
 };

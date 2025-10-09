@@ -36,12 +36,12 @@ export const create_services_api = (supabase) => ({
 	select_infinite_scroll: async (last_service_id) => {
 		let query = supabase
 			.from('services')
-			.select('*')
-			.order('created_at', { ascending: false }) // 최신순 정렬
+			.select('id, title, author_id, images, created_at, price')
+			.order('id', { ascending: false })
 			.limit(20);
 
 		if (last_service_id !== '') {
-			query.lt('id', last_service_id);
+			query = query.lt('id', last_service_id);
 		}
 
 		let { data: services, error } = await query;

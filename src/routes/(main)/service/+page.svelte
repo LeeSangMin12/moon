@@ -2,6 +2,7 @@
 	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
+	import { onMount } from 'svelte';
 	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
@@ -38,8 +39,28 @@
 		},
 	];
 
-	const serviceData = createServiceData(data);
-	const expertRequestData = createExpertRequestData(data);
+	// Initialize with empty data - will be populated when promises resolve
+	const serviceData = createServiceData({ services: [], service_likes: [] });
+	const expertRequestData = createExpertRequestData({ expert_requests: [] });
+
+	// Resolve streamed services promise
+	onMount(async () => {
+		if (data.services instanceof Promise) {
+			data.services.then(services => {
+				serviceData.services = services;
+			});
+		} else {
+			serviceData.services = data.services || [];
+		}
+
+		if (data.service_likes instanceof Promise) {
+			data.service_likes.then(likes => {
+				serviceData.serviceLikes = likes;
+			});
+		} else {
+			serviceData.serviceLikes = data.service_likes || [];
+		}
+	});
 
 	// Lazy load expert requests when switching to tab 1 or 2
 	$effect(() => {
