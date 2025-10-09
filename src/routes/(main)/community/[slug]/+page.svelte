@@ -1,6 +1,6 @@
 <script>
 	import logo from '$lib/img/logo.png';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
@@ -38,6 +38,12 @@
 		data.community.community_members?.[0]?.count ?? 0,
 	);
 
+	// Reactively update state when data changes
+	$effect(() => {
+		community_members_state = data.community_members;
+		participant_count = data.community.community_members?.[0]?.count ?? 0;
+	});
+
 	let is_participants_modal_open = $state(false);
 	let is_menu_modal_open = $state(false);
 	let is_report_modal_open = $state(false);
@@ -54,10 +60,12 @@
 	const handle_join = async (community_id) => {
 		try {
 			await $api_store.community_members.insert(community_id, $user_store.id);
-			community_members_state.push({ community_id, user_id: $user_store.id });
+			// Update local state immediately for responsive UI (use spread for Svelte 5 reactivity)
+			community_members_state = [...community_members_state, { community_id, user_id: $user_store.id }];
 			// 참여자 수 증가
 			participant_count++;
-
+			// Invalidate server data to fetch latest state
+			await invalidate(`/community/${community.slug}`);
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -67,11 +75,14 @@
 	const handle_leave = async (community_id) => {
 		try {
 			await $api_store.community_members.delete(community_id, $user_store.id);
+			// Update local state immediately for responsive UI
 			community_members_state = community_members_state.filter(
 				(member) => member.community_id !== community_id,
 			);
 			// 참여자 수 감소
 			participant_count--;
+			// Invalidate server data to fetch latest state
+			await invalidate(`/community/${community.slug}`);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
 			console.error(error);

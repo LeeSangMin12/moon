@@ -2,10 +2,10 @@
 	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import { onMount } from 'svelte';
 	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
+	import { onMount } from 'svelte';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
 	import Header from '$lib/components/ui/Header/+page.svelte';
@@ -45,8 +45,9 @@
 
 	// Resolve streamed services promise
 	onMount(async () => {
+		console.log('hi');
 		if (data.services instanceof Promise) {
-			data.services.then(services => {
+			data.services.then((services) => {
 				serviceData.services = services;
 			});
 		} else {
@@ -54,7 +55,7 @@
 		}
 
 		if (data.service_likes instanceof Promise) {
-			data.service_likes.then(likes => {
+			data.service_likes.then((likes) => {
 				serviceData.serviceLikes = likes;
 			});
 		} else {
@@ -66,7 +67,7 @@
 	$effect(() => {
 		if ((selected_tab === 1 || selected_tab === 2) && !expert_requests_loaded) {
 			expert_requests_loaded = true;
-			$api_store.expert_requests.select_infinite_scroll('').then(response => {
+			$api_store.expert_requests.select_infinite_scroll('').then((response) => {
 				expertRequestData.expertRequests = response.data || response;
 			});
 		}

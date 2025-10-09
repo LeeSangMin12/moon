@@ -1,6 +1,6 @@
 <script>
 	import logo from '$lib/img/logo.png';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiAddLine } from 'svelte-remixicon';
 
@@ -16,23 +16,23 @@
 
 	let { data } = $props();
 
-	let community_members_state = $state(data.community_members);
-	let communities_state = $state(data.communities);
+	// 초기 서버 데이터를 state로 복사 (로컬 관리)
+	let communities = $state(data.communities || []);
+
+	// 무한 스크롤로 추가된 커뮤니티들
+	let infinite_scroll_communities = $state([]);
+
+	// 전체 커뮤니티 = 서버 데이터 + 무한스크롤 데이터
+	let all_communities = $derived([...communities, ...infinite_scroll_communities]);
 
 	let is_infinite_loading = $state(false);
 	let last_community_id = $state('');
 
 	onMount(() => {
 		last_community_id =
-			communities_state[communities_state.length - 1]?.id || '';
+			all_communities[all_communities.length - 1]?.id || '';
 		infinite_scroll();
 	});
-
-	const is_user_member = (community) => {
-		return community_members_state.some(
-			(member) => member.community_id === community.id,
-		);
-	};
 
 	/**
 	 * 무한스크롤 함수
@@ -40,7 +40,7 @@
 	const infinite_scroll = () => {
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
-				if (communities_state.length >= 10 && entry.isIntersecting) {
+				if (all_communities.length >= 10 && entry.isIntersecting) {
 					is_infinite_loading = true;
 					setTimeout(() => {
 						load_more_data();
@@ -58,41 +58,61 @@
 	 */
 	const load_more_data = async () => {
 		const available_community =
-			await $api_store.communities.select_infinite_scroll(last_community_id);
+			await $api_store.communities.select_infinite_scroll(last_community_id, $user_store?.id);
 		is_infinite_loading = false;
 
 		//더 불러올 값이 있을때만 조회
 		if (available_community.length !== 0) {
-			communities_state = [...communities_state, ...available_community];
+			infinite_scroll_communities = [...infinite_scroll_communities, ...available_community];
 
 			last_community_id =
 				available_community[available_community.length - 1]?.id || '';
 		}
 	};
 
-	const community_members_count = (community) => {
-		return community.community_members?.[0]?.count ?? 0;
-	};
-
 	const handle_join = async (community_id) => {
 		try {
+			// Optimistic update - UI 즉시 업데이트
+			communities = communities.map(c =>
+				c.id === community_id
+					? { ...c, is_member: true, member_count: c.member_count + 1 }
+					: c
+			);
+
 			await $api_store.community_members.insert(community_id, $user_store.id);
-			community_members_state.push({ community_id, user_id: $user_store.id });
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
+			// 실패 시 롤백
+			communities = communities.map(c =>
+				c.id === community_id
+					? { ...c, is_member: false, member_count: Math.max(0, c.member_count - 1) }
+					: c
+			);
+			show_toast('error', '참여 중 오류가 발생했어요.');
 		}
 	};
 
 	const handle_leave = async (community_id) => {
 		try {
-			await $api_store.community_members.delete(community_id, $user_store.id);
-			community_members_state = community_members_state.filter(
-				(member) => member.community_id !== community_id,
+			// Optimistic update - UI 즉시 업데이트
+			communities = communities.map(c =>
+				c.id === community_id
+					? { ...c, is_member: false, member_count: Math.max(0, c.member_count - 1) }
+					: c
 			);
+
+			await $api_store.community_members.delete(community_id, $user_store.id);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
 			console.error(error);
+			// 실패 시 롤백
+			communities = communities.map(c =>
+				c.id === community_id
+					? { ...c, is_member: true, member_count: c.member_count + 1 }
+					: c
+			);
+			show_toast('error', '참여 취소 중 오류가 발생했어요.');
 		}
 	};
 </script>
@@ -115,7 +135,7 @@
 </Header>
 
 <main>
-	{#each communities_state as community}
+	{#each all_communities as community}
 		<article class="px-4">
 			<div class="flex items-start justify-between">
 				<a href={`/community/${community.slug}`} class="flex">
@@ -131,12 +151,12 @@
 						</p>
 						<p class="flex text-xs text-gray-400">
 							<Icon attribute="person" size={16} color={colors.gray[400]} />
-							{community_members_count(community)}
+							{community.member_count}
 						</p>
 					</div>
 				</a>
 
-				{#if is_user_member(community)}
+				{#if community.is_member}
 					<button
 						onclick={() => handle_leave(community.id)}
 						class="btn btn-sm btn-soft h-7"
