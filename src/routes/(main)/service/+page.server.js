@@ -8,20 +8,17 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 		'Cache-Control': 'public, max-age=60, s-maxage=300',
 	});
 
-	// STREAMING: Don't wait for user, start loading immediately
-	const userPromise = parent().then(({ user }) => user);
+	const { user } = await parent();
 
-	// Load services immediately (most important)
-	const servicesPromise = api.services.select_infinite_scroll('');
-
-	// Load likes only if user exists
-	const serviceLikesPromise = userPromise.then(user =>
-		user?.id ? api.service_likes.select_by_user_id(user.id) : []
-	);
+	// Parallel queries
+	const [services, service_likes] = await Promise.all([
+		api.services.select_infinite_scroll(''),
+		user?.id ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([])
+	]);
 
 	return {
-		services: servicesPromise,
-		service_likes: serviceLikesPromise,
+		services,
+		service_likes,
 		expert_requests: [], // Load lazily on tab switch
 	};
 }

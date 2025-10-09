@@ -3,10 +3,10 @@ export const create_post_comments_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('post_comments')
 			.select(
-				'*, users:user_id(id, handle, name, avatar_url), post_comment_votes(vote, user_id)',
+				'id, content, created_at, updated_at, user_id, post_id, parent_comment_id, users:user_id(id, handle, name, avatar_url), post_comment_votes(vote, user_id)',
 			)
 			.eq('post_id', post_id)
-			.order('created_at', { ascending: true });
+			.order('id', { ascending: true });
 
 		if (error) {
 			throw new Error(`Failed to select_by_post_id: ${error.message}`);

@@ -9,8 +9,8 @@
 	import PostSkeleton from '$lib/components/ui/PostSkeleton/+page.svelte';
 
 	// Dynamic imports for code splitting
-	let Post;
-	let Icon;
+	let Post = $state();
+	let Icon = $state();
 
 	import colors from '$lib/js/colors';
 	import { check_login } from '$lib/js/common';
@@ -43,28 +43,14 @@
 		Post = PostModule.default;
 		Icon = IconModule.default;
 
-		// Resolve streamed promises
-		if (data.posts instanceof Promise) {
-			data.posts.then(p => {
-				posts = p;
-				last_post_id = posts[posts.length - 1]?.id || '';
-				infinite_scroll();
-			});
-		} else {
-			posts = data.posts || [];
-			last_post_id = posts[posts.length - 1]?.id || '';
-			infinite_scroll();
-		}
+		// Initialize data (no longer using streaming)
+		posts = data.posts || [];
+		last_post_id = posts[posts.length - 1]?.id || '';
 
-		if (data.joined_communities instanceof Promise) {
-			data.joined_communities.then(jc => {
-				joined_communities = jc;
-				tabs = ['최신', ...joined_communities.map((c) => c.title)];
-			});
-		} else {
-			joined_communities = data.joined_communities || [];
-			tabs = ['최신', ...joined_communities.map((c) => c.title)];
-		}
+		joined_communities = data.joined_communities || [];
+		tabs = ['최신', ...joined_communities.map((c) => c.title)];
+
+		infinite_scroll();
 
 		// 초기 알림 미읽음 카운트 로드
 		refresh_unread_count();

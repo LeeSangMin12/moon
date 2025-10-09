@@ -218,18 +218,18 @@ export const create_service_orders_api = (supabase) => ({
 	},
 
 	// 최근 주문 조회 (무한 스크롤용)
-	select_infinite_scroll: async (last_order_id, limit = 20, user_id = null) => {
+	select_infinite_scroll: async (last_order_id, limit = 10, user_id = null) => {
 		let query = supabase
 			.from('service_orders')
 			.select(
 				`
-				*,
+				id, status, created_at, service_id,
 				buyer:buyer_id(id, name, handle, avatar_url),
 				seller:seller_id(id, name, handle, avatar_url),
 				service:service_id(id, title, price, images)
 			`,
 			)
-			.order('created_at', { ascending: false })
+			.order('id', { ascending: false })
 			.limit(limit);
 
 		if (last_order_id !== '') {

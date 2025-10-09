@@ -26,12 +26,12 @@ export const create_notifications_api = (supabase) => ({
 			.from('notifications')
 			.select(
 				`
-                *,
+                id, type, resource_type, resource_id, payload, link_url, read_at, created_at,
                 actor:actor_id(id, handle, name, avatar_url)
             `,
 			)
 			.eq('recipient_id', user_id)
-			.order('created_at', { ascending: false })
+			.order('id', { ascending: false })
 			.limit(limit);
 
 		if (error)

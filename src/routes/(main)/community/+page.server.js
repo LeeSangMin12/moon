@@ -1,17 +1,19 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ params, parent, locals: { supabase } }) {
-	const { user } = await parent();
-
+export async function load({ params, parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
-	const communities = await api.communities.select_infinite_scroll('');
+	// Set cache headers
+	setHeaders({
+		'Cache-Control': 'public, max-age=60, s-maxage=300',
+	});
 
-	let community_members = [];
+	const { user } = await parent();
 
-	if (user) {
-		community_members = await api.community_members.select_by_user_id(user.id);
-	}
+	const [communities, community_members] = await Promise.all([
+		api.communities.select_infinite_scroll(''),
+		user ? api.community_members.select_by_user_id(user.id) : Promise.resolve([])
+	]);
 
 	return {
 		communities,

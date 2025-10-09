@@ -13,9 +13,9 @@ export const create_communities_api = (supabase) => ({
 	select_infinite_scroll: async (last_community_id) => {
 		let query = supabase
 			.from('communities')
-			.select('*, community_members(count)')
-			.order('created_at', { ascending: false }) // 최신순 정렬
-			.limit(20);
+			.select('id, title, slug, content, avatar_url, created_at, creator_id, community_members(count)')
+			.order('id', { ascending: false })
+			.limit(10);
 
 		if (last_community_id !== '') {
 			query.lt('id', last_community_id);
