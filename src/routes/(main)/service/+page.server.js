@@ -1,7 +1,6 @@
 import { create_api } from '$lib/supabase/api';
 
 export async function load({ params, parent, locals: { supabase }, setHeaders }) {
-	const { user } = await parent();
 	const api = create_api(supabase);
 
 	// Set cache headers for better performance
@@ -9,15 +8,20 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 		'Cache-Control': 'public, max-age=60, s-maxage=300',
 	});
 
-	// Only load services initially - expert_requests loaded on tab switch
-	const [services, service_likes] = await Promise.all([
-		api.services.select_infinite_scroll(''),
-		user?.id ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([])
-	]);
+	// STREAMING: Don't wait for user, start loading immediately
+	const userPromise = parent().then(({ user }) => user);
+
+	// Load services immediately (most important)
+	const servicesPromise = api.services.select_infinite_scroll('');
+
+	// Load likes only if user exists
+	const serviceLikesPromise = userPromise.then(user =>
+		user?.id ? api.service_likes.select_by_user_id(user.id) : []
+	);
 
 	return {
-		services,
-		service_likes,
+		services: servicesPromise,
+		service_likes: serviceLikesPromise,
 		expert_requests: [], // Load lazily on tab switch
 	};
 }

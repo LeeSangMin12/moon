@@ -1,7 +1,6 @@
 import { create_api } from '$lib/supabase/api';
 
 export const load = async ({ parent, locals: { supabase }, setHeaders }) => {
-	const { user } = await parent();
 	const api = create_api(supabase);
 
 	// Set cache headers for better performance
@@ -9,20 +8,24 @@ export const load = async ({ parent, locals: { supabase }, setHeaders }) => {
 		'Cache-Control': 'public, max-age=60, s-maxage=300',
 	});
 
-	// Load initial data in parallel for faster response
-	if (user?.id) {
-		const [posts, joined_communities] = await Promise.all([
-			api.posts.select_infinite_scroll('', '', 10), // Reduced from 20 to 10 for faster LCP
-			api.community_members.select_by_user_id(user.id)
-		]);
+	// STREAMING: Return promises immediately, don't await
+	// This allows the page to render while data is loading
+	const userPromise = parent().then(({ user }) => user);
 
-		return {
-			joined_communities: joined_communities.map((cm) => cm.communities),
-			posts,
-		};
-	}
+	// Start loading posts immediately (don't wait for user)
+	const postsPromise = api.posts.select_infinite_scroll('', '', 10);
 
-	// For non-logged-in users, only load minimal posts
-	const posts = await api.posts.select_infinite_scroll('', '', 10);
-	return { posts, joined_communities: [] };
+	// Load communities only if user exists (but don't block)
+	const communitiesPromise = userPromise.then(user =>
+		user?.id
+			? api.community_members.select_by_user_id(user.id).then(cms => cms.map(cm => cm.communities))
+			: []
+	);
+
+	return {
+		// Return promises - SvelteKit will stream them
+		posts: postsPromise,
+		joined_communities: communitiesPromise,
+		streamed: true
+	};
 };

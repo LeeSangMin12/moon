@@ -22,6 +22,7 @@ export function createServiceData(initialData) {
 		get services() { return services; },
 		set services(value) { services = value; },
 		get serviceLikes() { return serviceLikes; },
+		set serviceLikes(value) { serviceLikes = value; },
 		get searchText() { return searchText; },
 		set searchText(value) { searchText = value; },
 		get isInfiniteLoading() { return isInfiniteLoading; },
