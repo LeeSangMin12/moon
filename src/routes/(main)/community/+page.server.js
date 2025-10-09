@@ -12,7 +12,7 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 
 	const [communities, community_members] = await Promise.all([
 		api.communities.select_infinite_scroll(''),
-		user ? api.community_members.select_by_user_id(user.id) : Promise.resolve([])
+		user?.id ? api.community_members.select_by_user_id(user.id) : Promise.resolve([])
 	]);
 
 	return {

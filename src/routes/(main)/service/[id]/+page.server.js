@@ -11,10 +11,10 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 
 	const [service, service_likes, service_reviews, review_permission, my_review] = await Promise.all([
 		api.services.select_by_id(params.id),
-		user ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([]),
+		user?.id ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([]),
 		api.service_reviews.select_by_service_id(params.id),
-		user ? api.service_reviews.can_write_review(params.id, user.id) : Promise.resolve({ can_write: false, order_id: null }),
-		user ? api.service_reviews.select_by_service_and_reviewer(params.id, user.id) : Promise.resolve(null)
+		user?.id ? api.service_reviews.can_write_review(params.id, user.id) : Promise.resolve({ can_write: false, order_id: null }),
+		user?.id ? api.service_reviews.select_by_service_and_reviewer(params.id, user.id) : Promise.resolve(null)
 	]);
 
 	return {
