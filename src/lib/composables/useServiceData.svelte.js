@@ -1,6 +1,4 @@
-import { api_store } from '$lib/store/api_store';
-
-export function createServiceData(initialData) {
+export function createServiceData(initialData, api) {
 	let services = $state(initialData.services);
 	let serviceLikes = $state(initialData.service_likes);
 	let searchText = $state('');
@@ -8,14 +6,14 @@ export function createServiceData(initialData) {
 
 	const searchServices = async () => {
 		if (searchText.trim()) {
-			services = await api_store.services.select_by_search(searchText);
+			services = await api.services.select_by_search(searchText);
 		} else {
 			services = initialData.services;
 		}
 	};
 
 	const loadMoreServices = async (lastServiceId) => {
-		return await api_store.services.select_infinite_scroll(lastServiceId);
+		return await api.services.select_infinite_scroll(lastServiceId);
 	};
 
 	return {

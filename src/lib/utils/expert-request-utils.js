@@ -75,9 +75,20 @@ export const getProposalStatusDisplay = (status) => {
 };
 
 // 보상금 포맷팅
-export const formatRewardAmount = (reward_amount) => {
+export const formatRewardAmount = (reward_amount, price_unit = 'per_project') => {
 	if (!reward_amount) return '협의';
-	return `${comma(reward_amount)}원`;
+
+	const unit_map = {
+		per_project: '건당',
+		per_hour: '시간당',
+		per_page: '장당',
+		per_day: '일당',
+		per_month: '월',
+		per_year: '년',
+	};
+
+	const unit_label = unit_map[price_unit] || '건당';
+	return `${unit_label} ${comma(reward_amount)}원`;
 };
 
 // 모집인원 포맷팅

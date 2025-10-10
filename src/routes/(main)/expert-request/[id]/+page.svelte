@@ -28,8 +28,22 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
+
+	const get_price_unit_label = (unit) => {
+		const unit_map = {
+			per_project: '건당',
+			per_hour: '시간당',
+			per_page: '장당',
+			per_day: '일당',
+			per_month: '월',
+			per_year: '년',
+		};
+		return unit_map[unit] || '건당';
+	};
 
 	let { data } = $props();
 	let {
@@ -125,7 +139,7 @@
 
 		try {
 			// 1. 제안서 생성
-			const new_proposal = await $api_store.expert_request_proposals.insert(
+			const new_proposal = await api.expert_request_proposals.insert(
 				{
 					request_id: expert_request.id,
 					message: proposal_form.message,
@@ -145,7 +159,7 @@
 
 				// Storage에 업로드
 				const upload_result =
-					await $api_store.proposal_attachments_bucket.upload_multiple(
+					await api.proposal_attachments_bucket.upload_multiple(
 						files_with_paths,
 					);
 
@@ -164,7 +178,7 @@
 						},
 					);
 
-					await $api_store.proposal_attachments.insert_multiple(
+					await api.proposal_attachments.insert_multiple(
 						attachments_data,
 						user.id,
 					);
@@ -176,7 +190,7 @@
 
 			// 제안서 목록 새로고침
 			proposals =
-				await $api_store.expert_request_proposals.select_by_request_id(
+				await api.expert_request_proposals.select_by_request_id(
 					expert_request.id,
 				);
 
@@ -294,7 +308,7 @@
 		if (!selected_proposal) return;
 
 		try {
-			await $api_store.expert_request_proposals.accept_proposal(
+			await api.expert_request_proposals.accept_proposal(
 				selected_proposal.id,
 				expert_request.id,
 			);
@@ -305,7 +319,7 @@
 					selected_proposal.expert_id &&
 					selected_proposal.expert_id !== user.id
 				) {
-					await $api_store.notifications.insert({
+					await api.notifications.insert({
 						recipient_id: selected_proposal.expert_id,
 						actor_id: user.id,
 						type: 'proposal.accepted',
@@ -332,10 +346,10 @@
 
 			// 데이터 새로고침
 			proposals =
-				await $api_store.expert_request_proposals.select_by_request_id(
+				await api.expert_request_proposals.select_by_request_id(
 					expert_request.id,
 				);
-			expert_request = await $api_store.expert_requests.select_by_id(
+			expert_request = await api.expert_requests.select_by_id(
 				expert_request.id,
 			);
 		} catch (error) {
@@ -377,12 +391,12 @@
 		}
 
 		try {
-			await $api_store.expert_request_proposals.reject_proposal(proposal_id);
+			await api.expert_request_proposals.reject_proposal(proposal_id);
 			show_toast('success', SUCCESS_MESSAGES.PROPOSAL_REJECTED);
 
 			// 제안 목록 새로고침
 			proposals =
-				await $api_store.expert_request_proposals.select_by_request_id(
+				await api.expert_request_proposals.select_by_request_id(
 					expert_request.id,
 				);
 		} catch (error) {
@@ -397,11 +411,11 @@
 		}
 
 		try {
-			await $api_store.expert_requests.complete_project(expert_request.id);
+			await api.expert_requests.complete_project(expert_request.id);
 			show_toast('success', SUCCESS_MESSAGES.PROJECT_COMPLETED);
 
 			// 데이터 새로고침
-			expert_request = await $api_store.expert_requests.select_by_id(
+			expert_request = await api.expert_requests.select_by_id(
 				expert_request.id,
 			);
 		} catch (error) {
@@ -462,12 +476,12 @@
 					title: review_form.title.trim(),
 					content: review_form.content.trim(),
 				};
-				await $api_store.expert_request_reviews.insert(review_data);
+				await api.expert_request_reviews.insert(review_data);
 
 				// 알림 생성: 전문가에게 리뷰 작성 알림
 				try {
 					if (review_expert_id && review_expert_id !== user.id) {
-						await $api_store.notifications.insert({
+						await api.notifications.insert({
 							recipient_id: review_expert_id,
 							actor_id: user.id,
 							type: 'expert_review.created',
@@ -492,7 +506,7 @@
 				show_toast('success', '리뷰가 작성되었습니다.');
 			} else if (my_review) {
 				// 기존 리뷰 수정
-				await $api_store.expert_request_reviews.update(my_review.id, {
+				await api.expert_request_reviews.update(my_review.id, {
 					rating: review_form.rating,
 					title: review_form.title.trim(),
 					content: review_form.content.trim(),
@@ -502,7 +516,7 @@
 
 			// 데이터 새로고침
 			my_review =
-				await $api_store.expert_request_reviews.select_by_request_and_reviewer(
+				await api.expert_request_reviews.select_by_request_and_reviewer(
 					expert_request.id,
 					user.id,
 				);
@@ -537,7 +551,7 @@
 		try {
 			const attachments_promises = proposals.map(async (proposal) => {
 				const attachments =
-					await $api_store.proposal_attachments.select_by_proposal_id(
+					await api.proposal_attachments.select_by_proposal_id(
 						proposal.id,
 					);
 				return { proposal_id: proposal.id, attachments };
@@ -606,7 +620,7 @@
 			<!-- 보상금 -->
 			<div class="mb-8">
 				<span class="text-lg font-medium text-blue-600">
-					{comma(expert_request.reward_amount)}원
+					{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
 				</span>
 			</div>
 
@@ -956,7 +970,7 @@
 									<div class="space-y-2">
 										{#each proposal_attachments_map[proposal.id] as attachment}
 											<a
-												href={$api_store.proposal_attachments_bucket.get_public_url(
+												href={api.proposal_attachments_bucket.get_public_url(
 													attachment.file_url,
 												)}
 												download={attachment.file_name}
@@ -1309,7 +1323,7 @@
 				<div class="flex justify-between border-t pt-2">
 					<p class="font-semibold">서비스 금액</p>
 					<p class="text-primary text-lg font-bold">
-						{comma(expert_request.reward_amount)}원
+						{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
 					</p>
 				</div>
 			</div>

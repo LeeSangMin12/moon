@@ -23,9 +23,8 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
 
 	const TITLE = '문';
 
@@ -36,6 +35,9 @@
 		'잘못된 정보를 포함하고 있습니다.',
 		'기타',
 	];
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { user, posts, follower_count, following_count } = $state(data);
@@ -74,9 +76,9 @@
 	let follow_modal_users = $state([]);
 
 	onMount(async () => {
-		if ($user_store?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
+		if (me?.id) {
+			is_following = await api.user_follows.is_following(
+				me.id,
 				user.id,
 			);
 		}
@@ -86,15 +88,15 @@
 		if (!check_login()) return;
 
 		if (is_following) {
-			await $api_store.user_follows.unfollow($user_store.id, user.id);
-			$user_store.user_follows = $user_store.user_follows.filter(
+			await api.user_follows.unfollow(me.id, user.id);
+			me.user_follows = me.user_follows.filter(
 				(follow) => follow.following_id !== user.id,
 			);
 			// 팔로워 수 감소
 			follower_count--;
 		} else {
-			await $api_store.user_follows.follow($user_store.id, user.id);
-			$user_store.user_follows.push({
+			await api.user_follows.follow(me.id, user.id);
+			me.user_follows.push({
 				following_id: user.id,
 			});
 			// 팔로워 수 증가
@@ -102,17 +104,17 @@
 
 			// 앱 레벨 알림 생성: 팔로우 당한 사용자에게
 			try {
-				await $api_store.notifications.insert({
+				await api.notifications.insert({
 					recipient_id: user.id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'follow.created',
 					resource_type: 'user',
-					resource_id: String($user_store.id),
+					resource_id: String(me.id),
 					payload: {
-						follower_id: $user_store.id,
-						follower_handle: $user_store.handle,
+						follower_id: me.id,
+						follower_handle: me.handle,
 					},
-					link_url: `/@${$user_store.handle}`,
+					link_url: `/@${me.handle}`,
 				});
 			} catch (e) {
 				console.error('Failed to insert notification (follow.created):', e);
@@ -130,8 +132,8 @@
 		}
 
 		try {
-			await $api_store.user_reports.insert({
-				reporter_id: $user_store.id,
+			await api.user_reports.insert({
+				reporter_id: me.id,
 				user_id: user.id,
 				reason: user_report_form_data.reason,
 				details: user_report_form_data.details,
@@ -152,23 +154,23 @@
 	const load_tab_data = async (tab_index) => {
 		if (tab_index === 0) {
 			// 게시글 탭
-			selected_data.posts = await $api_store.posts.select_by_user_id(user.id);
+			selected_data.posts = await api.posts.select_by_user_id(user.id);
 		} else if (tab_index === 1) {
 			// 댓글 탭
 			selected_data.post_comments =
-				await $api_store.post_comments.select_by_user_id(user.id);
+				await api.post_comments.select_by_user_id(user.id);
 		} else if (tab_index === 2) {
 			// 서비스 탭
-			selected_data.services = await $api_store.services.select_by_user_id(
+			selected_data.services = await api.services.select_by_user_id(
 				user.id,
 			);
 			selected_data.service_likes =
-				await $api_store.service_likes.select_by_user_id(user.id);
+				await api.service_likes.select_by_user_id(user.id);
 		} else if (tab_index === 3) {
 			// 받은리뷰 탭 - 서비스 리뷰와 전문가 리뷰 모두 조회
 			const [service_reviews, expert_reviews] = await Promise.all([
-				$api_store.service_reviews.select_by_service_author_id(user.id),
-				$api_store.expert_request_reviews.select_by_expert_id(user.id),
+				api.service_reviews.select_by_service_author_id(user.id),
+				api.expert_request_reviews.select_by_expert_id(user.id),
 			]);
 			selected_data.service_reviews = service_reviews;
 			selected_data.expert_request_reviews = expert_reviews;
@@ -185,9 +187,9 @@
 			event.detail;
 
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
@@ -198,11 +200,11 @@
 		follow_modal_type = type;
 		is_follow_modal_open = true;
 		if (type === 'followers') {
-			follow_modal_users = await $api_store.user_follows.select_followers(
+			follow_modal_users = await api.user_follows.select_followers(
 				user.id,
 			);
 		} else {
-			follow_modal_users = await $api_store.user_follows.select_followings(
+			follow_modal_users = await api.user_follows.select_followings(
 				user.id,
 			);
 		}
@@ -210,24 +212,24 @@
 
 	$effect(async () => {
 		const handle = $page.params.handle;
-		if (!handle || !$api_store.users) return;
+		if (!handle || !api.users) return;
 
-		const new_user = await $api_store.users.select_by_handle(handle);
-		const new_posts = await $api_store.posts.select_by_user_id(new_user.id);
-		const new_follower_count = await $api_store.user_follows.get_follower_count(
+		const new_user = await api.users.select_by_handle(handle);
+		const new_posts = await api.posts.select_by_user_id(new_user.id);
+		const new_follower_count = await api.user_follows.get_follower_count(
 			new_user.id,
 		);
 		const new_following_count =
-			await $api_store.user_follows.get_following_count(new_user.id);
+			await api.user_follows.get_following_count(new_user.id);
 
 		user = new_user;
 		posts = new_posts;
 		follower_count = new_follower_count;
 		following_count = new_following_count;
 
-		if ($user_store?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
+		if (me?.id) {
+			is_following = await api.user_follows.is_following(
+				me.id,
 				new_user.id,
 			);
 		}
@@ -280,7 +282,7 @@
 
 <Header>
 	<div slot="left">
-		{#if $page.params.handle !== $user_store.handle}
+		{#if $page.params.handle !== me?.handle}
 			<button class="flex items-center" onclick={smartGoBack}>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
@@ -293,10 +295,10 @@
 			onclick={() => {
 				if (!check_login()) return;
 
-				if ($page.params.handle !== $user_store.handle) {
+				if ($page.params.handle !== me?.handle) {
 					modal.user_config = true;
 				} else {
-					goto(`/@${$user_store.handle}/accounts`);
+					goto(`/@${me?.handle}/accounts`);
 				}
 			}}
 		>
@@ -358,7 +360,7 @@
 			{user?.self_introduction || ''}
 		</p>
 
-		{#if $page.params.handle === $user_store.handle}
+		{#if $page.params.handle === me?.handle}
 			<!-- 메시지와 팔로우 버튼 -->
 			<div class="mt-4 flex space-x-2">
 				<button
@@ -662,7 +664,7 @@
 	{/if}
 </main>
 
-{#if $page.params.handle === $user_store.handle}
+{#if $page.params.handle === me?.handle}
 	<Bottom_nav />
 {/if}
 

@@ -4,7 +4,10 @@ export const create_post_bookmarks_api = (supabase) => ({
 			.from('post_bookmarks')
 			.insert({ post_id, user_id });
 
-		if (error) throw new Error(`Failed to insert: ${error.message}`);
+		// 중복 키 에러는 무시 (이미 북마크가 있다는 의미)
+		if (error && error.code !== '23505') {
+			throw new Error(`Failed to insert: ${error.message}`);
+		}
 	},
 	delete: async (post_id, user_id) => {
 		const { error } = await supabase

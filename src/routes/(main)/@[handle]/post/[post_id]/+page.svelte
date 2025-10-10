@@ -26,8 +26,10 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '게시글';
 
@@ -42,11 +44,15 @@
 	let { data } = $props();
 	let { post, comments, page_url } = $state(data);
 
-	let is_bookmarked = $state(
-		post.post_bookmarks?.find((bookmark) => bookmark.user_id === $user_store.id)
-			? true
+	// State: Bookmark (derived from post.post_bookmarks - single source of truth)
+	let is_bookmarked = $derived(
+		me?.id && post.post_bookmarks
+			? post.post_bookmarks.some((bookmark) => bookmark.user_id === me.id)
 			: false,
 	);
+	let is_bookmarking = $state(false);
+
+	// State: Follow
 	let is_following = $state(false);
 
 	let modal = $state({
@@ -60,9 +66,9 @@
 	});
 
 	onMount(async () => {
-		if ($user_store?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
+		if (me?.id) {
+			is_following = await api.user_follows.is_following(
+				me.id,
 				post.users.id,
 			);
 		}
@@ -70,9 +76,9 @@
 
 	const leave_post_comment = async (event) => {
 		const { content } = event.detail;
-		const new_comment = await $api_store.post_comments.insert({
+		const new_comment = await api.post_comments.insert({
 			post_id: post.id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: content.trim(),
 		});
 
@@ -82,19 +88,19 @@
 		new_comment.user_vote = 0;
 		new_comment.replies = [];
 		new_comment.users = {
-			id: $user_store.id,
-			handle: $user_store.handle,
-			avatar_url: $user_store.avatar_url,
+			id: me.id,
+			handle: me.handle,
+			avatar_url: me.avatar_url,
 		};
 
 		comments = [...comments, new_comment];
 
 		// 앱 레벨 알림 생성: 게시글 작성자에게 (자기 자신 제외)
 		try {
-			if (post?.users?.id && post.users.id !== $user_store.id) {
-				await $api_store.notifications.insert({
+			if (post?.users?.id && post.users.id !== me.id) {
+				await api.notifications.insert({
 					recipient_id: post.users.id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'comment.created',
 					resource_type: 'post',
 					resource_id: String(post.id),
@@ -138,10 +144,10 @@
 		try {
 			const parent = comments.find((c) => c.id === parent_comment_id);
 			const parent_author_id = parent?.user_id;
-			if (parent_author_id && parent_author_id !== $user_store.id) {
-				await $api_store.notifications.insert({
+			if (parent_author_id && parent_author_id !== me.id) {
+				await api.notifications.insert({
 					recipient_id: parent_author_id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'comment.reply',
 					resource_type: 'post',
 					resource_id: String(post.id),
@@ -162,9 +168,9 @@
 	const handle_gift_comment_added = async (event) => {
 		const { gift_content, gift_moon_point, parent_comment_id } = event.detail;
 
-		const new_comment = await $api_store.post_comments.insert({
+		const new_comment = await api.post_comments.insert({
 			post_id: post.id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
@@ -176,9 +182,9 @@
 		new_comment.user_vote = 0;
 		new_comment.replies = [];
 		new_comment.users = {
-			id: $user_store.id,
-			handle: $user_store.handle,
-			avatar_url: $user_store.avatar_url,
+			id: me.id,
+			handle: me.handle,
+			avatar_url: me.avatar_url,
 		};
 
 		if (parent_comment_id) {
@@ -223,27 +229,49 @@
 		}
 	};
 
-	const toggle_bookmark = async () => {
-		if (is_bookmarked) {
-			await $api_store.post_bookmarks.delete(post.id, $user_store.id);
-		} else {
-			await $api_store.post_bookmarks.insert(post.id, $user_store.id);
-		}
+	/**
+	 * 북마크 토글
+	 * Single Source of Truth: post.post_bookmarks 배열만 관리
+	 */
+	async function toggle_bookmark() {
+		if (!check_login() || is_bookmarking) return;
 
-		is_bookmarked = !is_bookmarked;
-	};
+		is_bookmarking = true;
+		const old_bookmarks = post.post_bookmarks;
+
+		try {
+			if (is_bookmarked) {
+				// 북마크 제거
+				post.post_bookmarks = post.post_bookmarks.filter(
+					(bookmark) => bookmark.user_id !== me.id,
+				);
+				await api.post_bookmarks.delete(post.id, me.id);
+			} else {
+				// 북마크 추가
+				post.post_bookmarks = [...post.post_bookmarks, { user_id: me.id }];
+				await api.post_bookmarks.insert(post.id, me.id);
+			}
+		} catch (error) {
+			// Rollback on error
+			console.error('Bookmark toggle failed:', error);
+			post.post_bookmarks = old_bookmarks;
+			show_toast('error', '북마크 처리 중 오류가 발생했습니다.');
+		} finally {
+			is_bookmarking = false;
+		}
+	}
 
 	const toggle_follow = async () => {
 		if (!check_login()) return;
 
 		if (is_following) {
-			await $api_store.user_follows.unfollow($user_store.id, post.users.id);
-			$user_store.user_follows = $user_store.user_follows.filter(
+			await api.user_follows.unfollow(me.id, post.users.id);
+			me.user_follows = me.user_follows.filter(
 				(follow) => follow.following_id !== post.users.id,
 			);
 		} else {
-			await $api_store.user_follows.follow($user_store.id, post.users.id);
-			$user_store.user_follows.push({
+			await api.user_follows.follow(me.id, post.users.id);
+			me.user_follows.push({
 				following_id: post.users.id,
 			});
 		}
@@ -258,8 +286,8 @@
 		}
 
 		try {
-			await $api_store.post_reports.insert({
-				reporter_id: $user_store.id,
+			await api.post_reports.insert({
+				reporter_id: me.id,
 				post_id: post.id,
 				reason: post_report_form_data.reason,
 				details: post_report_form_data.details,
@@ -361,7 +389,7 @@
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if post.users.id === $user_store.id}
+		{#if post.users.id === me.id}
 			<div class="flex w-full flex-col items-center rounded-lg bg-white">
 				<a
 					href={`/regi/post/${post.id}`}

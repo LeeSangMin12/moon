@@ -13,7 +13,9 @@
 	import ExpertRequestTab from '$lib/components/ExpertRequestTab/+page.svelte';
 	import ServiceTab from '$lib/components/ServiceTab/+page.svelte';
 
-	import { api_store } from '$lib/store/api_store';
+	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { api } = get_api_context();
 
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
@@ -40,8 +42,8 @@
 	];
 
 	// Initialize with empty data - will be populated when promises resolve
-	const serviceData = createServiceData({ services: [], service_likes: [] });
-	const expertRequestData = createExpertRequestData({ expert_requests: [] });
+	const serviceData = createServiceData({ services: [], service_likes: [] }, api);
+	const expertRequestData = createExpertRequestData({ expert_requests: [] }, api);
 
 	// Resolve streamed services promise
 	onMount(async () => {
@@ -67,7 +69,7 @@
 	$effect(() => {
 		if ((selected_tab === 1 || selected_tab === 2) && !expert_requests_loaded) {
 			expert_requests_loaded = true;
-			$api_store.expert_requests.select_infinite_scroll('').then((response) => {
+			api.expert_requests.select_infinite_scroll('').then((response) => {
 				expertRequestData.expertRequests = response.data || response;
 			});
 		}
@@ -114,7 +116,7 @@
 	const handleSearch = async () => {
 		if (selected_tab === 0) {
 			if (searchText.trim()) {
-				const results = await $api_store.services.select_by_search(searchText);
+				const results = await api.services.select_by_search(searchText);
 				serviceData.services = results;
 			} else {
 				serviceData.services = data.services;
@@ -124,11 +126,11 @@
 		} else {
 			if (searchText.trim()) {
 				const results =
-					await $api_store.expert_requests.select_by_search(searchText);
+					await api.expert_requests.select_by_search(searchText);
 				expertRequestData.expertRequests = results;
 			} else {
 				const response =
-					await $api_store.expert_requests.select_infinite_scroll('', '');
+					await api.expert_requests.select_infinite_scroll('', '');
 				expertRequestData.expertRequests = response.data || response;
 			}
 			expertInfiniteScroll.lastId =

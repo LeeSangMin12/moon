@@ -12,9 +12,11 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '게시글 작성';
 
@@ -130,16 +132,16 @@
 		update_global_store('loading', true);
 		try {
 			// Check if user is logged in
-			if (!$user_store?.id) {
+			if (!me?.id) {
 				show_toast('error', '로그인이 필요합니다.');
 				return;
 			}
 
-			const new_post = await $api_store.posts.insert({
+			const new_post = await api.posts.insert({
 				community_id: community_select_value?.value || null,
 				title: post_form_data.title,
 				content: post_form_data.content,
-				author_id: $user_store.id,
+				author_id: me.id,
 			});
 
 			if (post_form_data.images.length > 0) {
@@ -147,13 +149,13 @@
 					new_post.id,
 					post_form_data.images,
 				);
-				await $api_store.posts.update(new_post.id, {
+				await api.posts.update(new_post.id, {
 					images: uploaded_images,
 				});
 			}
 
 			show_toast('success', '게시글이 저장되었습니다.');
-			goto(`/@${$user_store.handle}/post/${new_post.id}`, {
+			goto(`/@${me.handle}/post/${new_post.id}`, {
 				replaceState: true,
 			});
 		} finally {
@@ -167,7 +169,7 @@
 				const file_ext = img_file.name.split('.').pop();
 				const file_path = `${post_id}/${Date.now()}-${i}.${file_ext}`;
 
-				await $api_store.post_images.upload(file_path, img_file);
+				await api.post_images.upload(file_path, img_file);
 				return {
 					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/posts/images/${file_path}`,
 				};

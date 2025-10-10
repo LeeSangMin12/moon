@@ -20,12 +20,14 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, get_time_past, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	import Self from './+page.svelte';
 
 	const dispatch = createEventDispatcher();
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { post_id, comment } = $props();
 
@@ -51,9 +53,9 @@
 	const handle_vote = async (vote) => {
 		if (!check_login()) return;
 
-		await $api_store.post_comment_votes.upsert({
+		await api.post_comment_votes.upsert({
 			comment_id: comment_state.id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			vote,
 		});
 
@@ -74,9 +76,9 @@
 	};
 
 	const handle_add_reply = async () => {
-		const new_reply = await $api_store.post_comments.insert({
+		const new_reply = await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: reply_content.trim(),
 			parent_comment_id: comment_state.id,
 		});
@@ -87,9 +89,9 @@
 		new_reply.user_vote = 0;
 		new_reply.replies = [];
 		new_reply.users = {
-			id: $user_store.id,
-			handle: $user_store.handle,
-			avatar_url: $user_store.avatar_url,
+			id: me.id,
+			handle: me.handle,
+			avatar_url: me.avatar_url,
 		};
 
 		// 상위 컴포넌트에 답글 추가 알림
@@ -124,9 +126,9 @@
 		}
 
 		try {
-			const updated_comment = await $api_store.post_comments.update(
+			const updated_comment = await api.post_comments.update(
 				comment_state.id,
-				$user_store.id,
+				me.id,
 				edit_content.trim(),
 			);
 
@@ -150,7 +152,7 @@
 		if (!confirm('정말 삭제하시겠습니까?')) return;
 
 		try {
-			await $api_store.post_comments.delete(comment_state.id, $user_store.id);
+			await api.post_comments.delete(comment_state.id, me.id);
 
 			// 상위 컴포넌트에 삭제 알림
 			dispatch('comment_deleted', {
@@ -209,7 +211,7 @@
 	};
 
 	// 작성자인지 확인하는 computed property
-	const is_author = $derived(comment_state.users.id === $user_store.id);
+	const is_author = $derived(comment_state.users.id === me.id);
 </script>
 
 <GiftModal

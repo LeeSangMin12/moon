@@ -6,10 +6,12 @@
 
 	import colors from '$lib/js/colors';
 	import { comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { update_user_store, user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	let { is_modal_open, receiver_id, receiver_name, post_id } = $props();
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const dispatch = createEventDispatcher();
 
@@ -25,26 +27,26 @@
 	let is_buy_moon_modal_open = $state(false);
 
 	const handle_gift = async () => {
-		if (gift_moon_point > $user_store.moon_point) {
+		if (gift_moon_point > me.moon_point) {
 			show_toast('error', '보유 문이 부족합니다.');
 			return;
 		}
 
 		try {
-			await $api_store.users.gift_moon(
-				$user_store.id,
+			await api.users.gift_moon(
+				me.id,
 				receiver_id,
 				gift_moon_point,
 			);
 
-			await $api_store.moon_point_transactions.insert({
-				user_id: $user_store.id,
+			await api.moon_point_transactions.insert({
+				user_id: me.id,
 				amount: -gift_moon_point,
 				type: 'gift',
 				description: '문 선물',
 			});
 
-			await $api_store.moon_point_transactions.insert({
+			await api.moon_point_transactions.insert({
 				user_id: receiver_id,
 				amount: gift_moon_point,
 				type: 'receive',
@@ -53,14 +55,14 @@
 
 			// 앱 레벨 알림: 수신자에게 선물 알림
 			try {
-				await $api_store.notifications.insert({
+				await api.notifications.insert({
 					recipient_id: receiver_id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'gift.received',
 					resource_type: 'user',
 					resource_id: String(receiver_id),
 					payload: { amount: gift_moon_point, post_id },
-					link_url: `/@${$user_store.handle}/accounts/point`,
+					link_url: `/@${me.handle}/accounts/point`,
 				});
 			} catch (e) {
 				console.error('Failed to insert notification (gift.received):', e);
@@ -73,9 +75,7 @@
 				post_id,
 			});
 
-			update_user_store({
-				moon_point: $user_store.moon_point - gift_moon_point,
-			});
+			me.moon_point = me.moon_point - gift_moon_point;
 
 			is_modal_open = false;
 			gift_moon_point = 10;
@@ -113,8 +113,8 @@
 		try {
 			const charge_amount = Math.floor(charge_moon_form_data.point * 100 * 1.1);
 
-			await $api_store.moon_charges.create_charge_request({
-				user_id: $user_store.id,
+			await api.moon_charges.create_charge_request({
+				user_id: me.id,
 				point: charge_moon_form_data.point,
 				amount: charge_amount,
 				bank: charge_moon_form_data.bank,
@@ -200,7 +200,7 @@
 		<div class="my-4 flex items-center justify-between text-sm">
 			<p>
 				보유 문
-				<span class="text-primary">{$user_store.moon_point ?? 0}개</span>
+				<span class="text-primary">{me.moon_point ?? 0}개</span>
 			</p>
 			<button
 				onclick={() => {

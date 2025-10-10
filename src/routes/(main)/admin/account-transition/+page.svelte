@@ -7,7 +7,9 @@
 
 	import colors from '$lib/js/colors';
 	import { show_toast } from '$lib/js/common';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
 
 	let { data } = $props();
 	let { supabase } = $derived(data);
@@ -30,7 +32,7 @@
 
 <div class="mt-10 flex flex-col justify-center gap-2">
 	<h2 class="text-lg font-bold">계정전환</h2>
-	<p class="text-sm text-gray-500">현재 계정: {$user_store.name}</p>
+	<p class="text-sm text-gray-500">현재 계정: {me.name}</p>
 
 	<button
 		onclick={() => sign_in('dummy6@naver.com', '1234')}

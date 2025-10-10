@@ -5,8 +5,10 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { community = [], community_members = [] } = $props();
 
@@ -21,8 +23,8 @@
 	};
 	const handle_join = async (community_id) => {
 		try {
-			await $api_store.community_members.insert(community_id, $user_store.id);
-			community_members.push({ community_id, user_id: $user_store.id });
+			await api.community_members.insert(community_id, me.id);
+			community_members.push({ community_id, user_id: me.id });
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -31,7 +33,7 @@
 
 	const handle_leave = async (community_id) => {
 		try {
-			await $api_store.community_members.delete(community_id, $user_store.id);
+			await api.community_members.delete(community_id, me.id);
 			community_members = community_members.filter(
 				(member) => member.community_id !== community_id,
 			);

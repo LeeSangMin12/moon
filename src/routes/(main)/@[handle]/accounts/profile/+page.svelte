@@ -5,7 +5,9 @@
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
 
 	const TITLE = '회원 정보 설정';
 
@@ -27,7 +29,7 @@
 
 <Header>
 	<div slot="left">
-		<a class="flex items-center" href={`/@${$user_store.handle}/accounts`}>
+		<a class="flex items-center" href={`/@${me?.handle}/accounts`}>
 			<RiArrowLeftSLine size={24} color={colors.gray[800]} />
 		</a>
 	</div>
@@ -37,7 +39,7 @@
 <main>
 	<div class="mx-5 mt-5 flex flex-col gap-[30px]">
 		<a
-			href={`/@${$user_store.handle}/accounts/profile/modify`}
+			href={`/@${me?.handle}/accounts/profile/modify`}
 			class="flex items-center justify-between"
 		>
 			<span>프로필 정보 수정</span>

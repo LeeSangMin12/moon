@@ -10,8 +10,10 @@
 	import Service from '$lib/components/Service/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let search_text = $state('');
 	let search_data = $state({
@@ -30,20 +32,20 @@
 		if (search_text === '') return;
 
 		if (selected === 0) {
-			search_data.posts = await $api_store.posts.select_by_search(search_text);
+			search_data.posts = await api.posts.select_by_search(search_text);
 		} else if (selected === 1) {
 			search_data.communities =
-				await $api_store.communities.select_by_search(search_text);
+				await api.communities.select_by_search(search_text);
 			search_data.community_members =
-				await $api_store.community_members.select_by_user_id($user_store.id);
+				await api.community_members.select_by_user_id(me.id);
 		} else if (selected === 2) {
 			search_data.services =
-				await $api_store.services.select_by_search(search_text);
+				await api.services.select_by_search(search_text);
 			search_data.service_likes =
-				await $api_store.service_likes.select_by_user_id($user_store.id);
+				await api.service_likes.select_by_user_id(me.id);
 		} else if (selected === 3) {
 			search_data.profiles =
-				await $api_store.users.select_by_search(search_text);
+				await api.users.select_by_search(search_text);
 		}
 	};
 
@@ -52,9 +54,9 @@
 			event.detail;
 
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,

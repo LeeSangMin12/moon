@@ -4,7 +4,6 @@ import { get } from 'svelte/store';
 import Toast from '$lib/components/ui/Toast/+page.svelte';
 
 import { update_global_store } from '$lib/store/global_store';
-import { user_store } from '$lib/store/user_store';
 
 /**
  * 숫자 1000단위 마다 컴마 추가
@@ -278,9 +277,8 @@ export const has_invalid_args = (args) => {
 	return args.some((v) => !v || typeof v !== 'string' || v.trim() === '');
 };
 
-export const check_login = () => {
-	const user = get(user_store);
-	if (user.handle === '비회원') {
+export const check_login = (user) => {
+	if (!user || user.handle === '비회원') {
 		update_global_store('is_login_prompt_modal', true);
 		return false;
 	}

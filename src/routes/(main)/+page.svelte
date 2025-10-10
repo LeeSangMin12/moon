@@ -14,9 +14,11 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '문';
 
@@ -58,16 +60,16 @@
 
 	// 사용자 변경 시 미읽음 카운트 갱신
 	$effect(() => {
-		const uid = $user_store.id;
+		const uid = me.id;
 		if (!uid) return;
 		refresh_unread_count();
 	});
 
 	const refresh_unread_count = async () => {
 		try {
-			if (!$user_store?.id) return;
-			unread_count = await $api_store.notifications.select_unread_count(
-				$user_store.id,
+			if (!me?.id) return;
+			unread_count = await api.notifications.select_unread_count(
+				me.id,
 			);
 		} catch (e) {
 			console.error('Failed to load unread notifications count:', e);
@@ -96,7 +98,7 @@
 		}
 
 		// Load from API only if not cached
-		$api_store.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
+		api.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
 			posts = initial_posts;
 			last_post_id = initial_posts.at(-1)?.id ?? '';
 			// Update cache
@@ -153,7 +155,7 @@
 	const load_more_data = async () => {
 		const community_id =
 			selected === 0 ? '' : joined_communities[selected - 1].id;
-		const available_post = await $api_store.posts.select_infinite_scroll(
+		const available_post = await api.posts.select_infinite_scroll(
 			last_post_id,
 			community_id,
 			10,
@@ -174,9 +176,9 @@
 			event.detail;
 
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,

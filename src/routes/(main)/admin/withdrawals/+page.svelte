@@ -15,7 +15,10 @@
 
 	import colors from '$lib/js/colors';
 	import { comma, format_date, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let pending_withdrawals = $state(data.pending_withdrawals || []);
@@ -28,8 +31,8 @@
 	const handle_approve = async (withdrawal) => {
 		if (!confirm('이 출금 요청을 승인하시겠습니까?')) return;
 		try {
-			await $api_store.moon_withdrawals.approve(withdrawal.id);
-			await $api_store.moon_point_transactions.insert({
+			await api.moon_withdrawals.approve(withdrawal.id);
+			await api.moon_point_transactions.insert({
 				user_id: withdrawal.user_id,
 				amount: -withdrawal.amount,
 				type: 'withdrawal',
@@ -59,7 +62,7 @@
 			return;
 		}
 		try {
-			await $api_store.moon_withdrawals.reject(
+			await api.moon_withdrawals.reject(
 				selected_withdrawal_id,
 				reject_reason,
 			);

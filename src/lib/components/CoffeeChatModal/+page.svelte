@@ -2,8 +2,10 @@
 	import Modal from '$lib/components/ui/Modal/+page.svelte';
 
 	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { isOpen = $bindable(), recipientUser } = $props();
 
@@ -46,8 +48,8 @@
 
 		try {
 			// 커피챗 요청 생성
-			const newCoffeeChat = await $api_store.coffee_chats.insert({
-				sender_id: $user_store.id,
+			const newCoffeeChat = await api.coffee_chats.insert({
+				sender_id: me.id,
 				recipient_id: recipientUser.id,
 				email: formData.email,
 				subject: formData.subject,
@@ -57,16 +59,16 @@
 
 			// 알림 생성
 			try {
-				await $api_store.notifications.insert({
+				await api.notifications.insert({
 					recipient_id: recipientUser.id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'coffee_chat.requested',
 					resource_type: 'coffee_chat',
 					resource_id: String(newCoffeeChat.id),
 					payload: {
-						sender_id: $user_store.id,
-						sender_name: $user_store.name,
-						sender_handle: $user_store.handle,
+						sender_id: me.id,
+						sender_name: me.name,
+						sender_handle: me.handle,
 						subject: formData.subject,
 					},
 					link_url: `/@${recipientUser.handle}/accounts/coffee-chat`,

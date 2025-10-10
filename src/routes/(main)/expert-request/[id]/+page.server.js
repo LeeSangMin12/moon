@@ -28,6 +28,7 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 		return {
 			expert_request,
 			proposals,
+			user,
 			can_write_review: review_permission.can_write,
 			review_proposal_id: review_permission.proposal_id,
 			review_expert_id: review_permission.expert_id,

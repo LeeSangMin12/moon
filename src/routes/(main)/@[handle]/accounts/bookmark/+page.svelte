@@ -7,8 +7,10 @@
 	import Post from '$lib/components/Post/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { bookmarks } = $state(data);
@@ -19,9 +21,9 @@
 			event.detail;
 
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
@@ -39,7 +41,7 @@
 
 <Header>
 	<div slot="left">
-		<button onclick={() => goto(`/@${$user_store.handle}/accounts`)}>
+		<button onclick={() => goto(`/@${me.handle}/accounts`)}>
 			<RiArrowLeftSLine size={24} color={colors.gray[800]} />
 		</button>
 	</div>

@@ -3,9 +3,11 @@
 	import profile_png from '$lib/img/common/user/profile.png';
 
 	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { avatar_url } = $props();
 
@@ -16,12 +18,12 @@
 			selected_img.uri = URL.createObjectURL(selected_img);
 
 			const file_ext = selected_img.name.split('.').pop();
-			const file_path = `avatars/${$user_store.id}/${Date.now()}.${file_ext}`;
+			const file_path = `avatars/${me.id}/${Date.now()}.${file_ext}`;
 
-			await $api_store.user_avatars.upload(file_path, selected_img);
+			await api.user_avatars.upload(file_path, selected_img);
 
 			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/${file_path}`;
-			await $api_store.users.update($user_store.id, {
+			await api.users.update(me.id, {
 				avatar_url: img_url,
 			});
 

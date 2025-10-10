@@ -10,9 +10,11 @@
 
 	import colors from '$lib/js/colors';
 	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '게시글 수정';
 
@@ -75,7 +77,7 @@
 	const save_post = async () => {
 		update_global_store('loading', true);
 		try {
-			await $api_store.posts.update(post.id, {
+			await api.posts.update(post.id, {
 				community_id: community_select_value.value,
 				title: post_form_data.title,
 				content: post_form_data.content,
@@ -86,7 +88,7 @@
 					post.id,
 					post_form_data.images,
 				);
-				await $api_store.posts.update(post.id, {
+				await api.posts.update(post.id, {
 					images: uploaded_images,
 				});
 			}
@@ -106,7 +108,7 @@
 				const file_ext = img_file.name.split('.').pop();
 				const file_path = `${post_id}/${Date.now()}-${i}.${file_ext}`;
 
-				await $api_store.post_images.upload(file_path, img_file);
+				await api.post_images.upload(file_path, img_file);
 				return {
 					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/posts/images/${file_path}`,
 				};

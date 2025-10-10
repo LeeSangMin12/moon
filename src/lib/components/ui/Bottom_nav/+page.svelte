@@ -3,7 +3,9 @@
 	import { page } from '$app/stores';
 
 	import colors from '$lib/js/colors';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
 
 	// Preload data on hover/mouseenter for faster navigation
 	const handlePreload = (path) => {
@@ -117,10 +119,10 @@
 
 	<button
 		onclick={() => {
-			if ($user_store.handle === '비회원') {
+			if (me.handle === '비회원') {
 				goto('/login');
 			} else {
-				goto(`/@${$user_store.handle}`);
+				goto(`/@${me.handle}`);
 			}
 		}}
 		class="flex flex-col items-center gap-0.5"
@@ -130,7 +132,7 @@
 			height="20px"
 			viewBox="0 -960 960 960"
 			width="20px"
-			fill={$page.url.pathname === `/@${$user_store.handle}`
+			fill={$page.url.pathname === `/@${me.handle}`
 				? colors.gray[700]
 				: colors.gray[400]}
 			><path

@@ -17,8 +17,10 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '커뮤니티';
 
@@ -59,9 +61,9 @@
 
 	const handle_join = async (community_id) => {
 		try {
-			await $api_store.community_members.insert(community_id, $user_store.id);
+			await api.community_members.insert(community_id, me.id);
 			// Update local state immediately for responsive UI (use spread for Svelte 5 reactivity)
-			community_members_state = [...community_members_state, { community_id, user_id: $user_store.id }];
+			community_members_state = [...community_members_state, { community_id, user_id: me.id }];
 			// 참여자 수 증가
 			participant_count++;
 			// Invalidate server data to fetch latest state
@@ -74,7 +76,7 @@
 
 	const handle_leave = async (community_id) => {
 		try {
-			await $api_store.community_members.delete(community_id, $user_store.id);
+			await api.community_members.delete(community_id, me.id);
 			// Update local state immediately for responsive UI
 			community_members_state = community_members_state.filter(
 				(member) => member.community_id !== community_id,
@@ -96,8 +98,8 @@
 		}
 
 		try {
-			await $api_store.community_reports.insert({
-				reporter_id: $user_store.id,
+			await api.community_reports.insert({
+				reporter_id: me.id,
 				community_id: community.id,
 				reason: report_reason,
 				details: report_details,
@@ -121,9 +123,9 @@
 			event.detail;
 
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
@@ -273,7 +275,7 @@
 
 <Modal bind:is_modal_open={is_menu_modal_open} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if community.creator_id === $user_store.id}
+		{#if community.creator_id === me.id}
 			<!-- 수정하기 -->
 			<a
 				href={'/community/regi?slug=' + data.community.slug}

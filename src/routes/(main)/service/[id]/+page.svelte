@@ -24,8 +24,10 @@
 		copy_to_clipboard,
 		show_toast,
 	} from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	// Props & Data
 	let { data } = $props();
@@ -136,16 +138,16 @@
 		if (!check_login()) return;
 
 		try {
-			await $api_store.service_likes.insert(service_id, $user_store.id);
+			await api.service_likes.insert(service_id, me.id);
 			service_likes = [...service_likes, { service_id }];
 			show_toast('success', '서비스 좋아요를 눌렀어요!');
 
 			// 앱 레벨 알림 생성: 서비스 작성자에게
 			try {
-				if (service?.users?.id && service.users.id !== $user_store.id) {
-					await $api_store.notifications.insert({
+				if (service?.users?.id && service.users.id !== me.id) {
+					await api.notifications.insert({
 						recipient_id: service.users.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'service.liked',
 						resource_type: 'service',
 						resource_id: String(service_id),
@@ -166,7 +168,7 @@
 		if (!check_login()) return;
 
 		try {
-			await $api_store.service_likes.delete(service_id, $user_store.id);
+			await api.service_likes.delete(service_id, me.id);
 			service_likes = service_likes.filter(
 				(service) => service.service_id !== service_id,
 			);
@@ -188,7 +190,7 @@
 			const total_with_commission = service.price + commission;
 
 			const order_data = {
-				buyer_id: $user_store.id,
+				buyer_id: me.id,
 				seller_id: service.users.id,
 				service_id: service.id,
 				service_title: service.title,
@@ -203,14 +205,14 @@
 				special_request: order_form_data.special_request.trim(),
 			};
 
-			await $api_store.service_orders.insert(order_data);
+			await api.service_orders.insert(order_data);
 
 			// 앱 레벨 알림 생성: 판매자에게 주문 생성 알림
 			try {
-				if (service?.users?.id && service.users.id !== $user_store.id) {
-					await $api_store.notifications.insert({
+				if (service?.users?.id && service.users.id !== me.id) {
+					await api.notifications.insert({
 						recipient_id: service.users.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'order.created',
 						resource_type: 'order',
 						resource_id: '',
@@ -246,13 +248,13 @@
 			updated_service,
 			updated_review_permission,
 		] = await Promise.all([
-			$api_store.service_reviews.select_by_service_id(service.id),
-			$api_store.service_reviews.select_by_service_and_reviewer(
+			api.service_reviews.select_by_service_id(service.id),
+			api.service_reviews.select_by_service_and_reviewer(
 				service.id,
-				$user_store.id,
+				me.id,
 			),
-			$api_store.services.select_by_id(service.id),
-			$api_store.service_reviews.can_write_review(service.id, $user_store.id),
+			api.services.select_by_id(service.id),
+			api.service_reviews.can_write_review(service.id, me.id),
 		]);
 
 		service_reviews = updated_service_reviews;
@@ -273,19 +275,19 @@
 				// 아직 리뷰가 없는 완료된 주문이 존재 -> 새 리뷰 작성
 				const review_data = {
 					service_id: service.id,
-					reviewer_id: $user_store.id,
+					reviewer_id: me.id,
 					order_id: review_order_id,
 					rating: review_form_data.rating,
 					title: review_form_data.title.trim(),
 					content: review_form_data.content.trim(),
 				};
-				await $api_store.service_reviews.insert(review_data);
+				await api.service_reviews.insert(review_data);
 				// 앱 레벨 알림: 서비스 작성자에게 리뷰 생성
 				try {
-					if (service?.users?.id && service.users.id !== $user_store.id) {
-						await $api_store.notifications.insert({
+					if (service?.users?.id && service.users.id !== me.id) {
+						await api.notifications.insert({
 							recipient_id: service.users.id,
-							actor_id: $user_store.id,
+							actor_id: me.id,
 							type: 'review.created',
 							resource_type: 'service',
 							resource_id: String(service.id),
@@ -304,7 +306,7 @@
 				show_toast('success', '리뷰가 작성되었습니다.');
 			} else if (editing_review) {
 				// 기존 리뷰 수정 (order_id는 변경하지 않음)
-				await $api_store.service_reviews.update(editing_review.id, {
+				await api.service_reviews.update(editing_review.id, {
 					rating: review_form_data.rating,
 					title: review_form_data.title.trim(),
 					content: review_form_data.content.trim(),
@@ -561,7 +563,7 @@
 										{/if}
 									</div>
 									<div class="flex flex-col self-end">
-										{#if review.reviewer_id === $user_store.id}
+										{#if review.reviewer_id === me.id}
 											<div>
 												<button
 													onclick={() => open_review_modal(review)}

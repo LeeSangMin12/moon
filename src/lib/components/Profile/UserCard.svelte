@@ -2,26 +2,28 @@
 	import profile_png from '$lib/img/common/user/profile.png';
 	import { goto } from '$app/navigation';
 
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const { profile } = $props();
 
 	let is_following = $state(
-		$user_store.user_follows.some((follow) => {
+		me.user_follows.some((follow) => {
 			return follow.following_id === profile.id;
 		}),
 	);
 
 	const toggle_follow = async () => {
 		if (is_following) {
-			await $api_store.user_follows.unfollow($user_store.id, profile.id);
-			$user_store.user_follows = $user_store.user_follows.filter(
+			await api.user_follows.unfollow(me.id, profile.id);
+			me.user_follows = me.user_follows.filter(
 				(follow) => follow.following_id !== profile.id,
 			);
 		} else {
-			await $api_store.user_follows.follow($user_store.id, profile.id);
-			$user_store.user_follows.push({
+			await api.user_follows.follow(me.id, profile.id);
+			me.user_follows.push({
 				following_id: profile.id,
 			});
 		}
@@ -43,7 +45,7 @@
 		</div>
 	</a>
 
-	{#if profile.id !== $user_store.id}
+	{#if profile.id !== me.id}
 		{#if is_following}
 			<button class="btn btn-sm h-6" onclick={toggle_follow}> 팔로잉 </button>
 		{:else}

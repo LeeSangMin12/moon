@@ -60,7 +60,7 @@
 	<!-- 보상금 -->
 	<div class="mb-3">
 		<span class=" text-lg font-semibold text-blue-600">
-			{formatRewardAmount(request.reward_amount)}
+			{formatRewardAmount(request.reward_amount, request.price_unit)}
 		</span>
 	</div>
 	<div class="h-0.5 w-full bg-gray-200" />

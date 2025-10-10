@@ -8,8 +8,10 @@
 
 	import colors from '$lib/js/colors';
 	import { comma, format_date, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '포인트';
 
@@ -26,7 +28,7 @@
 
 	let is_withdraw_modal_open = $state(false);
 	let withdraw_form = $state({
-		amount: $user_store.moon_point,
+		amount: me.moon_point,
 		bank: '',
 		account_number: '',
 		account_holder: '',
@@ -54,15 +56,15 @@
 			return;
 		}
 
-		if ($user_store.moon_point < withdraw_form.amount) {
+		if (me.moon_point < withdraw_form.amount) {
 			alert('보유 문이 부족합니다.');
 			return;
 		}
 
 		withdraw_loading = true;
 		try {
-			const { error } = await $api_store.moon_withdrawals.insert({
-				user_id: $user_store.id,
+			const { error } = await api.moon_withdrawals.insert({
+				user_id: me.id,
 				amount: withdraw_form.amount,
 				bank: withdraw_form.bank,
 				account_number: withdraw_form.account_number,
@@ -71,9 +73,7 @@
 			if (error) throw error;
 			alert('출금 신청이 완료되었습니다!');
 			is_withdraw_modal_open = false;
-			moon_withdrawals = await $api_store.moon_withdrawals.select_by_user_id(
-				$user_store.id,
-			);
+			moon_withdrawals = await api.moon_withdrawals.select_by_user_id(me.id);
 
 			// 필요시 출금 내역 새로고침 등
 		} catch (e) {
@@ -94,7 +94,7 @@
 
 <Header nav_class="bg-white">
 	<div slot="left">
-		<a href={`/@${$user_store.handle}/accounts`}>
+		<a href={`/@${me.handle}/accounts`}>
 			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 		</a>
 	</div>
@@ -122,7 +122,7 @@
 			</div>
 			<p class="text-lg font-semibold">문 포인트</p>
 		</div>
-		<p class="mt-4 text-3xl font-bold">{comma($user_store.moon_point)}P</p>
+		<p class="mt-4 text-3xl font-bold">{comma(me.moon_point)}P</p>
 
 		{#if moon_withdrawals?.status === 'pending'}
 			<button class="btn btn-disabled mt-5 w-full">출금 신청 처리중</button>
@@ -181,7 +181,7 @@
 				<input
 					type="number"
 					min="1"
-					max={$user_store.moon_point}
+					max={me.moon_point}
 					bind:value={withdraw_form.amount}
 					class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 				/>

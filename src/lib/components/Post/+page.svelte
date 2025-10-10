@@ -5,9 +5,6 @@
 	import {
 		RiBookmarkFill,
 		RiBookmarkLine,
-		RiCloseLine,
-		RiDeleteBinLine,
-		RiMoonFill,
 		RiPencilLine,
 		RiThumbDownFill,
 		RiThumbDownLine,
@@ -15,7 +12,6 @@
 		RiThumbUpLine,
 		RiUserFollowLine,
 		RiUserUnfollowLine,
-		RiWindowLine,
 	} from 'svelte-remixicon';
 
 	import CustomCarousel from '$lib/components/ui/Carousel/+page.svelte';
@@ -26,19 +22,17 @@
 	import colors from '$lib/js/colors';
 	import {
 		check_login,
-		comma,
 		copy_to_clipboard,
 		format_date,
 		show_toast,
 	} from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
-	const dispatch = createEventDispatcher();
+	// Context
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
-	let { post } = $props();
-
+	// Constants
 	const REPORT_REASONS = [
 		'스팸/광고성 콘텐츠입니다.',
 		'욕설/혐오 발언을 사용했습니다.',
@@ -47,111 +41,124 @@
 		'기타',
 	];
 
+	const VIDEO_EXTENSIONS = /\.(mp4|mov|webm|ogg)$/i;
+
+	// Props & Events
+	let { post } = $props();
+	const dispatch = createEventDispatcher();
+
+	// State: Vote
 	let like_count = $state(post.like_count ?? 0);
-	
-	// 투표 상태를 위한 local state (우선순위: local > server data)
 	let local_user_vote = $state(null);
-	
-	// user_vote를 reactive하게 계산 (local state가 있으면 우선 사용)
-	let user_vote = $derived(
-		local_user_vote !== null 
-			? local_user_vote
-			: ($user_store?.id && post.post_votes
-				? post.post_votes.find((vote) => vote.user_id === $user_store.id)?.vote ?? 0
-				: 0)
-	);
-	
-	// is_bookmarked를 reactive하게 계산
-	let is_bookmarked = $derived(
-		$user_store?.id && post.post_bookmarks
-			? post.post_bookmarks.some((bookmark) => bookmark.user_id === $user_store.id)
-			: false
-	);
+	let is_voting = $state(false);
+
+	// State: Bookmark
+	let is_bookmarking = $state(false);
+
+	// State: Follow
 	let is_following = $state(false);
 
-	let post_report_form_data = $state({
-		reason: '',
-		details: '',
-	});
-
+	// State: Modals
 	let modal = $state({
 		post_config: false,
 		gift: false,
 		report: false,
 	});
 
-	onMount(async () => {
-		if ($user_store?.id && post.users?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
-				post.users.id,
-			);
-		}
-		
-		// Fetch current user's vote to ensure we have the latest state
-		if ($user_store?.id) {
-			try {
-				const current_vote = await $api_store.post_votes.get_user_vote(post.id, $user_store.id);
-				// Only update if different from what we have locally
-				const existing_vote = post.post_votes?.find((vote) => vote.user_id === $user_store.id)?.vote ?? 0;
-				if (current_vote !== existing_vote) {
-					local_user_vote = current_vote;
-				}
-			} catch (error) {
-				console.error('Failed to fetch user vote:', error);
-			}
-		}
+	// State: Report Form
+	let report_form = $state({
+		reason: '',
+		details: '',
 	});
 
-	// 중복 클릭 방지를 위한 플래그
-	let is_voting = false;
+	// Computed values (일반 변수 - reactive 불필요)
+	const author_handle = post.users?.handle || 'unknown';
+	const post_url = `/@${author_handle}/post/${post.id}`;
+	const full_post_url = `${window.location.origin}${post_url}`;
 
-	const on_vote = async (new_vote) => {
-		// 이미 투표 중이면 무시
-		if (is_voting) return;
+	// Reactive derived (실제로 변하는 값만)
+	let user_vote = $derived(
+		local_user_vote !== null
+			? local_user_vote
+			: me?.id && post.post_votes
+				? (post.post_votes.find((vote) => vote.user_id === me.id)?.vote ?? 0)
+				: 0,
+	);
+
+	let is_bookmarked = $derived(
+		me?.id && post.post_bookmarks
+			? post.post_bookmarks.some((bookmark) => bookmark.user_id === me.id)
+			: false,
+	);
+
+	let is_detail_page = $derived(
+		$page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/),
+	);
+
+	// Lifecycle
+
+	onMount(async () => {
+		await initialize_user_data();
+	});
+
+	/**
+	 * 컴포넌트 마운트 시 사용자 데이터 초기화
+	 */
+	async function initialize_user_data() {
+		if (!me?.id) return;
+
+		// 팔로우 상태 확인
+		if (post.users?.id) {
+			is_following = await api.user_follows.is_following(me.id, post.users.id);
+		}
+
+		// 투표 상태 동기화
+		await sync_vote_state();
+	}
+
+	/**
+	 * 서버에서 최신 투표 상태를 가져와 동기화
+	 */
+	async function sync_vote_state() {
+		try {
+			const current_vote = await api.post_votes.get_user_vote(post.id, me.id);
+
+			const existing_vote =
+				post.post_votes?.find((vote) => vote.user_id === me.id)?.vote ?? 0;
+
+			if (current_vote !== existing_vote) {
+				local_user_vote = current_vote;
+			}
+		} catch (error) {
+			console.error('Failed to sync vote state:', error);
+		}
+	}
+
+	// Vote Handlers
+
+	/**
+	 * 투표 처리 (좋아요/싫어요)
+	 * @param {number} new_vote - 1: 좋아요, -1: 싫어요, 0: 취소
+	 */
+	async function handle_vote(new_vote) {
+		if (!check_login() || is_voting) return;
+
 		is_voting = true;
-
 		const old_vote = user_vote;
 		const old_like_count = like_count;
 
-		// UI 상태 변경 (optimistic update)
-		if (old_vote === new_vote) {
-			local_user_vote = 0;
-			if (new_vote === 1) like_count--;
-		} else {
-			// 변경/새 투표 로직
-			local_user_vote = new_vote;
-
-			if (old_vote === 1) like_count--;
-			if (new_vote === 1) like_count++;
-		}
+		// Optimistic UI update
+		update_vote_ui(old_vote, new_vote);
 
 		try {
-			await $api_store.post_votes.handle_vote(post.id, $user_store.id, local_user_vote);
+			await api.post_votes.handle_vote(post.id, me.id, local_user_vote);
 
-			// 앱 레벨 알림 생성: 좋아요로 변경된 경우에만
-			if (
-				old_vote !== 1 &&
-				local_user_vote === 1 &&
-				post.users?.id &&
-				post.users.id !== $user_store.id
-			) {
-				try {
-					await $api_store.notifications.insert({
-						recipient_id: post.users.id,
-						actor_id: $user_store.id,
-						type: 'post.liked',
-						resource_type: 'post',
-						resource_id: String(post.id),
-						payload: { post_id: post.id, post_title: post.title },
-						link_url: `/@${post.users?.handle || 'unknown'}/post/${post.id}`,
-					});
-				} catch (e) {
-					console.error('Failed to insert notification (post.liked):', e);
-				}
+			// 좋아요 알림 전송
+			if (should_send_like_notification(old_vote, local_user_vote)) {
+				await send_like_notification();
 			}
 		} catch (error) {
-			// API 호출 실패 시 UI 상태 롤백
+			// Rollback on error
 			console.error('Vote failed:', error);
 			local_user_vote = old_vote === 0 ? null : old_vote;
 			like_count = old_like_count;
@@ -159,100 +166,216 @@
 		} finally {
 			is_voting = false;
 		}
-	};
+	}
 
-	const toggle_bookmark = async () => {
-		if (!check_login()) return;
-
-		if (is_bookmarked) {
-			await $api_store.post_bookmarks.delete(post.id, $user_store.id);
+	/**
+	 * 투표 UI 업데이트 (Optimistic)
+	 */
+	function update_vote_ui(old_vote, new_vote) {
+		// 같은 버튼 클릭 시 투표 취소
+		if (old_vote === new_vote) {
+			local_user_vote = 0;
+			if (new_vote === 1) like_count--;
 		} else {
-			await $api_store.post_bookmarks.insert(post.id, $user_store.id);
+			// 다른 투표로 변경
+			local_user_vote = new_vote;
+			if (old_vote === 1) like_count--;
+			if (new_vote === 1) like_count++;
 		}
+	}
 
-		is_bookmarked = !is_bookmarked;
-	};
+	/**
+	 * 좋아요 알림 전송 여부 확인
+	 */
+	function should_send_like_notification(old_vote, new_vote) {
+		return (
+			old_vote !== 1 && new_vote === 1 && post.users?.id && post.users.id !== me.id
+		);
+	}
 
-	const toggle_follow = async () => {
+	/**
+	 * 좋아요 알림 전송
+	 */
+	async function send_like_notification() {
+		try {
+			await api.notifications.insert({
+				recipient_id: post.users.id,
+				actor_id: me.id,
+				type: 'post.liked',
+				resource_type: 'post',
+				resource_id: String(post.id),
+				payload: { post_id: post.id, post_title: post.title },
+				link_url: post_url,
+			});
+		} catch (error) {
+			console.error('Failed to send like notification:', error);
+		}
+	}
+
+	// Bookmark Handlers
+
+	/**
+	 * 북마크 토글
+	 * Single Source of Truth: post.post_bookmarks 배열만 관리
+	 */
+	async function toggle_bookmark() {
+		if (!check_login() || is_bookmarking) return;
+
+		is_bookmarking = true;
+		const old_bookmarks = post.post_bookmarks;
+
+		try {
+			if (is_bookmarked) {
+				// 북마크 제거
+				post.post_bookmarks = post.post_bookmarks.filter(
+					(bookmark) => bookmark.user_id !== me.id,
+				);
+				await api.post_bookmarks.delete(post.id, me.id);
+			} else {
+				// 북마크 추가
+				post.post_bookmarks = [...post.post_bookmarks, { user_id: me.id }];
+				await api.post_bookmarks.insert(post.id, me.id);
+			}
+		} catch (error) {
+			// Rollback on error
+			console.error('Bookmark toggle failed:', error);
+			post.post_bookmarks = old_bookmarks;
+			show_toast('error', '북마크 처리 중 오류가 발생했습니다.');
+		} finally {
+			is_bookmarking = false;
+		}
+	}
+
+	// Follow Handlers
+
+	/**
+	 * 팔로우 토글
+	 */
+	async function toggle_follow() {
 		if (!check_login() || !post.users?.id) return;
 
-		if (is_following) {
-			await $api_store.user_follows.unfollow($user_store.id, post.users.id);
-			$user_store.user_follows = $user_store.user_follows.filter(
-				(follow) => follow.following_id !== post.users.id,
-			);
-		} else {
-			await $api_store.user_follows.follow($user_store.id, post.users.id);
-			$user_store.user_follows.push({
-				following_id: post.users.id,
-			});
+		try {
+			if (is_following) {
+				await api.user_follows.unfollow(me.id, post.users.id);
+				me.user_follows = me.user_follows.filter(
+					(follow) => follow.following_id !== post.users.id,
+				);
+			} else {
+				await api.user_follows.follow(me.id, post.users.id);
+				me.user_follows = [...me.user_follows, { following_id: post.users.id }];
+			}
+			is_following = !is_following;
+		} catch (error) {
+			console.error('Follow toggle failed:', error);
+			show_toast('error', '팔로우 처리 중 오류가 발생했습니다.');
 		}
+	}
 
-		is_following = !is_following;
-	};
+	// Report Handlers
 
-	const handle_report_submit = async () => {
-		if (post_report_form_data.reason === '') {
+	/**
+	 * 신고 제출
+	 */
+	async function submit_report() {
+		if (!report_form.reason) {
 			show_toast('error', '신고 사유를 선택해주세요.');
 			return;
 		}
 
 		try {
-			await $api_store.post_reports.insert({
-				reporter_id: $user_store.id,
+			await api.post_reports.insert({
+				reporter_id: me.id,
 				post_id: post.id,
-				reason: post_report_form_data.reason,
-				details: post_report_form_data.details,
+				reason: report_form.reason,
+				details: report_form.details,
 			});
 
 			show_toast('success', '신고가 정상적으로 접수되었습니다.');
+			reset_report_form();
 		} catch (error) {
 			console.error('Failed to submit report:', error);
 			show_toast('error', '신고 접수 중 오류가 발생했습니다.');
-		} finally {
-			modal.report = false;
-			post_report_form_data.reason = '';
-			post_report_form_data.details = '';
 		}
-	};
+	}
 
-	async function handle_gift_success(event) {
+	/**
+	 * 신고 폼 리셋
+	 */
+	function reset_report_form() {
+		modal.report = false;
+		report_form.reason = '';
+		report_form.details = '';
+	}
+
+	// Gift Handlers
+
+	/**
+	 * 선물 댓글 추가 성공 처리
+	 */
+	function handle_gift_success(event) {
 		const { gift_content, gift_moon_point } = event.detail;
 
-		// 상위 컴포넌트에 gift 댓글 추가 알림 (일반 댓글로 추가)
 		dispatch('gift_comment_added', {
 			gift_content,
 			gift_moon_point,
-			parent_comment_id: null, // 포스트에 대한 일반 댓글
-			post_id: post.id, // post_id 추가
+			parent_comment_id: null,
+			post_id: post.id,
 		});
 
 		modal.gift = false;
 	}
 
-	const is_video = (uri) => {
-		return /\.(mp4|mov|webm|ogg)$/i.test(uri);
-	};
+	// Utility Functions
+
+	/**
+	 * 비디오 파일 여부 확인
+	 */
+	function is_video(uri) {
+		return VIDEO_EXTENSIONS.test(uri);
+	}
+
+	/**
+	 * 링크 복사
+	 */
+	function copy_post_link() {
+		copy_to_clipboard(full_post_url, '링크가 복사되었습니다.');
+	}
+
+	/**
+	 * 모달 열기
+	 */
+	function open_config_modal() {
+		if (!check_login()) return;
+		modal.post_config = true;
+	}
+
+	function open_gift_modal() {
+		if (!check_login()) return;
+		modal.gift = true;
+	}
 </script>
 
+<!-- Post Article -->
+
 <article class="px-4">
+	<!-- Post Header: Author Info & Actions -->
 	<div class="flex items-center justify-between">
-		<a href={`/@${post.users?.handle || 'unknown'}`} class="flex items-center">
+		<a href={`/@${author_handle}`} class="flex items-center">
 			<img
 				src={post.users?.avatar_url ?? profile_png}
 				alt={post.users?.name || 'Unknown User'}
 				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 				loading="lazy"
 			/>
-
 			<p class="pr-3 text-sm font-medium">
 				{post.users?.name || 'Unknown User'}
 			</p>
 			<p class="mt-0.5 text-xs text-gray-400">{format_date(post.created_at)}</p>
 		</a>
 
+		<!-- Follow Button (Detail Page Only) -->
 		{#if $page.params.post_id}
-			{#if post.users?.id && post.users.id !== $user_store.id}
+			{#if post.users?.id && post.users.id !== me.id}
 				{#if is_following}
 					<button class="btn btn-sm h-6" onclick={toggle_follow}>팔로잉</button>
 				{:else}
@@ -262,32 +385,24 @@
 				{/if}
 			{/if}
 		{:else}
-			<button
-				onclick={() => {
-					if (!check_login()) return;
-
-					modal.post_config = true;
-				}}
-			>
+			<button onclick={open_config_modal}>
 				<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
 			</button>
 		{/if}
 	</div>
 
-	<!-- 제목 -->
-	<a
-		href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}
-		class="mt-2 line-clamp-2 font-semibold"
-	>
+	<!-- Post Title -->
+	<a href={post_url} class="mt-2 line-clamp-2 font-semibold">
 		{post.title}
 	</a>
 
+	<!-- Post Content -->
 	<div>
-		<!-- 본문 -->
-		{#if $page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/)}
+		{#if is_detail_page}
+			<!-- Detail Page: Full Content -->
 			{#if post.images?.length > 0}
-				{#if is_video(post.images[0].uri)}
-					<figure class="mt-2">
+				<figure class="mt-2">
+					{#if is_video(post.images[0].uri)}
 						<video
 							src={post.images[0].uri}
 							controls
@@ -296,17 +411,21 @@
 						>
 							<track kind="captions" label="No captions" />
 						</video>
-					</figure>
-				{:else}
-					<figure class="mt-2">
-						<CustomCarousel images={post.images.map((image) => image.uri)} />
-					</figure>
-				{/if}
+					{:else}
+						<CustomCarousel images={post.images.map((img) => img.uri)} />
+					{/if}
+				</figure>
 			{/if}
-			<div class="mt-2 text-sm prose prose-sm max-w-none" style="white-space: pre-wrap;">{@html post.content}</div>
+			<div
+				class="prose prose-sm mt-2 max-w-none text-sm"
+				style="white-space: pre-wrap;"
+			>
+				{@html post.content}
+			</div>
 		{:else if post.images?.length > 0}
-			{#if is_video(post.images[0].uri)}
-				<figure class="mt-2">
+			<!-- List Page: Images Only -->
+			<figure class="mt-2">
+				{#if is_video(post.images[0].uri)}
 					<video
 						src={post.images[0].uri}
 						controls
@@ -315,21 +434,26 @@
 					>
 						<track kind="captions" label="No captions" />
 					</video>
-				</figure>
-			{:else}
-				<figure class="mt-2">
-					<CustomCarousel images={post.images.map((image) => image.uri)} />
-				</figure>
-			{/if}
+				{:else}
+					<CustomCarousel images={post.images.map((img) => img.uri)} />
+				{/if}
+			</figure>
 		{:else}
-			<a href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}>
-				<div class="mt-2 text-sm prose prose-sm max-w-none" style="max-height: 10rem; overflow: hidden; position: relative;">
+			<!-- List Page: Preview with Fade -->
+			<a href={post_url}>
+				<div
+					class="prose prose-sm mt-2 max-w-none text-sm"
+					style="max-height: 10rem; overflow: hidden; position: relative;"
+				>
 					{@html post.content}
-					<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 2rem; background: linear-gradient(transparent, white); pointer-events: none;"></div>
+					<div
+						style="position: absolute; bottom: 0; left: 0; right: 0; height: 2rem; background: linear-gradient(transparent, white); pointer-events: none;"
+					></div>
 				</div>
 			</a>
 		{/if}
 
+		<!-- Community Badge -->
 		{#if post.community_id}
 			<a
 				href={`/community/${post.communities.slug}`}
@@ -340,16 +464,13 @@
 		{/if}
 	</div>
 
-	<!-- 액션 버튼 -->
+	<!-- Action Buttons: Vote, Comment, Gift, Bookmark -->
 	<div class="mt-3 flex items-center justify-between text-sm text-gray-400">
 		<div class="flex">
+			<!-- Like Button -->
 			<button
 				class="mr-3 flex items-center gap-1"
-				onclick={() => {
-					if (!check_login()) return;
-
-					on_vote(1);
-				}}
+				onclick={() => handle_vote(1)}
 			>
 				{#if user_vote === 1}
 					<RiThumbUpFill size={16} color={colors.primary} />
@@ -359,13 +480,10 @@
 				<p>{like_count}</p>
 			</button>
 
+			<!-- Dislike Button -->
 			<button
 				class="mr-4 flex items-center gap-1"
-				onclick={() => {
-					if (!check_login()) return;
-
-					on_vote(-1);
-				}}
+				onclick={() => handle_vote(-1)}
 			>
 				{#if user_vote === -1}
 					<RiThumbDownFill size={16} color={colors.warning} />
@@ -374,33 +492,19 @@
 				{/if}
 			</button>
 
-			<a
-				href={`/@${post.users?.handle || 'unknown'}/post/${post.id}`}
-				class="mr-4 flex items-center gap-1"
-			>
+			<!-- Comment Count -->
+			<a href={post_url} class="mr-4 flex items-center gap-1">
 				<Icon attribute="chat_bubble" size={16} color={colors.gray[400]} />
-
 				<p>{post.post_comments?.[0]?.count ?? 0}</p>
 			</a>
 
-			<button
-				class="flex items-center gap-1"
-				onclick={() => {
-					if (!check_login()) return;
-
-					modal.gift = true;
-				}}
-			>
+			<!-- Gift Button -->
+			<button class="flex items-center gap-1" onclick={open_gift_modal}>
 				<Icon attribute="gift" size={16} color={colors.gray[400]} />
-				<!-- <p>10</p> -->
 			</button>
 		</div>
 
-		<!-- <button class="flex items-center gap-1">
-				<Icon attribute="gift" size={16} color={colors.gray[400]} />
-				<p>10</p>
-			</button> -->
-
+		<!-- Bookmark Button -->
 		<button class="flex items-center gap-1" onclick={toggle_bookmark}>
 			{#if is_bookmarked}
 				<RiBookmarkFill size={16} color={colors.primary} />
@@ -410,11 +514,15 @@
 		</button>
 	</div>
 </article>
+
 <hr class="mt-2 border-gray-300" />
+
+<!-- Config Modal -->
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if post.users?.id === $user_store.id}
+		{#if post.users?.id === me.id}
+			<!-- Own Post Options -->
 			<div class="flex w-full flex-col items-center rounded-lg bg-white">
 				<a
 					href={`/regi/post/${post.id}`}
@@ -424,7 +532,7 @@
 					<p class="text-gray-600">수정하기</p>
 				</a>
 
-				<hr class=" w-full border-gray-100" />
+				<hr class="w-full border-gray-100" />
 
 				<button
 					class="flex w-full items-center gap-3 p-3"
@@ -441,31 +549,16 @@
 			</div>
 
 			<button
-				onclick={() => {
-					copy_to_clipboard(
-						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
-						'링크가 복사되었습니다.',
-					);
-				}}
+				onclick={copy_post_link}
 				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
 			>
 				<div class="flex w-full items-center gap-3 p-3">
 					<Icon attribute="link" size={20} color={colors.gray[600]} />
-
 					<p class="text-gray-600">링크복사</p>
 				</div>
 			</button>
-
-			<!-- <button
-				onclick={() => {}}
-				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
-			>
-				<div class="flex w-full items-center gap-3 p-3">
-					<RiDeleteBinLine size={20} color={colors.warning} />
-					<p class="text-red-500">삭제하기</p>
-				</div>
-			</button> -->
 		{:else}
+			<!-- Other's Post Options -->
 			<div class="flex w-full flex-col items-center rounded-lg bg-white">
 				<button
 					class="flex w-full items-center gap-3 p-3"
@@ -480,7 +573,7 @@
 					{/if}
 				</button>
 
-				<hr class=" w-full border-gray-100" />
+				<hr class="w-full border-gray-100" />
 
 				<button
 					class="flex w-full items-center gap-3 p-3"
@@ -497,17 +590,11 @@
 			</div>
 
 			<button
-				onclick={() => {
-					copy_to_clipboard(
-						`${window.location.origin}/@${post.users?.handle || 'unknown'}/post/${post.id}`,
-						'링크가 복사되었습니다.',
-					);
-				}}
+				onclick={copy_post_link}
 				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
 			>
 				<div class="flex w-full items-center gap-3 p-3">
 					<Icon attribute="link" size={20} color={colors.gray[600]} />
-
 					<p class="text-gray-600">링크복사</p>
 				</div>
 			</button>
@@ -525,6 +612,7 @@
 	</div>
 </Modal>
 
+<!-- Report Modal -->
 <Modal bind:is_modal_open={modal.report} modal_position="center">
 	<div class="p-4">
 		<h2 class="text-lg font-bold">무엇을 신고하시나요?</h2>
@@ -539,7 +627,7 @@
 						type="radio"
 						name="report_reason"
 						value={reason}
-						bind:group={post_report_form_data.reason}
+						bind:group={report_form.reason}
 						class="radio radio-primary radio-xs"
 					/>
 					<span class="ml-2">{reason}</span>
@@ -548,28 +636,23 @@
 		</div>
 
 		<textarea
-			bind:value={post_report_form_data.details}
+			bind:value={report_form.details}
 			class="textarea textarea-bordered focus:border-primary mt-4 w-full focus:outline-none"
 			placeholder="상세 내용을 입력해주세요. (선택 사항)"
 			rows="3"
 		></textarea>
 	</div>
 	<div class="flex">
-		<button
-			onclick={() => (modal.report = false)}
-			class="btn w-1/3 rounded-none"
+		<button onclick={reset_report_form} class="btn w-1/3 rounded-none"
+			>취소</button
 		>
-			취소
-		</button>
-		<button
-			onclick={handle_report_submit}
-			class="btn btn-primary w-2/3 rounded-none"
+		<button onclick={submit_report} class="btn btn-primary w-2/3 rounded-none"
+			>제출</button
 		>
-			제출
-		</button>
 	</div>
 </Modal>
 
+<!-- Gift Modal -->
 <GiftModal
 	bind:is_modal_open={modal.gift}
 	receiver_id={post.users?.id}
@@ -586,21 +669,21 @@
 		margin: 1rem 0 0.5rem 0 !important;
 		line-height: 1.2 !important;
 	}
-	
+
 	:global(.prose h2) {
 		font-size: 1.25rem !important;
 		font-weight: bold !important;
 		margin: 0.8rem 0 0.4rem 0 !important;
 		line-height: 1.3 !important;
 	}
-	
+
 	:global(.prose h3) {
 		font-size: 1.125rem !important;
 		font-weight: bold !important;
 		margin: 0.6rem 0 0.3rem 0 !important;
 		line-height: 1.4 !important;
 	}
-	
+
 	:global(.prose p) {
 		margin: 0.75rem 0 !important;
 		line-height: 1.6 !important;
@@ -608,24 +691,24 @@
 		display: block !important;
 		min-height: 1.2em !important;
 	}
-	
+
 	:global(.prose strong) {
 		font-weight: bold !important;
 	}
-	
+
 	:global(.prose em) {
 		font-style: italic !important;
 	}
-	
+
 	:global(.prose ul, .prose ol) {
 		padding-left: 1.5rem !important;
 		margin: 0.5rem 0 !important;
 	}
-	
+
 	:global(.prose li) {
 		margin: 0.25rem 0 !important;
 	}
-	
+
 	:global(.prose blockquote) {
 		border-left: 4px solid #e5e7eb !important;
 		padding-left: 1rem !important;
@@ -633,7 +716,7 @@
 		font-style: italic !important;
 		color: #6b7280 !important;
 	}
-	
+
 	:global(.prose img) {
 		max-width: 100% !important;
 		height: auto !important;
@@ -641,19 +724,19 @@
 		border-radius: 0.5rem !important;
 		display: block !important;
 	}
-	
+
 	:global(.prose a) {
 		color: #3b82f6 !important;
 		text-decoration: underline !important;
 	}
-	
+
 	:global(.prose code) {
 		background-color: #f3f4f6 !important;
 		padding: 0.125rem 0.25rem !important;
 		border-radius: 0.25rem !important;
 		font-size: 0.875em !important;
 	}
-	
+
 	:global(.prose pre) {
 		background-color: #f3f4f6 !important;
 		padding: 1rem !important;
@@ -661,18 +744,18 @@
 		overflow-x: auto !important;
 		margin: 1rem 0 !important;
 	}
-	
+
 	:global(.prose br) {
 		display: block !important;
 		margin: 0.25rem 0 !important;
 		line-height: 0 !important;
 	}
-	
+
 	:global(.prose .hard-break) {
 		display: block !important;
 		height: 0.5rem !important;
 	}
-	
+
 	:global(.prose p:empty) {
 		margin: 0.75rem 0 !important;
 		min-height: 1.2em !important;

@@ -6,15 +6,17 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { service = [], service_likes = [] } = $props();
 
 	const handle_like = async (service_id) => {
 		if (!check_login()) return;
 
-		await $api_store.service_likes.insert(service_id, $user_store.id);
+		await api.service_likes.insert(service_id, me.id);
 		service_likes = [...service_likes, { service_id }];
 		show_toast('success', '서비스 좋아요를 눌렀어요!');
 	};
@@ -22,7 +24,7 @@
 	const handle_unlike = async (service_id) => {
 		if (!check_login()) return;
 
-		await $api_store.service_likes.delete(service_id, $user_store.id);
+		await api.service_likes.delete(service_id, me.id);
 		service_likes = service_likes.filter(
 			(service) => service.service_id !== service_id,
 		);

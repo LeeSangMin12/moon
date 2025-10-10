@@ -7,9 +7,11 @@
 
 	import colors from '$lib/js/colors';
 	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { update_user_store, user_store } from '$lib/store/user_store';
+
+	const { me, update: update_me } = get_user_context();
+	const { api } = get_api_context();
 
 	import Set_avatar from './Set_avatar/+page.svelte';
 	import Set_basic from './Set_basic/+page.svelte';
@@ -70,7 +72,7 @@
 	const go_next = async () => {
 		if (page_count === 1) {
 			const handle_check_duplicate =
-				await $api_store.users.select_handle_check_duplicate(
+				await api.users.select_handle_check_duplicate(
 					sign_up_form_data.handle,
 				);
 
@@ -91,14 +93,14 @@
 		update_global_store('loading', true);
 
 		try {
-			await $api_store.users.update(session.user.id, {
+			await api.users.update(session.user.id, {
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
 				gender: sign_up_form_data.gender,
 				birth_date: sign_up_form_data.birth_date,
 			});
-			update_user_store({
+			update_me({
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,

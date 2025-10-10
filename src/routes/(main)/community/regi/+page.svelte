@@ -8,9 +8,11 @@
 
 	import colors from '$lib/js/colors';
 	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	import Set_avatar from './Set_avatar/+page.svelte';
 	import Set_content from './Set_content/+page.svelte';
@@ -105,14 +107,14 @@
 		try {
 			if (is_edit_mode) {
 				// 수정 로직
-				await $api_store.communities.update(form_data.id, {
+				await api.communities.update(form_data.id, {
 					title: form_data.title,
 					slug: form_data.slug,
 					content: form_data.content,
 				});
 
-				await $api_store.community_topics.delete_by_community_id(form_data.id);
-				await $api_store.community_topics.insert(
+				await api.community_topics.delete_by_community_id(form_data.id);
+				await api.community_topics.insert(
 					form_data.id,
 					form_data.selected_topics,
 				);
@@ -123,44 +125,44 @@
 				) {
 					const file_ext = form_data.avatar_url.name.split('.').pop();
 					const file_path = `${form_data.id}/${Date.now()}.${file_ext}`;
-					await $api_store.community_avatars.upload(
+					await api.community_avatars.upload(
 						file_path,
 						form_data.avatar_url,
 					);
 
 					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
-					await $api_store.communities.update(form_data.id, {
+					await api.communities.update(form_data.id, {
 						avatar_url: img_url,
 					});
 				}
 				show_toast('success', '커뮤니티 수정이 완료되었어요!');
 				goto(`/community/${form_data.slug}`);
 			} else {
-				const new_community = await $api_store.communities.insert({
-					creator_id: $user_store.id,
+				const new_community = await api.communities.insert({
+					creator_id: me.id,
 					title: form_data.title,
 					slug: form_data.slug,
 					content: form_data.content,
 				});
-				await $api_store.community_topics.insert(
+				await api.community_topics.insert(
 					new_community.id,
 					form_data.selected_topics,
 				);
-				await $api_store.community_members.insert(
+				await api.community_members.insert(
 					new_community.id,
-					$user_store.id,
+					me.id,
 				);
 
 				if (form_data.avatar_url) {
 					const file_ext = form_data.avatar_url.name.split('.').pop();
 					const file_path = `${new_community.id}/${Date.now()}.${file_ext}`;
-					await $api_store.community_avatars.upload(
+					await api.community_avatars.upload(
 						file_path,
 						form_data.avatar_url,
 					);
 
 					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
-					await $api_store.communities.update(new_community.id, {
+					await api.communities.update(new_community.id, {
 						avatar_url: img_url,
 					});
 				}
@@ -180,7 +182,7 @@
 			return null;
 		}
 
-		const existing_community = await $api_store.communities.select_by_slug(
+		const existing_community = await api.communities.select_by_slug(
 			form_data.slug,
 		);
 

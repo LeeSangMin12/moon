@@ -10,9 +10,11 @@
 
 	import colors from '$lib/js/colors';
 	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 
@@ -58,7 +60,7 @@
 	 */
 	const load_more_data = async () => {
 		const available_community =
-			await $api_store.communities.select_infinite_scroll(last_community_id, $user_store?.id);
+			await api.communities.select_infinite_scroll(last_community_id, me?.id);
 		is_infinite_loading = false;
 
 		//더 불러올 값이 있을때만 조회
@@ -79,7 +81,7 @@
 					: c
 			);
 
-			await $api_store.community_members.insert(community_id, $user_store.id);
+			await api.community_members.insert(community_id, me.id);
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -102,7 +104,7 @@
 					: c
 			);
 
-			await $api_store.community_members.delete(community_id, $user_store.id);
+			await api.community_members.delete(community_id, me.id);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
 			console.error(error);

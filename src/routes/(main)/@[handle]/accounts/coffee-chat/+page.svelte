@@ -8,9 +8,11 @@
 	import Icon from '$lib/components/ui/Icon/+page.svelte';
 
 	import colors from '$lib/js/colors';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { show_toast } from '$lib/js/common';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 
@@ -28,10 +30,10 @@
 
 	const loadCoffeeChats = async () => {
 		try {
-			if ($user_store?.id) {
+			if (me?.id) {
 				const [received, sent] = await Promise.all([
-					$api_store.coffee_chats.select_received($user_store.id),
-					$api_store.coffee_chats.select_sent($user_store.id)
+					api.coffee_chats.select_received(me.id),
+					api.coffee_chats.select_sent(me.id)
 				]);
 				received_chats = received;
 				sent_chats = sent;
@@ -85,7 +87,7 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={() => goto(`/@${$user_store.handle}/accounts`)}>
+		<button class="flex items-center" onclick={() => goto(`/@${me?.handle}/accounts`)}>
 			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 		</button>
 	</div>
@@ -158,27 +160,27 @@
 								
 								{#if chat.status === 'pending'}
 									<div class="flex space-x-2">
-										<button 
+										<button
 											class="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600"
 											onclick={async () => {
 												try {
-													await $api_store.coffee_chats.update_status(chat.id, 'accepted');
-													
+													await api.coffee_chats.update_status(chat.id, 'accepted');
+
 													// 수락 알림 생성
 													try {
-														await $api_store.notifications.insert({
+														await api.notifications.insert({
 															recipient_id: chat.sender.id,
-															actor_id: $user_store.id,
+															actor_id: me.id,
 															type: 'coffee_chat.accepted',
 															resource_type: 'coffee_chat',
 															resource_id: String(chat.id),
 															payload: {
-																recipient_id: $user_store.id,
-																recipient_name: $user_store.name,
-																recipient_handle: $user_store.handle,
+																recipient_id: me.id,
+																recipient_name: me.name,
+																recipient_handle: me.handle,
 																subject: chat.subject
 															},
-															link_url: `/@${$user_store.handle}/accounts/coffee-chat`
+															link_url: `/@${me.handle}/accounts/coffee-chat`
 														});
 													} catch (notificationError) {
 														console.error('Failed to create acceptance notification:', notificationError);
@@ -193,27 +195,27 @@
 										>
 											수락
 										</button>
-										<button 
+										<button
 											class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
 											onclick={async () => {
 												try {
-													await $api_store.coffee_chats.update_status(chat.id, 'rejected');
-													
+													await api.coffee_chats.update_status(chat.id, 'rejected');
+
 													// 거절 알림 생성
 													try {
-														await $api_store.notifications.insert({
+														await api.notifications.insert({
 															recipient_id: chat.sender.id,
-															actor_id: $user_store.id,
+															actor_id: me.id,
 															type: 'coffee_chat.rejected',
 															resource_type: 'coffee_chat',
 															resource_id: String(chat.id),
 															payload: {
-																recipient_id: $user_store.id,
-																recipient_name: $user_store.name,
-																recipient_handle: $user_store.handle,
+																recipient_id: me.id,
+																recipient_name: me.name,
+																recipient_handle: me.handle,
 																subject: chat.subject
 															},
-															link_url: `/@${$user_store.handle}/accounts/coffee-chat`
+															link_url: `/@${me.handle}/accounts/coffee-chat`
 														});
 													} catch (notificationError) {
 														console.error('Failed to create rejection notification:', notificationError);
