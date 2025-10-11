@@ -3,11 +3,11 @@
 	import { RiArrowLeftSLine, RiRemixiconFill } from 'svelte-remixicon';
 	import { smartGoBack } from '$lib/utils/navigation';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 
 	const TITLE = '채팅방';
 

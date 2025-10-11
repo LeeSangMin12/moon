@@ -1,16 +1,17 @@
 <script>
 	import { goto } from '$app/navigation';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import Community from '$lib/components/Community/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import Community from '$lib/components/Community.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
-	import Service from '$lib/components/Service/+page.svelte';
+	import Service from '$lib/components/Service.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -62,6 +63,15 @@
 			gift_moon_point,
 		});
 	};
+
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => search_data.posts,
+		(updated_posts) => {
+			search_data.posts = updated_posts;
+		},
+		me
+	);
 </script>
 
 <svelte:head>
@@ -111,7 +121,12 @@
 	{#if selected === 0 && search_data.posts.length > 0}
 		{#each search_data.posts as post}
 			<div class="mt-4">
-				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+				<Post
+				{post}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onBookmarkChanged={handle_bookmark_changed}
+				onVoteChanged={handle_vote_changed}
+			/>
 			</div>
 		{/each}
 	{:else if selected === 1 && search_data.communities.length > 0}

@@ -21,13 +21,13 @@
 		RiUser3Line,
 	} from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import StarRating from '$lib/components/ui/StarRating.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, comma, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, comma, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
@@ -128,7 +128,7 @@
 	};
 
 	const submit_proposal = async () => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		// 유효성 검사
 		const validation_errors = validateProposalData(proposal_form);
@@ -459,7 +459,7 @@
 	};
 
 	const handle_review_submit = async () => {
-		if (!check_login() || is_submitting_review || !validate_review_form())
+		if (!check_login(me) || is_submitting_review || !validate_review_form())
 			return;
 
 		try {
@@ -1037,7 +1037,7 @@
 	<Modal
 		is_modal_open={show_proposal_modal}
 		modal_position="bottom"
-		on:modal_close={() => (show_proposal_modal = false)}
+		onModalClose={() => (show_proposal_modal = false)}
 	>
 		<div class="p-6">
 			<div class="mb-6 flex items-center justify-between">
@@ -1209,7 +1209,7 @@
 	<Modal
 		is_modal_open={show_payment_modal}
 		modal_position="bottom"
-		on:modal_close={() => {
+		onModalClose={() => {
 			show_payment_modal = false;
 			selected_proposal = null;
 		}}
@@ -1365,7 +1365,7 @@
 	<Modal
 		is_modal_open={show_review_modal}
 		modal_position="bottom"
-		on:modal_close={() => (show_review_modal = false)}
+		onModalClose={() => (show_review_modal = false)}
 	>
 		<div class="p-6">
 			<div class="mb-6 flex items-center justify-between">

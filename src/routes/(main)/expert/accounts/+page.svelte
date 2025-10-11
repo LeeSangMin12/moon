@@ -19,14 +19,14 @@
 		RiUserLine,
 	} from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import StarRating from '$lib/components/ui/StarRating.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { comma, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
@@ -544,7 +544,7 @@
 	<Modal
 		is_modal_open={show_review_modal}
 		modal_position="bottom"
-		on:modal_close={close_review_modal}
+		onModalClose={close_review_modal}
 	>
 		<div class="p-6">
 			<div class="mb-6 flex items-center justify-between">

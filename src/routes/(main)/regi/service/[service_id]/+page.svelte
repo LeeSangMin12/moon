@@ -6,10 +6,10 @@
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 

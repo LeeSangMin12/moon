@@ -3,11 +3,11 @@
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, format_date, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { comma, format_date, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();

@@ -4,9 +4,9 @@
 	import { RiArrowLeftSLine, RiAddLine, RiDeleteBinLine, RiFileExcel2Line, RiDownload2Line } from 'svelte-remixicon';
 	import * as XLSX from 'xlsx';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import Header from '$lib/components/ui/Header.svelte';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 
 	let accounts = $state([
 		{ email: '', password: '', name: '', handle: '' }

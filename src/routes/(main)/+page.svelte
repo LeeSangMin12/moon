@@ -3,19 +3,20 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { RiAddLine, RiNotificationFill } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import PostSkeleton from '$lib/components/ui/PostSkeleton/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import PostSkeleton from '$lib/components/ui/PostSkeleton.svelte';
 
 	// Dynamic imports for code splitting
 	let Post = $state();
 	let Icon = $state();
 
-	import colors from '$lib/js/colors';
-	import { check_login } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -39,8 +40,8 @@
 	onMount(async () => {
 		// Dynamic import components
 		const [PostModule, IconModule] = await Promise.all([
-			import('$lib/components/Post/+page.svelte'),
-			import('$lib/components/ui/Icon/+page.svelte')
+			import('$lib/components/Post.svelte'),
+			import('$lib/components/ui/Icon.svelte')
 		]);
 		Post = PostModule.default;
 		Icon = IconModule.default;
@@ -186,6 +187,20 @@
 
 		console.log('Gift comment added successfully');
 	};
+
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+			// 캐시도 함께 업데이트
+			const cache_key = selected === 0 ? 'all' : (joined_communities[selected - 1]?.id || '');
+			if (posts_cache.has(cache_key)) {
+				posts_cache.set(cache_key, { posts: updated_posts, last_post_id });
+			}
+		},
+		me
+	);
 </script>
 
 <svelte:head>
@@ -223,7 +238,12 @@
 	{:else}
 		{#each posts as post}
 			<div class="mt-4">
-				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+				<Post
+				{post}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onBookmarkChanged={handle_bookmark_changed}
+				onVoteChanged={handle_vote_changed}
+			/>
 			</div>
 		{/each}
 	{/if}
@@ -245,7 +265,7 @@
 		<button
 			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				goto('/regi/post');
 			}}

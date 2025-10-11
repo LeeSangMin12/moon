@@ -1,7 +1,7 @@
 <script>
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 
 	let { placeholder, value = $bindable(), onSearch } = $props();
 </script>

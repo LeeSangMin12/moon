@@ -7,11 +7,11 @@
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
 	import { onMount } from 'svelte';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import ExpertRequestTab from '$lib/components/ExpertRequestTab/+page.svelte';
-	import ServiceTab from '$lib/components/ServiceTab/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import ExpertRequestTab from '$lib/components/ExpertRequestTab.svelte';
+	import ServiceTab from '$lib/components/ServiceTab.svelte';
 
 	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
 

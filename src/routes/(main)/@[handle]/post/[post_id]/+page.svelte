@@ -16,17 +16,18 @@
 		RiUserUnfollowLine,
 	} from 'svelte-remixicon';
 
-	import CustomCarousel from '$lib/components/ui/Carousel/+page.svelte';
-	import CommentInput from '$lib/components/ui/CommentInput/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import Comment from '$lib/components/Comment/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import CustomCarousel from '$lib/components/ui/Carousel.svelte';
+	import CommentInput from '$lib/components/ui/CommentInput.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import Comment from '$lib/components/Comment.svelte';
+	import Post from '$lib/components/Post.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -198,6 +199,15 @@
 		}
 	};
 
+	// Post 이벤트 핸들러 (단일 post 객체용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => [post],  // 배열로 감싸서 전달
+		(updated_posts) => {
+			post = updated_posts[0];  // 첫 번째(유일한) post 객체 가져오기
+		},
+		me
+	);
+
 	const handle_comment_deleted = (event) => {
 		const { comment_id, parent_comment_id } = event.detail;
 
@@ -234,7 +244,7 @@
 	 * Single Source of Truth: post.post_bookmarks 배열만 관리
 	 */
 	async function toggle_bookmark() {
-		if (!check_login() || is_bookmarking) return;
+		if (!check_login(me) || is_bookmarking) return;
 
 		is_bookmarking = true;
 		const old_bookmarks = post.post_bookmarks;
@@ -262,7 +272,7 @@
 	}
 
 	const toggle_follow = async () => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		if (is_following) {
 			await api.user_follows.unfollow(me.id, post.users.id);
@@ -360,7 +370,7 @@
 	<button
 		slot="right"
 		onclick={() => {
-			if (!check_login()) return;
+			if (!check_login(me)) return;
 
 			modal.post_config = true;
 		}}
@@ -369,7 +379,12 @@
 	</button>
 </Header>
 
-<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+<Post
+	{post}
+	onGiftCommentAdded={handle_gift_comment_added}
+	onBookmarkChanged={handle_bookmark_changed}
+	onVoteChanged={handle_vote_changed}
+/>
 
 <main>
 	<div class="space-y-4 p-4">
@@ -377,15 +392,15 @@
 			<Comment
 				post_id={post.id}
 				{comment}
-				on:reply_added={handle_reply_added}
-				on:gift_comment_added={handle_gift_comment_added}
-				on:comment_deleted={handle_comment_deleted}
+				onReplyAdded={handle_reply_added}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onCommentDeleted={handle_comment_deleted}
 			/>
 		{/each}
 	</div>
 </main>
 
-<CommentInput on:leave_comment={leave_post_comment} />
+<CommentInput onLeaveComment={leave_post_comment} />
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">

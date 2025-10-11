@@ -7,7 +7,7 @@
 	const { me } = get_user_context();
 	const { api } = get_api_context();
 
-	const { profile } = $props();
+	const { profile, onFollowChanged } = $props();
 
 	let is_following = $state(
 		me.user_follows.some((follow) => {
@@ -28,6 +28,9 @@
 			});
 		}
 		is_following = !is_following;
+
+		// 부모 컴포넌트에 알림
+		onFollowChanged?.({ profile_id: profile.id, is_following });
 	};
 </script>
 

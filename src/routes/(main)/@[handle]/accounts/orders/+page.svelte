@@ -2,12 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiInformationLine } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { comma, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();

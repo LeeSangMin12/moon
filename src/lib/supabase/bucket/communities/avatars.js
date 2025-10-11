@@ -1,4 +1,4 @@
-import { has_invalid_args } from '$lib/js/common';
+import { has_invalid_args } from '$lib/utils/common';
 
 export const create_community_avatars_api = (supabase) => ({
 	upload: async (file_path, community_avatar_url) => {

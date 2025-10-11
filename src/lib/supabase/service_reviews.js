@@ -1,4 +1,4 @@
-import { has_invalid_args } from '$lib/js/common';
+import { has_invalid_args } from '$lib/utils/common';
 
 export const create_service_reviews_api = (supabase) => ({
 	// 리뷰 생성

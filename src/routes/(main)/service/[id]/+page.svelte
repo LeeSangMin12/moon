@@ -11,19 +11,19 @@
 	} from 'svelte-remixicon';
 
 	// Components
-	import CustomCarousel from '$lib/components/ui/Carousel/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
+	import CustomCarousel from '$lib/components/ui/Carousel.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import StarRating from '$lib/components/ui/StarRating.svelte';
 
 	// Utils & Stores
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 	import {
 		check_login,
 		comma,
 		copy_to_clipboard,
 		show_toast,
-	} from '$lib/js/common';
+	} from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
@@ -135,7 +135,7 @@
 
 	// Like Handlers
 	const handle_like = async (service_id) => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		try {
 			await api.service_likes.insert(service_id, me.id);
@@ -165,7 +165,7 @@
 	};
 
 	const handle_unlike = async (service_id) => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		try {
 			await api.service_likes.delete(service_id, me.id);
@@ -181,7 +181,7 @@
 
 	// Order Handler
 	const handle_order = async () => {
-		if (!check_login() || !validate_order_form()) return;
+		if (!check_login(me) || !validate_order_form()) return;
 
 		try {
 			// 수수료 계산 (10% 기준)
@@ -265,7 +265,7 @@
 	};
 
 	const handle_review_submit = async () => {
-		if (!check_login() || is_submitting_review || !validate_review_form())
+		if (!check_login(me) || is_submitting_review || !validate_review_form())
 			return;
 
 		try {
@@ -589,7 +589,7 @@
 			<button
 				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
 				onclick={() => {
-					if (!check_login()) return;
+					if (!check_login(me)) return;
 					is_buy_modal_open = true;
 				}}
 			>

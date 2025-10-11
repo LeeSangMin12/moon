@@ -3,13 +3,13 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiTimeLine, RiMailLine, RiCupLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
-	import { show_toast } from '$lib/js/common';
+	import { show_toast } from '$lib/utils/common';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();

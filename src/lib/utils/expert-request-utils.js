@@ -1,6 +1,6 @@
 // 전문가 요청 시스템 공통 유틸리티 함수들
 
-import { comma } from '$lib/js/common';
+import { comma } from '$lib/utils/common';
 
 // 요청 상태 상수
 export const REQUEST_STATUS = {

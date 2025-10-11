@@ -9,15 +9,16 @@
 		RiUserLine,
 	} from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -33,8 +34,9 @@
 	];
 
 	let { data } = $props();
-	let { community, community_members, community_participants, posts } =
+	let { community, community_members, community_participants } =
 		$derived(data);
+	let posts = $state(data.posts);
 	let community_members_state = $state(data.community_members);
 	let participant_count = $state(
 		data.community.community_members?.[0]?.count ?? 0,
@@ -42,6 +44,7 @@
 
 	// Reactively update state when data changes
 	$effect(() => {
+		posts = data.posts;
 		community_members_state = data.community_members;
 		participant_count = data.community.community_members?.[0]?.count ?? 0;
 	});
@@ -131,6 +134,15 @@
 			gift_moon_point,
 		});
 	};
+
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+		},
+		me
+	);
 </script>
 
 <svelte:head>
@@ -189,7 +201,7 @@
 		<button
 			class="flex items-center"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				is_menu_modal_open = true;
 			}}
@@ -233,7 +245,7 @@
 			{#if is_user_member(community)}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 
 						handle_leave(community.id);
 					}}
@@ -244,7 +256,7 @@
 			{:else}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 
 						handle_join(community.id);
 					}}
@@ -268,7 +280,12 @@
 
 	{#each posts as post}
 		<div class="mt-4">
-			<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+			<Post
+			{post}
+			onGiftCommentAdded={handle_gift_comment_added}
+			onBookmarkChanged={handle_bookmark_changed}
+			onVoteChanged={handle_vote_changed}
+		/>
 		</div>
 	{/each}
 </main>

@@ -6,14 +6,14 @@
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 	import { page } from '$app/stores';
 
-	import Date_picker from '$lib/components/ui/Date_picker/+page.svelte';
-	import Date_range_picker from '$lib/components/ui/Date_range_picker/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Date_picker from '$lib/components/ui/Date_picker.svelte';
+	import Date_range_picker from '$lib/components/ui/Date_range_picker.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
@@ -76,7 +76,7 @@
 
 	onMount(() => {
 		// Check if user is logged in when page loads
-		if (!check_login()) {
+		if (!check_login(me)) {
 			goto('/login');
 			return;
 		}

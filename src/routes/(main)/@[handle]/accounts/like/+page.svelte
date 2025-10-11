@@ -3,13 +3,13 @@
 	import { onMount } from 'svelte';
 	import { RiAddLine, RiArrowLeftSLine, RiHeartFill } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Service from '$lib/components/Service/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Service from '$lib/components/Service.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, comma, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, comma, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();

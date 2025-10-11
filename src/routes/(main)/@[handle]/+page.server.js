@@ -4,8 +4,9 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 	const api = create_api(supabase);
 	const { handle } = params;
 
+	// 사용자별 데이터(북마크, 좋아요, 팔로우 상태)가 포함되므로 캐시 비활성화
 	setHeaders({
-		'Cache-Control': 'public, max-age=60, s-maxage=300',
+		'Cache-Control': 'private, max-age=0, must-revalidate',
 	});
 
 	// Fetch user first (required for other queries)

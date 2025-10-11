@@ -7,8 +7,8 @@
 	import { create_api } from '$lib/supabase/api';
 	import { onMount } from 'svelte';
 
-	import Login_prompt_modal from '$lib/components/ui/Login_prompt_modal/+page.svelte';
-	import PerformanceMonitor from '$lib/components/ui/PerformanceMonitor/+page.svelte';
+	import Login_prompt_modal from '$lib/components/ui/Login_prompt_modal.svelte';
+	import PerformanceMonitor from '$lib/components/ui/PerformanceMonitor.svelte';
 
 	// global_store는 UI 상태이므로 그대로 사용
 	import { is_login_prompt_modal, loading } from '$lib/store/global_store';

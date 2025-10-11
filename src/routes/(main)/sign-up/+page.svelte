@@ -2,20 +2,20 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
 	const { me, update: update_me } = get_user_context();
 	const { api } = get_api_context();
 
-	import Set_avatar from './Set_avatar/+page.svelte';
-	import Set_basic from './Set_basic/+page.svelte';
-	import Set_personal from './Set_personal/+page.svelte';
+	import SetAvatar from './_components/SetAvatar.svelte';
+	import SetBasic from './_components/SetBasic.svelte';
+	import SetPersonal from './_components/SetPersonal.svelte';
 
 	let { data } = $props();
 	let { session } = $derived(data);
@@ -134,11 +134,11 @@
 
 <main>
 	{#if page_count === 1}
-		<Set_basic bind:data={sign_up_form_data} bind:handle_error />
+		<SetBasic bind:data={sign_up_form_data} bind:handle_error />
 	{:else if page_count === 2}
-		<Set_personal bind:data={sign_up_form_data} />
+		<SetPersonal bind:data={sign_up_form_data} />
 	{:else if page_count === 3}
-		<Set_avatar bind:avatar_url={sign_up_form_data.avatar_url} />
+		<SetAvatar bind:avatar_url={sign_up_form_data.avatar_url} />
 	{/if}
 
 	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">

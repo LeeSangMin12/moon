@@ -11,20 +11,21 @@
 		RiShareLine,
 	} from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
-	import Service from '$lib/components/Service/+page.svelte';
-	import CoffeeChatModal from '$lib/components/CoffeeChatModal/+page.svelte';
+	import Service from '$lib/components/Service.svelte';
+	import CoffeeChatModal from '$lib/components/CoffeeChatModal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const TITLE = '문';
 
@@ -85,7 +86,7 @@
 	});
 
 	const toggle_follow = async () => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		if (is_following) {
 			await api.user_follows.unfollow(me.id, user.id);
@@ -196,6 +197,16 @@
 		});
 	};
 
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+			selected_data.posts = updated_posts;
+		},
+		me
+	);
+
 	const open_follow_modal = async (type) => {
 		follow_modal_type = type;
 		is_follow_modal_open = true;
@@ -293,7 +304,7 @@
 		<button
 			class="flex items-center"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				if ($page.params.handle !== me?.handle) {
 					modal.user_config = true;
@@ -400,7 +411,7 @@
 				{/if}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 						modal.coffee_chat = true;
 					}}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
@@ -428,7 +439,12 @@
 	{#if selected === 0 && selected_data.posts.length > 0}
 		{#each selected_data.posts as post}
 			<div class="mt-4">
-				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+				<Post
+				{post}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onBookmarkChanged={handle_bookmark_changed}
+				onVoteChanged={handle_vote_changed}
+			/>
 			</div>
 		{/each}
 	{:else if selected === 1 && selected_data.post_comments.length > 0}
