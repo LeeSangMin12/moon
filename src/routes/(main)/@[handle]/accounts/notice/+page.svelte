@@ -1,9 +1,9 @@
 <script>
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 </script>
 
 <svelte:head>

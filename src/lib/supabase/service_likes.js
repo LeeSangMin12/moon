@@ -1,4 +1,4 @@
-import { has_invalid_args } from '$lib/js/common';
+import { has_invalid_args } from '$lib/utils/common';
 
 export const create_service_likes_api = (supabase) => ({
 	select_by_user_id: async (user_id) => {

@@ -2,14 +2,16 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiInformationLine } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { comma, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '주문 내역';
 
@@ -70,16 +72,16 @@
 	// 주문 승인 (판매자용)
 	const handle_approve_order = async (order_id) => {
 		try {
-			await $api_store.service_orders.approve(order_id);
+			await api.service_orders.approve(order_id);
 			show_toast('success', '주문이 승인되었습니다.');
 
 			// 구매자에게 알림
 			try {
 				const order = my_sales.find((o) => o.id === order_id);
 				if (order?.buyer?.id) {
-					await $api_store.notifications.insert({
+					await api.notifications.insert({
 						recipient_id: order.buyer.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'order.approved',
 						resource_type: 'order',
 						resource_id: String(order_id),
@@ -92,9 +94,7 @@
 			}
 
 			// 데이터 새로고침
-			my_sales = await $api_store.service_orders.select_by_seller_id(
-				$user_store.id,
-			);
+			my_sales = await api.service_orders.select_by_seller_id(me.id);
 		} catch (error) {
 			console.error('주문 승인 실패:', error);
 			show_toast('error', '주문 승인에 실패했습니다.');
@@ -104,16 +104,16 @@
 	// 주문 완료 (판매자용)
 	const handle_complete_order = async (order_id) => {
 		try {
-			await $api_store.service_orders.complete(order_id);
+			await api.service_orders.complete(order_id);
 			show_toast('success', '서비스가 완료되었습니다.');
 
 			// 구매자에게 알림
 			try {
 				const order = my_sales.find((o) => o.id === order_id);
 				if (order?.buyer?.id) {
-					await $api_store.notifications.insert({
+					await api.notifications.insert({
 						recipient_id: order.buyer.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'order.completed',
 						resource_type: 'order',
 						resource_id: String(order_id),
@@ -129,9 +129,7 @@
 			}
 
 			// 데이터 새로고침
-			my_sales = await $api_store.service_orders.select_by_seller_id(
-				$user_store.id,
-			);
+			my_sales = await api.service_orders.select_by_seller_id(me.id);
 		} catch (error) {
 			console.error('주문 완료 실패:', error);
 			show_toast('error', '주문 완료에 실패했습니다.');
@@ -144,7 +142,7 @@
 		if (!reason) return;
 
 		try {
-			await $api_store.service_orders.cancel(order_id, reason);
+			await api.service_orders.cancel(order_id, reason);
 			show_toast('success', '주문이 취소되었습니다.');
 
 			// 구매자/판매자 모두에게 알림
@@ -154,9 +152,9 @@
 						? my_orders.find((o) => o.id === order_id)
 						: my_sales.find((o) => o.id === order_id);
 				if (order?.buyer?.id) {
-					await $api_store.notifications.insert({
+					await api.notifications.insert({
 						recipient_id: order.buyer.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'order.cancelled',
 						resource_type: 'order',
 						resource_id: String(order_id),
@@ -168,9 +166,9 @@
 					});
 				}
 				if (order?.seller?.id) {
-					await $api_store.notifications.insert({
+					await api.notifications.insert({
 						recipient_id: order.seller.id,
-						actor_id: $user_store.id,
+						actor_id: me.id,
 						type: 'order.cancelled',
 						resource_type: 'order',
 						resource_id: String(order_id),
@@ -187,13 +185,9 @@
 
 			// 데이터 새로고침
 			if (selected_tab_index === 0) {
-				my_orders = await $api_store.service_orders.select_by_buyer_id(
-					$user_store.id,
-				);
+				my_orders = await api.service_orders.select_by_buyer_id(me.id);
 			} else {
-				my_sales = await $api_store.service_orders.select_by_seller_id(
-					$user_store.id,
-				);
+				my_sales = await api.service_orders.select_by_seller_id(me.id);
 			}
 		} catch (error) {
 			console.error('주문 취소 실패:', error);

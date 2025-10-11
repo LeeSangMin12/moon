@@ -6,17 +6,19 @@
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 	import { page } from '$app/stores';
 
-	import Date_picker from '$lib/components/ui/Date_picker/+page.svelte';
-	import Date_range_picker from '$lib/components/ui/Date_range_picker/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Date_picker from '$lib/components/ui/Date_picker.svelte';
+	import Date_range_picker from '$lib/components/ui/Date_range_picker.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store.js';
+	import colors from '$lib/config/colors';
+	import { check_login, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let is_date_range_modal = $state(false);
 	let is_date_picker_modal = $state(false);
@@ -32,6 +34,7 @@
 		category: '',
 		description: '',
 		reward_amount: '',
+		price_unit: 'per_project',
 		application_deadline: null,
 		work_start_date: null,
 		work_end_date: null,
@@ -39,6 +42,15 @@
 		work_location: '',
 		job_type: 'sidejob',
 	});
+
+	const price_unit_options = [
+		{ value: 'per_project', label: '건당' },
+		{ value: 'per_hour', label: '시간당' },
+		{ value: 'per_page', label: '장당' },
+		{ value: 'per_day', label: '일당' },
+		{ value: 'per_month', label: '월' },
+		{ value: 'per_year', label: '년' },
+	];
 
 	const categories = [
 		{ value: '웹개발/프로그래밍', label: '웹개발/프로그래밍' },
@@ -64,7 +76,7 @@
 
 	onMount(() => {
 		// Check if user is logged in when page loads
-		if (!check_login()) {
+		if (!check_login(me)) {
 			goto('/login');
 			return;
 		}
@@ -169,18 +181,19 @@
 		update_global_store('loading', true);
 		try {
 			// Check if user is logged in
-			if (!$user_store?.id) {
+			if (!me?.id) {
 				show_toast('error', '로그인이 필요합니다.');
 				return;
 			}
 
 			// API 호출로 전문가 요청 저장
-			const new_request = await $api_store.expert_requests.insert(
+			const new_request = await api.expert_requests.insert(
 				{
 					title: request_form_data.title,
 					category: selected_category?.value,
 					description: request_form_data.description,
 					reward_amount: parseInt(request_form_data.reward_amount),
+					price_unit: request_form_data.price_unit,
 					application_deadline: request_form_data.application_deadline
 						? request_form_data.application_deadline.toISOString().split('T')[0]
 						: null,
@@ -190,7 +203,7 @@
 					work_location: request_form_data.work_location,
 					job_type: selected_job_type?.value || 'sidejob',
 				},
-				$user_store.id,
+				me.id,
 			);
 
 			// 성공 메시지 표시
@@ -326,13 +339,23 @@
 					<label class="mb-2 block text-sm font-medium text-gray-700">
 						보상금 (원)
 					</label>
-					<input
-						type="number"
-						bind:value={request_form_data.reward_amount}
-						placeholder="예: 500000"
-						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
-						min="10000"
-					/>
+					<div class="flex gap-2">
+						<input
+							type="number"
+							bind:value={request_form_data.reward_amount}
+							placeholder="예: 500000"
+							class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+							min="10000"
+						/>
+						<select
+							bind:value={request_form_data.price_unit}
+							class="w-28 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						>
+							{#each price_unit_options as option}
+								<option value={option.value}>{option.label}</option>
+							{/each}
+						</select>
+					</div>
 					<p class="mt-1 text-xs text-gray-500">
 						최소 10,000원 이상 입력해주세요
 					</p>
@@ -488,7 +511,7 @@
 						<div>
 							<strong>보상금:</strong>
 							{request_form_data.reward_amount
-								? `${parseInt(request_form_data.reward_amount).toLocaleString()}원`
+								? `${price_unit_options.find(o => o.value === request_form_data.price_unit)?.label || '건당'} ${parseInt(request_form_data.reward_amount).toLocaleString()}원`
 								: '미입력'}
 						</div>
 						<div>
@@ -554,7 +577,7 @@
 						<div class="rounded-xl bg-white p-4">
 							<p class="text-sm text-gray-600">보상금</p>
 							<p class="mt-1 text-lg font-bold text-gray-900">
-								{parseInt(request_form_data.reward_amount).toLocaleString()}원
+								{price_unit_options.find(o => o.value === request_form_data.price_unit)?.label || '건당'} {parseInt(request_form_data.reward_amount).toLocaleString()}원
 							</p>
 						</div>
 						<div class="rounded-xl bg-white p-4">

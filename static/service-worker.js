@@ -30,6 +30,11 @@ self.addEventListener('fetch', (event) => {
 	if (event.request.method !== 'GET') return;
 
 	const url = new URL(event.request.url);
+
+	// Only cache HTTP/HTTPS requests (skip chrome-extension://, data:, blob:, etc.)
+	if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+		return;
+	}
 	const isImage = IMAGE_EXTENSIONS.some((ext) =>
 		url.pathname.toLowerCase().includes(ext),
 	);

@@ -4,30 +4,33 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store';
-	import { update_user_store, user_store } from '$lib/store/user_store';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let form = $state({
-		name: $user_store.name,
-		avatar_url: $user_store.avatar_url,
-		self_introduction: $user_store.self_introduction || '',
+		name: me?.name || '',
+		avatar_url: me?.avatar_url || '',
+		self_introduction: me?.self_introduction || '',
 	});
 
 	let is_submitting = $state(false);
 
 	const handle_submit = async () => {
+		if (!me?.id) return;
 		is_submitting = true;
 		try {
-			await $api_store.users.update($user_store.id, {
+			await api.users.update(me.id, {
 				name: form.name,
 				self_introduction: form.self_introduction,
 			});
-			update_user_store({
+			Object.assign(me, {
 				name: form.name,
 				self_introduction: form.self_introduction,
 			});
@@ -42,23 +45,24 @@
 	};
 
 	const modify_avatar_url = async (event) => {
+		if (!me?.id) return;
 		update_global_store('loading', true);
 		try {
 			const selected_img = event.target.files[0];
 			selected_img.uri = URL.createObjectURL(selected_img);
 
 			const file_ext = selected_img.name.split('.').pop();
-			const file_path = `avatars/${$user_store.id}/${Date.now()}.${file_ext}`;
+			const file_path = `avatars/${me.id}/${Date.now()}.${file_ext}`;
 
-			await $api_store.user_avatars.upload(file_path, selected_img);
+			await api.user_avatars.upload(file_path, selected_img);
 
 			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/${file_path}`;
-			await $api_store.users.update($user_store.id, {
+			await api.users.update(me.id, {
 				avatar_url: img_url,
 			});
 
 			form.avatar_url = img_url;
-			update_user_store({ avatar_url: img_url });
+			Object.assign(me, { avatar_url: img_url });
 
 			show_toast('success', '수정이 완료되었습니다.');
 		} finally {
@@ -76,7 +80,7 @@
 </svelte:head>
 
 <Header>
-	<a slot="left" href={`/@${$user_store.handle}/accounts/profile`}>
+	<a slot="left" href={`/@${me?.handle}/accounts/profile`}>
 		<RiArrowLeftSLine size={24} color={colors.gray[800]} />
 	</a>
 	<h1 slot="center" class="font-semibold">프로필 수정</h1>

@@ -3,20 +3,23 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { RiAddLine, RiNotificationFill } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import PostSkeleton from '$lib/components/ui/PostSkeleton/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import PostSkeleton from '$lib/components/ui/PostSkeleton.svelte';
 
 	// Dynamic imports for code splitting
 	let Post = $state();
 	let Icon = $state();
 
-	import colors from '$lib/js/colors';
-	import { check_login } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { check_login } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '문';
 
@@ -37,8 +40,8 @@
 	onMount(async () => {
 		// Dynamic import components
 		const [PostModule, IconModule] = await Promise.all([
-			import('$lib/components/Post/+page.svelte'),
-			import('$lib/components/ui/Icon/+page.svelte')
+			import('$lib/components/Post.svelte'),
+			import('$lib/components/ui/Icon.svelte')
 		]);
 		Post = PostModule.default;
 		Icon = IconModule.default;
@@ -58,16 +61,16 @@
 
 	// 사용자 변경 시 미읽음 카운트 갱신
 	$effect(() => {
-		const uid = $user_store.id;
+		const uid = me.id;
 		if (!uid) return;
 		refresh_unread_count();
 	});
 
 	const refresh_unread_count = async () => {
 		try {
-			if (!$user_store?.id) return;
-			unread_count = await $api_store.notifications.select_unread_count(
-				$user_store.id,
+			if (!me?.id) return;
+			unread_count = await api.notifications.select_unread_count(
+				me.id,
 			);
 		} catch (e) {
 			console.error('Failed to load unread notifications count:', e);
@@ -96,7 +99,7 @@
 		}
 
 		// Load from API only if not cached
-		$api_store.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
+		api.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
 			posts = initial_posts;
 			last_post_id = initial_posts.at(-1)?.id ?? '';
 			// Update cache
@@ -153,7 +156,7 @@
 	const load_more_data = async () => {
 		const community_id =
 			selected === 0 ? '' : joined_communities[selected - 1].id;
-		const available_post = await $api_store.posts.select_infinite_scroll(
+		const available_post = await api.posts.select_infinite_scroll(
 			last_post_id,
 			community_id,
 			10,
@@ -169,14 +172,11 @@
 	};
 
 	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
-			event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
@@ -184,6 +184,20 @@
 
 		console.log('Gift comment added successfully');
 	};
+
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+			// 캐시도 함께 업데이트
+			const cache_key = selected === 0 ? 'all' : (joined_communities[selected - 1]?.id || '');
+			if (posts_cache.has(cache_key)) {
+				posts_cache.set(cache_key, { posts: updated_posts, last_post_id });
+			}
+		},
+		me
+	);
 </script>
 
 <svelte:head>
@@ -221,7 +235,12 @@
 	{:else}
 		{#each posts as post}
 			<div class="mt-4">
-				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+				<Post
+				{post}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onBookmarkChanged={handle_bookmark_changed}
+				onVoteChanged={handle_vote_changed}
+			/>
 			</div>
 		{/each}
 	{/if}
@@ -243,7 +262,7 @@
 		<button
 			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				goto('/regi/post');
 			}}

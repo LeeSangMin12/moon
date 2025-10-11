@@ -3,10 +3,10 @@
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 	import { smartGoBack } from '$lib/utils/navigation';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 
 	let { data } = $props();
 	let { supabase } = $derived(data);

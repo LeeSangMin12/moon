@@ -3,9 +3,9 @@
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 	import { smartGoBack } from '$lib/utils/navigation';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 </script>
 
 <Header>
@@ -21,5 +21,6 @@
 		<a href="/admin/moon-charges">문 충전 관리</a>
 		<a href="/admin/withdrawals">출금 관리</a>
 		<a href="/admin/account-transition">계정 전환</a>
+		<a href="/admin/bulk-accounts">대량 계정 생성</a>
 	</div>
 </div>

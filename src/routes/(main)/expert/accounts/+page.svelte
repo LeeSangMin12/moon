@@ -19,15 +19,18 @@
 		RiUserLine,
 	} from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import StarRating from '$lib/components/ui/StarRating/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import StarRating from '$lib/components/ui/StarRating.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { comma, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { user, my_requests, my_proposals, review_data } = $state(data);
@@ -53,23 +56,23 @@
 
 	const refresh_data = async () => {
 		try {
-			my_requests = await $api_store.expert_requests.select_by_requester_id(
+			my_requests = await api.expert_requests.select_by_requester_id(
 				user.id,
 			);
 			my_proposals =
-				await $api_store.expert_request_proposals.select_by_expert_id(user.id);
+				await api.expert_request_proposals.select_by_expert_id(user.id);
 
 			// 리뷰 데이터도 새로고침
 			review_data = {};
 			for (const request of my_requests) {
 				if (request.status === 'completed') {
 					const review_permission =
-						await $api_store.expert_request_reviews.can_write_review(
+						await api.expert_request_reviews.can_write_review(
 							request.id,
 							user.id,
 						);
 					const my_review =
-						await $api_store.expert_request_reviews.select_by_request_and_reviewer(
+						await api.expert_request_reviews.select_by_request_and_reviewer(
 							request.id,
 							user.id,
 						);
@@ -99,7 +102,7 @@
 		}
 
 		try {
-			await $api_store.expert_requests.complete_project(request_id);
+			await api.expert_requests.complete_project(request_id);
 			show_toast('success', SUCCESS_MESSAGES.PROJECT_COMPLETED);
 
 			// 데이터 새로고침
@@ -190,10 +193,10 @@
 				content: review_form.content.trim(),
 			};
 
-			await $api_store.expert_request_reviews.insert(review_data_to_insert);
+			await api.expert_request_reviews.insert(review_data_to_insert);
 
 			// 전문가에게 알림 전송
-			await $api_store.notifications.insert({
+			await api.notifications.insert({
 				recipient_id: request_review_data.expert_id,
 				actor_id: user.id,
 				type: 'expert_review.created',
@@ -541,7 +544,7 @@
 	<Modal
 		is_modal_open={show_review_modal}
 		modal_position="bottom"
-		on:modal_close={close_review_modal}
+		onModalClose={close_review_modal}
 	>
 		<div class="p-6">
 			<div class="mb-6 flex items-center justify-between">

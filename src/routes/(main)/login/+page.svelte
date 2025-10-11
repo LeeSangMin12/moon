@@ -7,11 +7,11 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 
 	let is_corporation_login = $state(false);
 	let corporation_login_id = $state('');

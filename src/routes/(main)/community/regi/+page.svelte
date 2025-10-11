@@ -3,18 +3,20 @@
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { show_toast } from '$lib/utils/common';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
-	import Set_avatar from './Set_avatar/+page.svelte';
-	import Set_content from './Set_content/+page.svelte';
-	import Set_topic from './Set_topic/+page.svelte';
+	const { me } = get_user_context();
+	const { api } = get_api_context();
+
+	import SetAvatar from './_components/SetAvatar.svelte';
+	import SetContent from './_components/SetContent.svelte';
+	import SetTopic from './_components/SetTopic.svelte';
 
 	let { data } = $props();
 	let { topic_categories, community } = $derived(data);
@@ -105,14 +107,14 @@
 		try {
 			if (is_edit_mode) {
 				// 수정 로직
-				await $api_store.communities.update(form_data.id, {
+				await api.communities.update(form_data.id, {
 					title: form_data.title,
 					slug: form_data.slug,
 					content: form_data.content,
 				});
 
-				await $api_store.community_topics.delete_by_community_id(form_data.id);
-				await $api_store.community_topics.insert(
+				await api.community_topics.delete_by_community_id(form_data.id);
+				await api.community_topics.insert(
 					form_data.id,
 					form_data.selected_topics,
 				);
@@ -123,44 +125,44 @@
 				) {
 					const file_ext = form_data.avatar_url.name.split('.').pop();
 					const file_path = `${form_data.id}/${Date.now()}.${file_ext}`;
-					await $api_store.community_avatars.upload(
+					await api.community_avatars.upload(
 						file_path,
 						form_data.avatar_url,
 					);
 
 					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
-					await $api_store.communities.update(form_data.id, {
+					await api.communities.update(form_data.id, {
 						avatar_url: img_url,
 					});
 				}
 				show_toast('success', '커뮤니티 수정이 완료되었어요!');
 				goto(`/community/${form_data.slug}`);
 			} else {
-				const new_community = await $api_store.communities.insert({
-					creator_id: $user_store.id,
+				const new_community = await api.communities.insert({
+					creator_id: me.id,
 					title: form_data.title,
 					slug: form_data.slug,
 					content: form_data.content,
 				});
-				await $api_store.community_topics.insert(
+				await api.community_topics.insert(
 					new_community.id,
 					form_data.selected_topics,
 				);
-				await $api_store.community_members.insert(
+				await api.community_members.insert(
 					new_community.id,
-					$user_store.id,
+					me.id,
 				);
 
 				if (form_data.avatar_url) {
 					const file_ext = form_data.avatar_url.name.split('.').pop();
 					const file_path = `${new_community.id}/${Date.now()}.${file_ext}`;
-					await $api_store.community_avatars.upload(
+					await api.community_avatars.upload(
 						file_path,
 						form_data.avatar_url,
 					);
 
 					const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/communities/avatars/${file_path}`;
-					await $api_store.communities.update(new_community.id, {
+					await api.communities.update(new_community.id, {
 						avatar_url: img_url,
 					});
 				}
@@ -180,7 +182,7 @@
 			return null;
 		}
 
-		const existing_community = await $api_store.communities.select_by_slug(
+		const existing_community = await api.communities.select_by_slug(
 			form_data.slug,
 		);
 
@@ -213,19 +215,19 @@
 	</div>
 
 	{#if page_count === 1}
-		<Set_topic
+		<SetTopic
 			bind:selected_topics={form_data.selected_topics}
 			{topic_categories}
 		/>
 	{:else if page_count === 2}
-		<Set_content
+		<SetContent
 			bind:title={form_data.title}
 			bind:slug={form_data.slug}
 			bind:content={form_data.content}
 			{is_edit_mode}
 		/>
 	{:else if page_count === 3}
-		<Set_avatar bind:avatar_url={form_data.avatar_url} />
+		<SetAvatar bind:avatar_url={form_data.avatar_url} />
 	{/if}
 
 	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">

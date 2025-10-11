@@ -26,7 +26,7 @@ export const create_community_members_api = (supabase) => ({
 	insert: async (community_id, user_id) => {
 		let { error } = await supabase
 			.from('community_members')
-			.insert({ community_id, user_id });
+			.upsert({ community_id, user_id }, { onConflict: 'community_id,user_id' });
 
 		if (error) throw new Error(`Failed to insert: ${error.message}`);
 	},

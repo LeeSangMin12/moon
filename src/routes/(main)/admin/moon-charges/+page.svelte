@@ -9,12 +9,15 @@
 		RiTimeLine,
 	} from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { comma, format_date, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { comma, format_date, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 
@@ -30,10 +33,10 @@
 		if (!confirm('이 충전 요청을 승인하시겠습니까?')) return;
 
 		try {
-			await $api_store.moon_charges.approve_charge_request(charge.id);
+			await api.moon_charges.approve_charge_request(charge.id);
 			show_toast('success', '충전 요청이 승인되었습니다.');
 
-			await $api_store.moon_point_transactions.insert({
+			await api.moon_point_transactions.insert({
 				user_id: charge.user_id,
 				amount: charge.point,
 				type: 'charge',
@@ -65,7 +68,7 @@
 		}
 
 		try {
-			await $api_store.moon_charges.reject_charge_request(
+			await api.moon_charges.reject_charge_request(
 				selected_charge_id,
 				reject_reason,
 			);

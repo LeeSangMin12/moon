@@ -1,13 +1,13 @@
 import { get } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
-import { user_store } from '$lib/store/user_store';
 
 /**
  * 스마트 뒤로가기 함수
  * 현재 페이지 경로에 따라 적절한 뒤로가기 동작을 수행
+ * @param {Object} user - 현재 로그인한 사용자 객체 (optional)
  */
-export function smartGoBack() {
+export function smartGoBack(user = null) {
 	const currentPage = get(page);
 	const pathname = currentPage.url.pathname;
 	const searchParams = currentPage.url.searchParams;
@@ -37,9 +37,8 @@ export function smartGoBack() {
 
 	// 전문가 관련 페이지들
 	if (pathname.startsWith('/expert/')) {
-		const currentUser = get(user_store);
-		if (currentUser && currentUser.handle) {
-			goto(`/@${currentUser.handle}/accounts`);
+		if (user && user.handle) {
+			goto(`/@${user.handle}/accounts`);
 		} else {
 			goto('/service');
 		}

@@ -3,8 +3,9 @@ import { create_api } from '$lib/supabase/api';
 export async function load({ params, parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
+	// 사용자별 데이터(서비스 좋아요, 리뷰 권한)가 포함되므로 캐시 비활성화
 	setHeaders({
-		'Cache-Control': 'public, max-age=30, s-maxage=60',
+		'Cache-Control': 'private, max-age=0, must-revalidate',
 	});
 
 	const { user } = await parent();

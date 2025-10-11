@@ -1,6 +1,6 @@
 <script>
 	import logo from '$lib/img/logo.png';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
@@ -9,16 +9,19 @@
 		RiUserLine,
 	} from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '커뮤니티';
 
@@ -31,12 +34,21 @@
 	];
 
 	let { data } = $props();
-	let { community, community_members, community_participants, posts } =
-		$derived(data);
+
+	// Props에서 직접 사용
+	let { community, community_participants } = $derived(data);
+
+	// 로컬 상태로 관리 (서버 invalidate 시 동기화 필요)
+	let posts = $state(data.posts);
 	let community_members_state = $state(data.community_members);
-	let participant_count = $state(
-		data.community.community_members?.[0]?.count ?? 0,
-	);
+	let participant_count = $state(data.community.community_members?.[0]?.count ?? 0);
+
+	// data 변경 시 로컬 상태 동기화 (invalidate 후 서버 데이터 반영)
+	$effect(() => {
+		posts = data.posts;
+		community_members_state = data.community_members;
+		participant_count = data.community.community_members?.[0]?.count ?? 0;
+	});
 
 	let is_participants_modal_open = $state(false);
 	let is_menu_modal_open = $state(false);
@@ -53,11 +65,13 @@
 
 	const handle_join = async (community_id) => {
 		try {
-			await $api_store.community_members.insert(community_id, $user_store.id);
-			community_members_state.push({ community_id, user_id: $user_store.id });
+			await api.community_members.insert(community_id, me.id);
+			// Update local state immediately for responsive UI (use spread for Svelte 5 reactivity)
+			community_members_state = [...community_members_state, { community_id, user_id: me.id }];
 			// 참여자 수 증가
 			participant_count++;
-
+			// Invalidate server data to fetch latest state
+			await invalidate(`/community/${community.slug}`);
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -66,12 +80,15 @@
 
 	const handle_leave = async (community_id) => {
 		try {
-			await $api_store.community_members.delete(community_id, $user_store.id);
+			await api.community_members.delete(community_id, me.id);
+			// Update local state immediately for responsive UI
 			community_members_state = community_members_state.filter(
 				(member) => member.community_id !== community_id,
 			);
 			// 참여자 수 감소
 			participant_count--;
+			// Invalidate server data to fetch latest state
+			await invalidate(`/community/${community.slug}`);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
 			console.error(error);
@@ -85,8 +102,8 @@
 		}
 
 		try {
-			await $api_store.community_reports.insert({
-				reporter_id: $user_store.id,
+			await api.community_reports.insert({
+				reporter_id: me.id,
 				community_id: community.id,
 				reason: report_reason,
 				details: report_details,
@@ -105,19 +122,25 @@
 	};
 
 	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
-			event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
 		});
 	};
+
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+		},
+		me
+	);
 </script>
 
 <svelte:head>
@@ -176,7 +199,7 @@
 		<button
 			class="flex items-center"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				is_menu_modal_open = true;
 			}}
@@ -220,7 +243,7 @@
 			{#if is_user_member(community)}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 
 						handle_leave(community.id);
 					}}
@@ -231,7 +254,7 @@
 			{:else}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 
 						handle_join(community.id);
 					}}
@@ -255,14 +278,19 @@
 
 	{#each posts as post}
 		<div class="mt-4">
-			<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+			<Post
+			{post}
+			onGiftCommentAdded={handle_gift_comment_added}
+			onBookmarkChanged={handle_bookmark_changed}
+			onVoteChanged={handle_vote_changed}
+		/>
 		</div>
 	{/each}
 </main>
 
 <Modal bind:is_modal_open={is_menu_modal_open} modal_position="bottom">
 	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if community.creator_id === $user_store.id}
+		{#if community.creator_id === me.id}
 			<!-- 수정하기 -->
 			<a
 				href={'/community/regi?slug=' + data.community.slug}

@@ -4,15 +4,16 @@
 	import { onMount } from 'svelte';
 	import { RiAddLine, RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { check_login, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { joined_communities, community_members } = $state(data);
@@ -29,8 +30,8 @@
 
 	const handle_join = async (community_id) => {
 		try {
-			await $api_store.community_members.insert(community_id, $user_store.id);
-			community_members.push({ community_id, user_id: $user_store.id });
+			await api.community_members.insert(community_id, me.id);
+			community_members.push({ community_id, user_id: me.id });
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
 			console.error(error);
@@ -39,7 +40,7 @@
 
 	const handle_leave = async (community_id) => {
 		try {
-			await $api_store.community_members.delete(community_id, $user_store.id);
+			await api.community_members.delete(community_id, me.id);
 			community_members = community_members.filter(
 				(member) => member.community_id !== community_id,
 			);
@@ -60,7 +61,7 @@
 
 <Header>
 	<div slot="left">
-		<button onclick={() => goto(`/@${$user_store.handle}/accounts`)}>
+		<button onclick={() => goto(`/@${me.handle}/accounts`)}>
 			<RiArrowLeftSLine size={24} color={colors.gray[800]} />
 		</button>
 	</div>
@@ -99,7 +100,7 @@
 					{:else}
 						<button
 							onclick={() => {
-								if (!check_login()) return;
+								if (!check_login(me)) return;
 
 								handle_join(item.communities.id);
 							}}
@@ -125,7 +126,7 @@
 		<button
 			class="rounded-full bg-blue-500 p-3 text-white shadow-lg hover:bg-blue-600"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
 				goto('/community/regi');
 			}}

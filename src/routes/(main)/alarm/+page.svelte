@@ -4,12 +4,14 @@
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { notifications } = $state(data);
@@ -25,7 +27,7 @@
 
 	const open_notification = async (n) => {
 		if (!n.read_at) {
-			await $api_store.notifications.mark_as_read(n.id, $user_store.id);
+			await api.notifications.mark_as_read(n.id, me.id);
 			n.read_at = new Date().toISOString();
 		}
 		if (n.link_url) goto(n.link_url);
@@ -33,8 +35,8 @@
 
 	onMount(async () => {
 		try {
-			if ($user_store?.id) {
-				await $api_store.notifications.mark_all_as_read($user_store.id);
+			if (me?.id) {
+				await api.notifications.mark_all_as_read(me.id);
 				// 로컬 상태도 즉시 반영
 				const now = new Date().toISOString();
 				notifications = notifications.map((n) => ({

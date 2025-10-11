@@ -15,10 +15,12 @@
 		RiCupLine,
 	} from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 
-	import colors from '$lib/js/colors';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
 </script>
 
 <svelte:head>
@@ -31,7 +33,7 @@
 
 <Header>
 	<div slot="left">
-		<a class="flex items-center" href={`/@${$user_store.handle}`}>
+		<a class="flex items-center" href={`/@${me?.handle}`}>
 			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 		</a>
 	</div>
@@ -40,12 +42,12 @@
 <main>
 	<div class="mx-4 mt-2 flex items-center justify-center">
 		<a
-			href={`/@${$user_store.handle}/accounts/point`}
+			href={`/@${me?.handle}/accounts/point`}
 			class="flex h-16 w-full items-center justify-between rounded-[14px] bg-gradient-to-r from-blue-500 to-sky-500 px-7"
 		>
 			<p class="font-bold text-white">문 포인트</p>
 			<p class="flex items-center text-xl font-bold text-white">
-				<span>{$user_store.moon_point} P</span>
+				<span>{me?.moon_point} P</span>
 
 				<svg
 					class="ml-2 inline-block"
@@ -73,7 +75,7 @@
 	<div class="mt-3 flex flex-col gap-5">
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/profile"
+			href="/@{me?.handle}/accounts/profile"
 		>
 			<RiUserLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -82,7 +84,7 @@
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/orders"
+			href="/@{me?.handle}/accounts/orders"
 		>
 			<RiGraduationCapLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -97,7 +99,7 @@
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/like"
+			href="/@{me?.handle}/accounts/like"
 		>
 			<RiHeartLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -106,7 +108,7 @@
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/bookmark"
+			href="/@{me?.handle}/accounts/bookmark"
 		>
 			<RiBookmarkLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -115,7 +117,7 @@
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/community"
+			href="/@{me?.handle}/accounts/community"
 		>
 			<RiTeamLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -124,7 +126,7 @@
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/coffee-chat"
+			href="/@{me?.handle}/accounts/coffee-chat"
 		>
 			<RiCupLine size={20} color={colors.gray[600]} class="mr-3" />
 
@@ -139,14 +141,14 @@
 	<div class="mt-3 flex flex-col gap-5">
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/event"
+			href="/@{me?.handle}/accounts/event"
 		>
 			<p>이벤트</p>
 		</a>
 
 		<a
 			class="flex items-center px-4"
-			href="/@{$user_store.handle}/accounts/notice"
+			href="/@{me?.handle}/accounts/notice"
 		>
 			<p>공지사항</p>
 		</a>

@@ -4,8 +4,9 @@ export const load = async ({ params, parent, locals: { supabase }, url, setHeade
 	const { post_id } = params;
 	const api = create_api(supabase);
 
+	// 사용자 상호작용(북마크, 좋아요 등)이 빈번한 페이지이므로 캐시 비활성화
 	setHeaders({
-		'Cache-Control': 'public, max-age=60, s-maxage=300',
+		'Cache-Control': 'no-cache, no-store, must-revalidate',
 	});
 
 	const { user } = await parent();

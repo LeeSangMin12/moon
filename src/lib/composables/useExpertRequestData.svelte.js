@@ -1,6 +1,4 @@
-import { api_store } from '$lib/store/api_store';
-
-export function createExpertRequestData(initialData) {
+export function createExpertRequestData(initialData, api) {
 	let expertRequests = $state(initialData.expert_requests);
 	let searchText = $state('');
 	let selectedCategory = $state('');
@@ -8,15 +6,15 @@ export function createExpertRequestData(initialData) {
 
 	const searchExpertRequests = async () => {
 		if (searchText.trim()) {
-			expertRequests = await api_store.expert_requests.select_by_search(searchText);
+			expertRequests = await api.expert_requests.select_by_search(searchText);
 		} else {
-			const response = await api_store.expert_requests.select_infinite_scroll('', selectedCategory);
+			const response = await api.expert_requests.select_infinite_scroll('', selectedCategory);
 			expertRequests = response.data || response;
 		}
 	};
 
 	const loadMoreExpertRequests = async (lastRequestId) => {
-		const response = await api_store.expert_requests.select_infinite_scroll(
+		const response = await api.expert_requests.select_infinite_scroll(
 			lastRequestId,
 			selectedCategory
 		);
@@ -25,7 +23,7 @@ export function createExpertRequestData(initialData) {
 
 	const filterByCategory = async (category) => {
 		selectedCategory = category;
-		const response = await api_store.expert_requests.select_infinite_scroll('', category);
+		const response = await api.expert_requests.select_infinite_scroll('', category);
 		expertRequests = response.data || response;
 	};
 

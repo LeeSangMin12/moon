@@ -4,8 +4,9 @@ import { error } from '@sveltejs/kit';
 export async function load({ params, parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
+	// 사용자별 데이터(리뷰 권한)가 포함되므로 캐시 비활성화
 	setHeaders({
-		'Cache-Control': 'public, max-age=30, s-maxage=60',
+		'Cache-Control': 'private, max-age=0, must-revalidate',
 	});
 
 	try {
@@ -28,6 +29,7 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 		return {
 			expert_request,
 			proposals,
+			user,
 			can_write_review: review_permission.can_write,
 			review_proposal_id: review_permission.proposal_id,
 			review_expert_id: review_permission.expert_id,

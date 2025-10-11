@@ -6,14 +6,16 @@
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
 
-	import Header from '$lib/components/ui/Header/+page.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
 	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store.js';
+	import colors from '$lib/config/colors';
+	import { check_login, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '서비스 등록';
 
@@ -29,7 +31,7 @@
 
 	onMount(() => {
 		// Check if user is logged in when page loads
-		if (!check_login()) {
+		if (!check_login(me)) {
 			goto('/login');
 			return;
 		}
@@ -88,13 +90,13 @@
 		update_global_store('loading', true);
 		try {
 			// Check if user is logged in
-			if (!$user_store?.id) {
+			if (!me?.id) {
 				show_toast('error', '로그인이 필요합니다.');
 				return;
 			}
 
-			const new_service = await $api_store.services.insert({
-				author_id: $user_store.id,
+			const new_service = await api.services.insert({
+				author_id: me.id,
 				title: service_form_data.title,
 				content: service_form_data.content,
 				price: service_form_data.price,
@@ -106,7 +108,7 @@
 					new_service.id,
 					service_form_data.images,
 				);
-				await $api_store.services.update(new_service.id, {
+				await api.services.update(new_service.id, {
 					images: uploaded_images,
 				});
 			}
@@ -124,7 +126,7 @@
 				const file_ext = img_file.name.split('.').pop();
 				const file_path = `${service_id}/${Date.now()}-${i}.${file_ext}`;
 
-				await $api_store.service_images.upload(file_path, img_file);
+				await api.service_images.upload(file_path, img_file);
 				return {
 					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/services/images/${file_path}`,
 				};

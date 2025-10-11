@@ -11,21 +11,21 @@
 		RiShareLine,
 	} from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Modal from '$lib/components/ui/Modal/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import Post from '$lib/components/Post/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
-	import Service from '$lib/components/Service/+page.svelte';
-	import CoffeeChatModal from '$lib/components/CoffeeChatModal/+page.svelte';
+	import Service from '$lib/components/Service.svelte';
+	import CoffeeChatModal from '$lib/components/CoffeeChatModal.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
+	import colors from '$lib/config/colors';
+	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { user_store } from '$lib/store/user_store';
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const TITLE = '문';
 
@@ -37,13 +37,29 @@
 		'기타',
 	];
 
+	const { me } = get_user_context();
+	const { api } = get_api_context();
+
 	let { data } = $props();
-	let { user, posts, follower_count, following_count } = $state(data);
+
+	// 서버에서 받은 읽기 전용 데이터 - $derived 사용
+	let user = $derived(data.user);
+	let following_count = $derived(data.following_count);
+
+	// 로컬에서 수정되는 데이터 - $state 사용
+	let posts = $state(data.posts);
+	let follower_count = $state(data.follower_count);
+
+	// 서버 데이터 변경 시 로컬 상태 동기화 (params 변경 시 load 함수가 재실행됨)
+	$effect(() => {
+		posts = data.posts;
+		follower_count = data.follower_count;
+	});
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
 	let selected_data = $state({
-		posts: [],
+		posts: data.posts || [],
 		post_comments: [],
 		services: [],
 		service_likes: [],
@@ -74,27 +90,27 @@
 	let follow_modal_users = $state([]);
 
 	onMount(async () => {
-		if ($user_store?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
+		if (me?.id) {
+			is_following = await api.user_follows.is_following(
+				me.id,
 				user.id,
 			);
 		}
 	});
 
 	const toggle_follow = async () => {
-		if (!check_login()) return;
+		if (!check_login(me)) return;
 
 		if (is_following) {
-			await $api_store.user_follows.unfollow($user_store.id, user.id);
-			$user_store.user_follows = $user_store.user_follows.filter(
+			await api.user_follows.unfollow(me.id, user.id);
+			me.user_follows = me.user_follows.filter(
 				(follow) => follow.following_id !== user.id,
 			);
 			// 팔로워 수 감소
 			follower_count--;
 		} else {
-			await $api_store.user_follows.follow($user_store.id, user.id);
-			$user_store.user_follows.push({
+			await api.user_follows.follow(me.id, user.id);
+			me.user_follows.push({
 				following_id: user.id,
 			});
 			// 팔로워 수 증가
@@ -102,17 +118,17 @@
 
 			// 앱 레벨 알림 생성: 팔로우 당한 사용자에게
 			try {
-				await $api_store.notifications.insert({
+				await api.notifications.insert({
 					recipient_id: user.id,
-					actor_id: $user_store.id,
+					actor_id: me.id,
 					type: 'follow.created',
 					resource_type: 'user',
-					resource_id: String($user_store.id),
+					resource_id: String(me.id),
 					payload: {
-						follower_id: $user_store.id,
-						follower_handle: $user_store.handle,
+						follower_id: me.id,
+						follower_handle: me.handle,
 					},
-					link_url: `/@${$user_store.handle}`,
+					link_url: `/@${me.handle}`,
 				});
 			} catch (e) {
 				console.error('Failed to insert notification (follow.created):', e);
@@ -130,8 +146,8 @@
 		}
 
 		try {
-			await $api_store.user_reports.insert({
-				reporter_id: $user_store.id,
+			await api.user_reports.insert({
+				reporter_id: me.id,
 				user_id: user.id,
 				reason: user_report_form_data.reason,
 				details: user_report_form_data.details,
@@ -152,23 +168,23 @@
 	const load_tab_data = async (tab_index) => {
 		if (tab_index === 0) {
 			// 게시글 탭
-			selected_data.posts = await $api_store.posts.select_by_user_id(user.id);
+			selected_data.posts = await api.posts.select_by_user_id(user.id);
 		} else if (tab_index === 1) {
 			// 댓글 탭
 			selected_data.post_comments =
-				await $api_store.post_comments.select_by_user_id(user.id);
+				await api.post_comments.select_by_user_id(user.id);
 		} else if (tab_index === 2) {
 			// 서비스 탭
-			selected_data.services = await $api_store.services.select_by_user_id(
+			selected_data.services = await api.services.select_by_user_id(
 				user.id,
 			);
 			selected_data.service_likes =
-				await $api_store.service_likes.select_by_user_id(user.id);
+				await api.service_likes.select_by_user_id(user.id);
 		} else if (tab_index === 3) {
 			// 받은리뷰 탭 - 서비스 리뷰와 전문가 리뷰 모두 조회
 			const [service_reviews, expert_reviews] = await Promise.all([
-				$api_store.service_reviews.select_by_service_author_id(user.id),
-				$api_store.expert_request_reviews.select_by_expert_id(user.id),
+				api.service_reviews.select_by_service_author_id(user.id),
+				api.expert_request_reviews.select_by_expert_id(user.id),
 			]);
 			selected_data.service_reviews = service_reviews;
 			selected_data.expert_request_reviews = expert_reviews;
@@ -180,62 +196,58 @@
 		load_tab_data(selected);
 	});
 
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
-			event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await $api_store.post_comments.insert({
+		await api.post_comments.insert({
 			post_id,
-			user_id: $user_store.id,
+			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
 			gift_moon_point,
 		});
 	};
 
+	// Post 이벤트 핸들러 (composable 사용)
+	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+		() => posts,
+		(updated_posts) => {
+			posts = updated_posts;
+			selected_data.posts = updated_posts;
+		},
+		me
+	);
+
 	const open_follow_modal = async (type) => {
 		follow_modal_type = type;
 		is_follow_modal_open = true;
 		if (type === 'followers') {
-			follow_modal_users = await $api_store.user_follows.select_followers(
+			follow_modal_users = await api.user_follows.select_followers(
 				user.id,
 			);
 		} else {
-			follow_modal_users = await $api_store.user_follows.select_followings(
+			follow_modal_users = await api.user_follows.select_followings(
 				user.id,
 			);
 		}
 	};
 
-	$effect(async () => {
-		const handle = $page.params.handle;
-		if (!handle || !$api_store.users) return;
+	// params 변경 시 탭 데이터와 팔로우 상태를 다시 로드
+	// (load 함수가 user/posts/counts는 자동으로 처리함)
+	$effect(() => {
+		if (user?.id) {
+			// 탭 데이터 로드
+			load_tab_data(selected);
 
-		const new_user = await $api_store.users.select_by_handle(handle);
-		const new_posts = await $api_store.posts.select_by_user_id(new_user.id);
-		const new_follower_count = await $api_store.user_follows.get_follower_count(
-			new_user.id,
-		);
-		const new_following_count =
-			await $api_store.user_follows.get_following_count(new_user.id);
+			// 팔로우 상태 업데이트
+			if (me?.id) {
+				api.user_follows.is_following(me.id, user.id).then(result => {
+					is_following = result;
+				});
+			}
 
-		user = new_user;
-		posts = new_posts;
-		follower_count = new_follower_count;
-		following_count = new_following_count;
-
-		if ($user_store?.id) {
-			is_following = await $api_store.user_follows.is_following(
-				$user_store.id,
-				new_user.id,
-			);
+			// 모달 닫기
+			is_follow_modal_open = false;
 		}
-
-		// 탭 데이터도 새로고침
-		await load_tab_data(selected);
-
-		is_follow_modal_open = false;
 	});
 </script>
 
@@ -280,7 +292,7 @@
 
 <Header>
 	<div slot="left">
-		{#if $page.params.handle !== $user_store.handle}
+		{#if $page.params.handle !== me?.handle}
 			<button class="flex items-center" onclick={smartGoBack}>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
@@ -291,12 +303,12 @@
 		<button
 			class="flex items-center"
 			onclick={() => {
-				if (!check_login()) return;
+				if (!check_login(me)) return;
 
-				if ($page.params.handle !== $user_store.handle) {
+				if ($page.params.handle !== me?.handle) {
 					modal.user_config = true;
 				} else {
-					goto(`/@${$user_store.handle}/accounts`);
+					goto(`/@${me?.handle}/accounts`);
 				}
 			}}
 		>
@@ -358,7 +370,7 @@
 			{user?.self_introduction || ''}
 		</p>
 
-		{#if $page.params.handle === $user_store.handle}
+		{#if $page.params.handle === me?.handle}
 			<!-- 메시지와 팔로우 버튼 -->
 			<div class="mt-4 flex space-x-2">
 				<button
@@ -398,7 +410,7 @@
 				{/if}
 				<button
 					onclick={() => {
-						if (!check_login()) return;
+						if (!check_login(me)) return;
 						modal.coffee_chat = true;
 					}}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
@@ -426,7 +438,12 @@
 	{#if selected === 0 && selected_data.posts.length > 0}
 		{#each selected_data.posts as post}
 			<div class="mt-4">
-				<Post {post} on:gift_comment_added={handle_gift_comment_added} />
+				<Post
+				{post}
+				onGiftCommentAdded={handle_gift_comment_added}
+				onBookmarkChanged={handle_bookmark_changed}
+				onVoteChanged={handle_vote_changed}
+			/>
 			</div>
 		{/each}
 	{:else if selected === 1 && selected_data.post_comments.length > 0}
@@ -662,7 +679,7 @@
 	{/if}
 </main>
 
-{#if $page.params.handle === $user_store.handle}
+{#if $page.params.handle === me?.handle}
 	<Bottom_nav />
 {/if}
 

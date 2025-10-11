@@ -2,18 +2,20 @@
 	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import { onMount } from 'svelte';
 	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
+	import { onMount } from 'svelte';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector/+page.svelte';
-	import ExpertRequestTab from '$lib/components/ExpertRequestTab/+page.svelte';
-	import ServiceTab from '$lib/components/ServiceTab/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+	import ExpertRequestTab from '$lib/components/ExpertRequestTab.svelte';
+	import ServiceTab from '$lib/components/ServiceTab.svelte';
 
-	import { api_store } from '$lib/store/api_store';
+	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { api } = get_api_context();
 
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
@@ -40,13 +42,14 @@
 	];
 
 	// Initialize with empty data - will be populated when promises resolve
-	const serviceData = createServiceData({ services: [], service_likes: [] });
-	const expertRequestData = createExpertRequestData({ expert_requests: [] });
+	const serviceData = createServiceData({ services: [], service_likes: [] }, api);
+	const expertRequestData = createExpertRequestData({ expert_requests: [] }, api);
 
 	// Resolve streamed services promise
 	onMount(async () => {
+		console.log('hi');
 		if (data.services instanceof Promise) {
-			data.services.then(services => {
+			data.services.then((services) => {
 				serviceData.services = services;
 			});
 		} else {
@@ -54,7 +57,7 @@
 		}
 
 		if (data.service_likes instanceof Promise) {
-			data.service_likes.then(likes => {
+			data.service_likes.then((likes) => {
 				serviceData.serviceLikes = likes;
 			});
 		} else {
@@ -66,7 +69,7 @@
 	$effect(() => {
 		if ((selected_tab === 1 || selected_tab === 2) && !expert_requests_loaded) {
 			expert_requests_loaded = true;
-			$api_store.expert_requests.select_infinite_scroll('').then(response => {
+			api.expert_requests.select_infinite_scroll('').then((response) => {
 				expertRequestData.expertRequests = response.data || response;
 			});
 		}
@@ -113,7 +116,7 @@
 	const handleSearch = async () => {
 		if (selected_tab === 0) {
 			if (searchText.trim()) {
-				const results = await $api_store.services.select_by_search(searchText);
+				const results = await api.services.select_by_search(searchText);
 				serviceData.services = results;
 			} else {
 				serviceData.services = data.services;
@@ -123,11 +126,11 @@
 		} else {
 			if (searchText.trim()) {
 				const results =
-					await $api_store.expert_requests.select_by_search(searchText);
+					await api.expert_requests.select_by_search(searchText);
 				expertRequestData.expertRequests = results;
 			} else {
 				const response =
-					await $api_store.expert_requests.select_infinite_scroll('', '');
+					await api.expert_requests.select_infinite_scroll('', '');
 				expertRequestData.expertRequests = response.data || response;
 			}
 			expertInfiniteScroll.lastId =

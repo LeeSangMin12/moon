@@ -1,11 +1,11 @@
 <script>
 	import { onMount } from 'svelte';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
-	import colors from '$lib/js/colors';
+	import colors from '$lib/config/colors';
 
 	const TITLE = '채팅';
 </script>

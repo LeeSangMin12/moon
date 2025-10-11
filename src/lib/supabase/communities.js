@@ -10,21 +10,72 @@ export const create_communities_api = (supabase) => ({
 
 		return communities;
 	},
-	select_infinite_scroll: async (last_community_id) => {
+	select_infinite_scroll: async (last_community_id, user_id = null) => {
+		console.log('[select_infinite_scroll] Called with user_id:', user_id);
+
 		let query = supabase
 			.from('communities')
-			.select('id, title, slug, content, avatar_url, created_at, creator_id, community_members(count)')
+			.select('id, title, slug, content, avatar_url, created_at, creator_id')
 			.order('id', { ascending: false })
 			.limit(10);
 
 		if (last_community_id !== '') {
-			query.lt('id', last_community_id);
+			query = query.lt('id', last_community_id);
 		}
 
 		let { data: communities, error } = await query;
 
 		if (error)
 			throw new Error(`Failed to select_communities: ${error.message}`);
+
+		if (!communities || communities.length === 0) {
+			return [];
+		}
+
+		console.log('[select_infinite_scroll] Fetched communities:', communities.length);
+
+		// Get member counts and membership info for all communities
+		const community_ids = communities.map(c => c.id);
+		const { data: members, error: members_error } = await supabase
+			.from('community_members')
+			.select('community_id, user_id')
+			.in('community_id', community_ids);
+
+		if (members_error)
+			throw new Error(`Failed to select_community_members: ${members_error.message}`);
+
+		console.log('[select_infinite_scroll] Fetched members:', members?.length);
+		console.log('[select_infinite_scroll] Members data:', JSON.stringify(members, null, 2));
+
+		// Create a map of community_id -> member info
+		const member_map = {};
+		members?.forEach(member => {
+			if (!member_map[member.community_id]) {
+				member_map[member.community_id] = [];
+			}
+			member_map[member.community_id].push(member.user_id);
+		});
+
+		console.log('[select_infinite_scroll] Member map:', JSON.stringify(member_map, null, 2));
+
+		// Add is_member and member_count to each community
+		communities = communities.map(community => {
+			const community_member_ids = member_map[community.id] || [];
+			const is_member = user_id ? community_member_ids.includes(user_id) : false;
+
+			console.log(`[select_infinite_scroll] Community ${community.id}:`, {
+				member_ids: community_member_ids,
+				user_id,
+				is_member
+			});
+
+			return {
+				...community,
+				is_member,
+				member_count: community_member_ids.length,
+				community_members: [{ count: community_member_ids.length }] // For backward compatibility
+			};
+		});
 
 		return communities;
 	},

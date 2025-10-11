@@ -3,15 +3,17 @@
 	import { onMount } from 'svelte';
 	import { RiAddLine, RiArrowLeftSLine, RiHeartFill } from 'svelte-remixicon';
 
-	import Bottom_nav from '$lib/components/ui/Bottom_nav/+page.svelte';
-	import Header from '$lib/components/ui/Header/+page.svelte';
-	import Icon from '$lib/components/ui/Icon/+page.svelte';
-	import Service from '$lib/components/Service/+page.svelte';
+	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
+	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Service from '$lib/components/Service.svelte';
 
-	import colors from '$lib/js/colors';
-	import { check_login, comma, show_toast } from '$lib/js/common';
-	import { api_store } from '$lib/store/api_store';
-	import { user_store } from '$lib/store/user_store';
+	import colors from '$lib/config/colors';
+	import { check_login, comma, show_toast } from '$lib/utils/common';
+	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+
+	const { me } = get_user_context();
+	const { api } = get_api_context();
 
 	const TITLE = '좋아요한 서비스';
 
@@ -29,7 +31,7 @@
 
 <Header>
 	<div slot="left">
-		<button onclick={() => goto(`/@${$user_store.handle}/accounts`)}>
+		<button onclick={() => goto(`/@${me.handle}/accounts`)}>
 			<RiArrowLeftSLine size={24} color={colors.gray[800]} />
 		</button>
 	</div>
