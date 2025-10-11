@@ -329,9 +329,7 @@
 	/**
 	 * 선물 댓글 추가 성공 처리
 	 */
-	function handle_gift_success(event) {
-		const { gift_content, gift_moon_point } = event.detail;
-
+	function handle_gift_success({ gift_content, gift_moon_point, post_id: modal_post_id }) {
 		onGiftCommentAdded?.({
 			gift_content,
 			gift_moon_point,

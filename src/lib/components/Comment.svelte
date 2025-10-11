@@ -39,7 +39,19 @@
 	let is_reply_open = $state(false);
 	let are_replies_visible = $state(false);
 	let is_gift_modal_open = $state(false);
-	let comment_state = $state(comment);
+
+	// 로컬 변경사항만 추적 (optimistic UI update)
+	let local_votes = $state({
+		user_vote: null,
+		upvotes: null,
+		downvotes: null
+	});
+
+	// 로컬 수정 상태
+	let local_edit = $state({
+		content: null,
+		updated_at: null
+	});
 
 	// 수정 관련 상태
 	let is_editing = $state(false);
@@ -49,41 +61,43 @@
 	let textarea_ref = $state(null);
 	let edit_textarea_ref = $state(null);
 
-	// comment prop이 변경될 때 local state 업데이트
-	$effect(() => {
-		comment_state = comment;
-	});
-
 	const handle_vote = async (vote) => {
 		if (!check_login(me)) return;
 
-		await api.post_comment_votes.upsert({
-			comment_id: comment_state.id,
-			user_id: me.id,
-			vote,
-		});
+		const current_vote = local_votes.user_vote ?? comment.user_vote;
+		const current_upvotes = local_votes.upvotes ?? comment.upvotes;
+		const current_downvotes = local_votes.downvotes ?? comment.downvotes;
 
-		if (comment_state.user_vote === vote) {
-			comment_state.user_vote = 0;
-			if (vote === 1) comment_state.upvotes--;
-			else comment_state.downvotes--;
+		// Optimistic update
+		if (current_vote === vote) {
+			// 투표 취소: DB에서 레코드 삭제
+			await api.post_comment_votes.delete(comment.id, me.id);
+			local_votes.user_vote = 0;
+			if (vote === 1) local_votes.upvotes = current_upvotes - 1;
+			else local_votes.downvotes = current_downvotes - 1;
 		} else {
+			// 투표 추가 또는 변경
+			await api.post_comment_votes.upsert({
+				comment_id: comment.id,
+				user_id: me.id,
+				vote,
+			});
+			local_votes.user_vote = vote;
 			if (vote === 1) {
-				if (comment_state.user_vote === -1) comment_state.downvotes--;
-				comment_state.upvotes++;
+				local_votes.upvotes = current_upvotes + 1;
+				if (current_vote === -1) local_votes.downvotes = current_downvotes - 1;
 			} else {
-				if (comment_state.user_vote === 1) comment_state.upvotes--;
-				comment_state.downvotes++;
+				local_votes.downvotes = current_downvotes + 1;
+				if (current_vote === 1) local_votes.upvotes = current_upvotes - 1;
 			}
-			comment_state.user_vote = vote;
 		}
 
 		// 부모 컴포넌트에 알림
 		onVoteChanged?.({
-			comment_id: comment_state.id,
-			user_vote: comment_state.user_vote,
-			upvotes: comment_state.upvotes,
-			downvotes: comment_state.downvotes
+			comment_id: comment.id,
+			user_vote: local_votes.user_vote,
+			upvotes: local_votes.upvotes,
+			downvotes: local_votes.downvotes
 		});
 	};
 
@@ -92,7 +106,7 @@
 			post_id,
 			user_id: me.id,
 			content: reply_content.trim(),
-			parent_comment_id: comment_state.id,
+			parent_comment_id: comment.id,
 		});
 
 		new_reply.post_comment_votes = [];
@@ -108,7 +122,7 @@
 
 		// 상위 컴포넌트에 답글 추가 알림
 		onReplyAdded?.({
-			parent_comment_id: comment_state.id,
+			parent_comment_id: comment.id,
 			new_reply,
 		});
 
@@ -118,7 +132,7 @@
 	};
 
 	const handle_edit_comment = () => {
-		edit_content = comment_state.content;
+		edit_content = local_edit.content ?? comment.content;
 		is_editing = true;
 		is_more_modal_open = false;
 
@@ -139,14 +153,14 @@
 
 		try {
 			const updated_comment = await api.post_comments.update(
-				comment_state.id,
+				comment.id,
 				me.id,
 				edit_content.trim(),
 			);
 
-			// 서버에서 받은 업데이트된 댓글 데이터로 상태 업데이트
-			comment_state.content = updated_comment.content;
-			comment_state.updated_at = updated_comment.updated_at;
+			// Optimistic update
+			local_edit.content = updated_comment.content;
+			local_edit.updated_at = updated_comment.updated_at;
 			is_editing = false;
 			show_toast('success', '댓글이 수정되었습니다.');
 		} catch (error) {
@@ -164,12 +178,12 @@
 		if (!confirm('정말 삭제하시겠습니까?')) return;
 
 		try {
-			await api.post_comments.delete(comment_state.id, me.id);
+			await api.post_comments.delete(comment.id, me.id);
 
 			// 상위 컴포넌트에 삭제 알림
 			onCommentDeleted?.({
-				comment_id: comment_state.id,
-				parent_comment_id: comment_state.parent_comment_id,
+				comment_id: comment.id,
+				parent_comment_id: comment.parent_comment_id,
 			});
 
 			show_toast('success', '댓글이 삭제되었습니다.');
@@ -179,14 +193,12 @@
 		}
 	};
 
-	async function handle_gift_success(event) {
-		const { gift_content, gift_moon_point } = event.detail;
-
+	async function handle_gift_success({ gift_content, gift_moon_point, post_id: modal_post_id }) {
 		// 상위 컴포넌트에 gift 댓글 추가 알림
 		onGiftCommentAdded?.({
 			gift_content,
 			gift_moon_point,
-			parent_comment_id: comment_state.id,
+			parent_comment_id: comment.id,
 			post_id,
 		});
 
@@ -228,13 +240,13 @@
 	};
 
 	// 작성자인지 확인하는 computed property
-	const is_author = $derived(comment_state.users.id === me.id);
+	const is_author = $derived(comment.users?.id === me.id);
 </script>
 
 <GiftModal
 	bind:is_modal_open={is_gift_modal_open}
-	receiver_id={comment_state.users.id}
-	receiver_name={comment_state.users.name}
+	receiver_id={comment.users.id}
+	receiver_name={comment.users.name}
 	onGiftSuccess={handle_gift_success}
 />
 
@@ -282,9 +294,9 @@
 <div class="flex flex-col">
 	<div class="flex w-full items-start justify-between">
 		<div class="flex gap-3">
-			<a class="h-8 w-8 flex-shrink-0" href={comment_state.users?.handle ? `/@${comment_state.users.handle}` : '#'}>
+			<a class="h-8 w-8 flex-shrink-0" href={comment.users?.handle ? `/@${comment.users.handle}` : '#'}>
 				<img
-					src={comment_state.users?.avatar_url ?? profile_png}
+					src={comment.users?.avatar_url ?? profile_png}
 					alt="프로필"
 					class="block aspect-square h-full w-full rounded-full object-cover"
 					loading="lazy"
@@ -294,24 +306,24 @@
 				<div class="mb-0.5 flex items-center gap-2">
 					<a
 						class="text-sm font-medium text-black"
-						href={comment_state.users?.handle ? `/@${comment_state.users.handle}` : '#'}
-						>@{comment_state.users?.handle ?? '알 수 없음'}</a
+						href={comment.users?.handle ? `/@${comment.users.handle}` : '#'}
+						>@{comment.users?.handle ?? '알 수 없음'}</a
 					>
 					<span class="text-xs text-gray-400"
-						>{get_time_past(new Date(comment_state.created_at))}</span
+						>{get_time_past(new Date(comment.created_at))}</span
 					>
-					{#if comment_state.updated_at && comment_state.updated_at !== comment_state.created_at}
+					{#if (local_edit.updated_at ?? comment.updated_at) && (local_edit.updated_at ?? comment.updated_at) !== comment.created_at}
 						<span class="text-xs text-gray-400">(수정됨)</span>
 					{/if}
 				</div>
 
 				<div class="text-sm text-gray-800">
-					{#if comment_state.gift_moon_point}
+					{#if comment.gift_moon_point}
 						<div
 							class="bg-primary mr-2 inline-block flex-col rounded px-2 py-0.5 text-xs text-white"
 						>
 							<span class="mr-1"> 🌙 </span>
-							{comment_state.gift_moon_point}
+							{comment.gift_moon_point}
 						</div>
 					{/if}
 
@@ -335,7 +347,7 @@
 							>
 						</div>
 					{:else}
-						<p class="mt-1 whitespace-pre-wrap">{comment_state.content}</p>
+						<p class="mt-1 whitespace-pre-wrap">{local_edit.content ?? comment.content}</p>
 					{/if}
 				</div>
 
@@ -348,23 +360,23 @@
 								class="flex items-center gap-1"
 								onclick={() => handle_vote(1)}
 							>
-								{#if comment_state.user_vote === 1}
+								{#if (local_votes.user_vote ?? comment.user_vote) === 1}
 									<RiThumbUpFill size={16} color={colors.primary} />
 								{:else}
 									<RiThumbUpLine size={16} color={colors.gray[400]} />
 								{/if}
-								<p class:text-primary={comment_state.user_vote === 1}>
-									{comment_state.upvotes}
+								<p class:text-primary={(local_votes.user_vote ?? comment.user_vote) === 1}>
+									{local_votes.upvotes ?? comment.upvotes}
 								</p>
 							</button>
 							<button class="flex items-center" onclick={() => handle_vote(-1)}>
-								{#if comment_state.user_vote === -1}
+								{#if (local_votes.user_vote ?? comment.user_vote) === -1}
 									<RiThumbDownFill size={16} color={colors.warning} />
 								{:else}
 									<RiThumbDownLine size={16} color={colors.gray[400]} />
 								{/if}
 							</button>
-							<!-- {#if comment_state.parent_comment_id === null} -->
+							<!-- {#if comment.parent_comment_id === null} -->
 							<button
 								class="flex items-center gap-1"
 								onclick={() => (is_reply_open = !is_reply_open)}
@@ -418,7 +430,7 @@
 		</div>
 	{/if}
 
-	{#if comment_state.replies?.length > 0}
+	{#if comment.replies?.length > 0}
 		<button
 			class="mt-4 ml-10 flex items-center text-xs text-blue-500 hover:underline"
 			onclick={() => (are_replies_visible = !are_replies_visible)}
@@ -428,12 +440,12 @@
 			{:else}
 				<RiArrowDownSLine size={16} color={colors.primary} />
 			{/if}
-			답글 {comment_state.replies.length}개
+			답글 {comment.replies.length}개
 		</button>
 
 		{#if are_replies_visible}
 			<div class="mt-3 ml-10 space-y-3">
-				{#each comment_state.replies as reply (reply.id)}
+				{#each comment.replies as reply (reply.id)}
 					<Self
 						{post_id}
 						comment={reply}

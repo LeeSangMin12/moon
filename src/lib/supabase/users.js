@@ -35,7 +35,7 @@ export const create_users_api = (supabase) => ({
 	select_by_search: async (search_text) => {
 		let { data, error } = await supabase
 			.from('users')
-			.select('id, handle, name, avatar_url, bio, created_at')
+			.select('id, handle, name, avatar_url, self_introduction, created_at')
 			.or(`handle.ilike.%${search_text}%,name.ilike.%${search_text}%`)
 			.order('id', { ascending: false })
 			.limit(20);

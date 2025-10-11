@@ -75,8 +75,7 @@
 		}
 	});
 
-	const leave_post_comment = async (event) => {
-		const { content } = event.detail;
+	const leave_post_comment = async ({ content }) => {
 		const new_comment = await api.post_comments.insert({
 			post_id: post.id,
 			user_id: me.id,
@@ -118,9 +117,7 @@
 		}
 	};
 
-	const handle_reply_added = async (event) => {
-		const { parent_comment_id, new_reply } = event.detail;
-
+	const handle_reply_added = async ({ parent_comment_id, new_reply }) => {
 		// 댓글 배열에서 해당 부모 댓글을 찾아서 답글 추가
 		const update_comment_replies = (commentList) => {
 			return commentList.map((comment) => {
@@ -166,9 +163,7 @@
 		}
 	};
 
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id } = event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id: event_post_id }) => {
 		const new_comment = await api.post_comments.insert({
 			post_id: post.id,
 			user_id: me.id,
@@ -191,7 +186,8 @@
 		if (parent_comment_id) {
 			// 답글인 경우 해당 댓글의 replies 배열에 추가
 			handle_reply_added({
-				detail: { parent_comment_id, new_reply: new_comment },
+				parent_comment_id,
+				new_reply: new_comment,
 			});
 		} else {
 			// 일반 댓글인 경우 comments 배열에 추가
@@ -208,9 +204,7 @@
 		me
 	);
 
-	const handle_comment_deleted = (event) => {
-		const { comment_id, parent_comment_id } = event.detail;
-
+	const handle_comment_deleted = ({ comment_id, parent_comment_id }) => {
 		if (parent_comment_id) {
 			// 답글 삭제 - 중첩된 구조에서 해당 답글 제거
 			const remove_reply_from_comments = (commentList) => {

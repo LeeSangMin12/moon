@@ -17,10 +17,7 @@
 	let { bookmarks } = $state(data);
 
 	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
-			event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
 		await api.post_comments.insert({
 			post_id,

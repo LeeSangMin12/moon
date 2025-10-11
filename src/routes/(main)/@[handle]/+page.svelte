@@ -41,12 +41,25 @@
 	const { api } = get_api_context();
 
 	let { data } = $props();
-	let { user, posts, follower_count, following_count } = $state(data);
+
+	// 서버에서 받은 읽기 전용 데이터 - $derived 사용
+	let user = $derived(data.user);
+	let following_count = $derived(data.following_count);
+
+	// 로컬에서 수정되는 데이터 - $state 사용
+	let posts = $state(data.posts);
+	let follower_count = $state(data.follower_count);
+
+	// 서버 데이터 변경 시 로컬 상태 동기화 (params 변경 시 load 함수가 재실행됨)
+	$effect(() => {
+		posts = data.posts;
+		follower_count = data.follower_count;
+	});
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
 	let selected_data = $state({
-		posts: [],
+		posts: data.posts || [],
 		post_comments: [],
 		services: [],
 		service_likes: [],
@@ -183,10 +196,7 @@
 		load_tab_data(selected);
 	});
 
-	const handle_gift_comment_added = async (event) => {
-		const { gift_content, gift_moon_point, parent_comment_id, post_id } =
-			event.detail;
-
+	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
 		await api.post_comments.insert({
 			post_id,
@@ -221,34 +231,23 @@
 		}
 	};
 
-	$effect(async () => {
-		const handle = $page.params.handle;
-		if (!handle || !api.users) return;
+	// params 변경 시 탭 데이터와 팔로우 상태를 다시 로드
+	// (load 함수가 user/posts/counts는 자동으로 처리함)
+	$effect(() => {
+		if (user?.id) {
+			// 탭 데이터 로드
+			load_tab_data(selected);
 
-		const new_user = await api.users.select_by_handle(handle);
-		const new_posts = await api.posts.select_by_user_id(new_user.id);
-		const new_follower_count = await api.user_follows.get_follower_count(
-			new_user.id,
-		);
-		const new_following_count =
-			await api.user_follows.get_following_count(new_user.id);
+			// 팔로우 상태 업데이트
+			if (me?.id) {
+				api.user_follows.is_following(me.id, user.id).then(result => {
+					is_following = result;
+				});
+			}
 
-		user = new_user;
-		posts = new_posts;
-		follower_count = new_follower_count;
-		following_count = new_following_count;
-
-		if (me?.id) {
-			is_following = await api.user_follows.is_following(
-				me.id,
-				new_user.id,
-			);
+			// 모달 닫기
+			is_follow_modal_open = false;
 		}
-
-		// 탭 데이터도 새로고침
-		await load_tab_data(selected);
-
-		is_follow_modal_open = false;
 	});
 </script>
 
