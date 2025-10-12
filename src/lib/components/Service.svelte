@@ -17,24 +17,24 @@
 		if (!check_login(me)) return;
 
 		await api.service_likes.insert(service_id, me.id);
-		service_likes = [...service_likes, { service_id }];
+		const updated_likes = [...service_likes, { service_id }];
 		show_toast('success', '서비스 좋아요를 눌렀어요!');
 
 		// 부모 컴포넌트에 알림
-		onLikeChanged?.({ service_id, likes: service_likes });
+		onLikeChanged?.({ service_id, likes: updated_likes });
 	};
 
 	const handle_unlike = async (service_id) => {
 		if (!check_login(me)) return;
 
 		await api.service_likes.delete(service_id, me.id);
-		service_likes = service_likes.filter(
+		const updated_likes = service_likes.filter(
 			(service) => service.service_id !== service_id,
 		);
 		show_toast('success', '서비스 좋아요를 취소했어요!');
 
 		// 부모 컴포넌트에 알림
-		onLikeChanged?.({ service_id, likes: service_likes });
+		onLikeChanged?.({ service_id, likes: updated_likes });
 	};
 
 	const is_user_liked = (service_id) => {

@@ -217,6 +217,11 @@
 		me
 	);
 
+	// Service 좋아요 변경 핸들러
+	const handle_service_like_changed = ({ service_id, likes }) => {
+		selected_data.service_likes = likes;
+	};
+
 	const open_follow_modal = async (type) => {
 		follow_modal_type = type;
 		is_follow_modal_open = true;
@@ -233,10 +238,15 @@
 
 	// params 변경 시 탭 데이터와 팔로우 상태를 다시 로드
 	// (load 함수가 user/posts/counts는 자동으로 처리함)
+	let prev_user_id = $state(null);
 	$effect(() => {
-		if (user?.id) {
-			// 탭 데이터 로드
-			load_tab_data(selected);
+		// user id가 실제로 변경되었을 때만 실행
+		if (user?.id && user.id !== prev_user_id) {
+			prev_user_id = user.id;
+
+			// 탭을 게시글로 리셋하고 데이터 로드
+			selected = 0;
+			load_tab_data(0);
 
 			// 팔로우 상태 업데이트
 			if (me?.id) {
@@ -522,8 +532,8 @@
 	{:else if selected === 2 && selected_data.services.length > 0}
 		<!-- 서비스 탭 -->
 		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
-			{#each selected_data.services as service}
-				<Service {service} service_likes={selected_data.service_likes} />
+			{#each selected_data.services as service (service.id)}
+				<Service {service} service_likes={selected_data.service_likes} onLikeChanged={handle_service_like_changed} />
 			{/each}
 		</div>
 	{:else if selected === 3 && (selected_data.service_reviews.length > 0 || selected_data.expert_request_reviews.length > 0)}
