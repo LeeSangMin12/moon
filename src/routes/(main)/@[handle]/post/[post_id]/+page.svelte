@@ -340,19 +340,17 @@
 	{/if}
 
 	<!-- Article structured data -->
-	<script type="application/ld+json">
-        {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Article',
-            headline: post.title,
-            description: (post.content ?? '').slice(0, 200),
-            image: post?.images?.[0]?.uri ? [post.images[0].uri] : undefined,
-            author: post?.users?.name ? { '@type': 'Person', name: post.users.name } : undefined,
-            datePublished: post?.created_at,
-            dateModified: post?.updated_at ?? post?.created_at,
-            mainEntityOfPage: page_url
-        })}
-	</script>
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'Article',
+		headline: post.title,
+		description: (post.content ?? '').slice(0, 200),
+		image: post?.images?.[0]?.uri ? [post.images[0].uri] : undefined,
+		author: post?.users?.name ? { '@type': 'Person', name: post.users.name } : undefined,
+		datePublished: post?.created_at,
+		dateModified: post?.updated_at ?? post?.created_at,
+		mainEntityOfPage: page_url
+	})}<\/script>`}
 </svelte:head>
 
 <Header>
