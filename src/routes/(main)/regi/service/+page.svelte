@@ -27,6 +27,7 @@
 		price: 0,
 		contact_info: '',
 		images: [],
+		options: [], // 옵션 배열 추가
 	});
 
 	onMount(() => {
@@ -86,6 +87,27 @@
 		service_form_data.images = update_images;
 	};
 
+	/**
+	 * 옵션 추가
+	 */
+	const add_option = () => {
+		service_form_data.options = [
+			...service_form_data.options,
+			{ name: '', price_add: 0, description: '', display_order: service_form_data.options.length }
+		];
+	};
+
+	/**
+	 * 옵션 삭제
+	 */
+	const delete_option = (idx) => {
+		const updated_options = [...service_form_data.options];
+		updated_options.splice(idx, 1);
+		// display_order 재정렬
+		updated_options.forEach((opt, i) => opt.display_order = i);
+		service_form_data.options = updated_options;
+	};
+
 	const save_service = async () => {
 		update_global_store('loading', true);
 		try {
@@ -111,6 +133,23 @@
 				await api.services.update(new_service.id, {
 					images: uploaded_images,
 				});
+			}
+
+			// 옵션 저장
+			if (service_form_data.options.length > 0) {
+				const options_to_insert = service_form_data.options
+					.filter(opt => opt.name.trim() && opt.price_add > 0)
+					.map(opt => ({
+						service_id: new_service.id,
+						name: opt.name.trim(),
+						price_add: opt.price_add,
+						description: opt.description?.trim() || null,
+						display_order: opt.display_order,
+					}));
+
+				if (options_to_insert.length > 0) {
+					await api.service_options.insert_bulk(options_to_insert);
+				}
 			}
 
 			show_toast('success', '서비스가 저장되었습니다.');
@@ -241,6 +280,67 @@
 				type="number"
 				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 			/>
+		</div>
+	</div>
+
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">추가 옵션 (선택)</p>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			고객이 선택할 수 있는 추가 옵션을 등록해보세요
+		</p>
+
+		<div class="mt-3 space-y-3">
+			{#each service_form_data.options as option, idx}
+				<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+					<div class="mb-3 flex items-center justify-between">
+						<span class="text-sm font-medium text-gray-700">옵션 {idx + 1}</span>
+						<button
+							onclick={() => delete_option(idx)}
+							class="text-sm text-gray-500 hover:text-gray-700"
+							type="button"
+						>
+							삭제
+						</button>
+					</div>
+
+					<div class="space-y-3">
+						<div>
+							<input
+								bind:value={option.name}
+								type="text"
+								placeholder="옵션 이름 (예: 소스파일 제공)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+
+						<div>
+							<input
+								bind:value={option.price_add}
+								type="number"
+								placeholder="추가 금액 (원)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+
+						<div>
+							<input
+								bind:value={option.description}
+								type="text"
+								placeholder="설명 (선택)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+					</div>
+				</div>
+			{/each}
+
+			<button
+				onclick={add_option}
+				type="button"
+				class="flex h-11 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+			>
+				+ 옵션 추가
+			</button>
 		</div>
 	</div>
 

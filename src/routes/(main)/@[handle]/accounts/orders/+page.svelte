@@ -1,14 +1,16 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { comma, show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiInformationLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector.svelte';
-
-	import colors from '$lib/config/colors';
-	import { comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -238,78 +240,29 @@
 					</div>
 				{:else}
 					{#each my_orders as order}
-						<div class="mb-4 rounded-lg border border-gray-200 bg-white p-4">
-							<div class="flex items-start justify-between">
-								<div class="flex-1">
-									<h3 class="text-lg font-medium">{order.service_title}</h3>
-									<p class="mt-1 text-sm text-gray-600">
-										판매자: @{order.seller.handle}
-									</p>
-									<p class="text-sm text-gray-600">
-										주문일: {format_date(order.created_at)}
-									</p>
-
-									{#if order.special_request}
-										<p class="mt-2 text-sm text-gray-600">
-											요청사항: {order.special_request}
-										</p>
-									{/if}
-								</div>
-
-								<div class="text-right">
-									<span
-										class="inline-block rounded-full px-2 py-1 text-xs font-medium {get_status_color(
-											order.status,
-										)}"
-									>
-										{get_status_icon(order.status)}
-										{get_status_text(order.status)}
-									</span>
-									<p class="text-primary mt-2 text-lg font-bold">
-										₩{comma(order.total_with_commission)}
-									</p>
-								</div>
+						<button
+							onclick={() => goto(`/@${me.handle}/accounts/orders/${order.id}`)}
+							class="mb-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-gray-300 hover:shadow-sm"
+						>
+							<!-- 상태 배지 -->
+							<div class="mb-2">
+								<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(order.status)}">
+									{get_status_text(order.status)}
+								</span>
 							</div>
 
-							<div class="mt-4 border-t border-gray-100 pt-3">
-								<div class="text-sm text-gray-600">
-									<p>입금자명: {order.depositor_name}</p>
-									<p>은행: {order.bank}</p>
-									<p>계좌번호: {order.account_number}</p>
-									{#if order.buyer_contact}
-										<p>연락처: {order.buyer_contact}</p>
-									{/if}
-								</div>
+							<!-- 서비스 제목 -->
+							<h3 class="mb-1 text-base font-bold text-gray-900">{order.service_title}</h3>
 
-								<div class="mt-3 flex gap-2">
-									<button
-										onclick={() => goto(`/service/${order.service_id}`)}
-										class="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-									>
-										서비스 보기
-									</button>
+							<!-- 판매자 & 날짜 -->
+							<p class="mb-3 text-sm text-gray-500">@{order.seller.handle} · {format_date(order.created_at)}</p>
 
-									{#if order.status === 'pending'}
-										<button
-											onclick={() => handle_cancel_order(order.id)}
-											class="rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
-										>
-											주문 취소
-										</button>
-									{/if}
-
-									{#if order.status === 'completed'}
-										<button
-											onclick={() =>
-												goto(`/service/${order.service_id}#reviews`)}
-											class="bg-primary hover:bg-primary-dark rounded-md px-3 py-1.5 text-sm text-white"
-										>
-											리뷰 작성
-										</button>
-									{/if}
-								</div>
+							<!-- 결제 금액 -->
+							<div class="flex items-baseline justify-between">
+								<span class="text-sm text-gray-600">결제 금액</span>
+								<span class="text-xl font-bold text-gray-900">₩{comma(order.total_with_commission)}</span>
 							</div>
-						</div>
+						</button>
 					{/each}
 				{/if}
 			</div>
@@ -344,10 +297,6 @@
 								<span class="font-medium">3단계:</span>
 								<span>서비스 완료 후 "서비스 완료" 버튼을 눌러주세요.</span>
 							</div>
-							<div class="mt-3 text-xs text-blue-600">
-								💡 각 단계별로 상태가 자동으로 업데이트되어 고객에게 알림이
-								갑니다.
-							</div>
 						</div>
 					</div>
 				{/if}
@@ -358,100 +307,31 @@
 					</div>
 				{:else}
 					{#each my_sales as order}
-						<div class="mb-4 rounded-lg border border-gray-200 bg-white p-4">
-							<div class="flex items-start justify-between">
-								<div class="flex-1">
-									<h3 class="text-lg font-medium">{order.service_title}</h3>
-									<p class="mt-1 text-sm text-gray-600">
-										구매자: @{order.buyer.handle}
-									</p>
-									<p class="text-sm text-gray-600">
-										주문일: {format_date(order.created_at)}
-									</p>
-
-									{#if order.special_request}
-										<p class="mt-2 text-sm text-gray-600">
-											구매자 요청: {order.special_request}
-										</p>
-									{/if}
-								</div>
-
-								<div class="text-right">
-									<span
-										class="inline-block rounded-full px-2 py-1 text-xs font-medium {get_status_color(
-											order.status,
-										)}"
-									>
-										{get_status_icon(order.status)}
-										{get_status_text(order.status)}
-									</span>
-									<p class="text-primary mt-2 text-lg font-bold">
-										₩{comma(order.unit_price)}
-									</p>
-								</div>
+						<button
+							onclick={() => goto(`/@${me.handle}/accounts/orders/${order.id}`)}
+							class="mb-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-gray-300 hover:shadow-sm"
+						>
+							<!-- 상태 배지 -->
+							<div class="mb-2">
+								<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(order.status)}">
+									{get_status_text(order.status)}
+								</span>
 							</div>
 
-							<div class="mt-4 border-t border-gray-100 pt-3">
-								<div class="text-sm text-gray-600">
-									<p>입금자명: {order.depositor_name}</p>
-									<p>은행: {order.bank}</p>
-									<p>계좌번호: {order.account_number}</p>
-									{#if order.buyer_contact}
-										<p>구매자 연락처: {order.buyer_contact}</p>
-									{/if}
-								</div>
+							<!-- 서비스 제목 -->
+							<h3 class="mb-1 text-base font-bold text-gray-900">{order.service_title}</h3>
 
-								<div class="mt-3 flex gap-2">
-									<button
-										onclick={() => goto(`/service/${order.service_id}`)}
-										class="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-									>
-										서비스 보기
-									</button>
+							<!-- 구매자 & 날짜 -->
+							<p class="mb-3 text-sm text-gray-500">@{order.buyer.handle} · {format_date(order.created_at)}</p>
 
-									{#if order.status === 'pending'}
-										<button
-											onclick={() => handle_approve_order(order.id)}
-											class="rounded-md bg-blue-500 px-3 py-1.5 text-sm text-white hover:bg-blue-600"
-										>
-											결제 승인
-										</button>
-									{/if}
-
-									{#if order.status === 'paid'}
-										<button
-											onclick={() => handle_complete_order(order.id)}
-											class="rounded-md bg-green-500 px-3 py-1.5 text-sm text-white hover:bg-green-600"
-										>
-											서비스 완료
-										</button>
-									{/if}
-
-									{#if order.status === 'pending' || order.status === 'paid'}
-										<button
-											onclick={() => handle_cancel_order(order.id)}
-											class="rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
-										>
-											주문 취소
-										</button>
-									{/if}
-								</div>
-
-								{#if order.status === 'pending'}
-									<div
-										class="mt-2 rounded-md bg-yellow-50 p-2 text-xs text-yellow-800"
-									>
-										💡 입금 확인 후 "결제 승인" 버튼을 눌러주세요.
-									</div>
-								{:else if order.status === 'paid'}
-									<div
-										class="mt-2 rounded-md bg-blue-50 p-2 text-xs text-blue-800"
-									>
-										💡 서비스 제공 완료 후 "서비스 완료" 버튼을 눌러주세요.
-									</div>
-								{/if}
+							<!-- 정산 금액 -->
+							<div class="flex items-baseline justify-between">
+								<span class="text-sm text-gray-600">정산 금액</span>
+								<span class="text-xl font-bold text-gray-900">
+									₩{comma(order.total_with_commission - order.commission_amount)}
+								</span>
 							</div>
-						</div>
+						</button>
 					{/each}
 				{/if}
 			</div>
