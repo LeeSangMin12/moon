@@ -1,4 +1,10 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { comma, show_toast } from '$lib/utils/common';
 	import {
 		ERROR_MESSAGES,
 		formatBudget,
@@ -22,18 +28,16 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
-
-	import colors from '$lib/config/colors';
-	import { comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { user, my_requests, my_proposals, review_data } = $state(data);
+
+	const TITLE = '사이드·풀타임 잡 관리';
 
 	// 탭 관련 상태
 	let tabs = ['요청한 서비스', '제안한 서비스'];
@@ -56,11 +60,10 @@
 
 	const refresh_data = async () => {
 		try {
-			my_requests = await api.expert_requests.select_by_requester_id(
+			my_requests = await api.expert_requests.select_by_requester_id(user.id);
+			my_proposals = await api.expert_request_proposals.select_by_expert_id(
 				user.id,
 			);
-			my_proposals =
-				await api.expert_request_proposals.select_by_expert_id(user.id);
 
 			// 리뷰 데이터도 새로고침
 			review_data = {};
@@ -226,7 +229,7 @@
 </script>
 
 <svelte:head>
-	<title>전문가 서비스 계정 | 문</title>
+	<title>{TITLE} | 문</title>
 	<meta
 		name="description"
 		content="내가 요청하고 제안한 전문가 서비스들을 관리하세요."
@@ -237,7 +240,7 @@
 	<button slot="left" onclick={smartGoBack}>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
-	<h1 slot="center" class="font-semibold">전문가 서비스 계정</h1>
+	<h1 slot="center" class="font-semibold">{TITLE}</h1>
 </Header>
 
 <main class="min-h-screen bg-gray-50 pb-20">
@@ -308,7 +311,11 @@
 									{comma(request.reward_amount)}원
 								</span>
 								<div class="flex items-center gap-4 text-sm text-gray-500">
-									<span>{formatDeadlineRelative(request.application_deadline)}</span>
+									<span
+										>{formatDeadlineRelative(
+											request.application_deadline,
+										)}</span
+									>
 									{#if request.category}
 										<span>•</span>
 										<span>{request.category}</span>
@@ -350,8 +357,7 @@
 											class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 										>
 											<div class="flex items-center gap-2">
-												<span class="text-sm text-gray-600"
-													>리뷰 작성 완료</span
+												<span class="text-sm text-gray-600">리뷰 작성 완료</span
 												>
 												<div class="flex items-center gap-1">
 													{#each Array(5) as _, i}

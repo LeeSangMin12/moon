@@ -94,7 +94,7 @@
 		<a class="flex items-center px-4" href="/expert/accounts">
 			<RiUserStarLine size={20} color={colors.gray[600]} class="mr-3" />
 
-			<p>전문가 서비스 관리</p>
+			<p>사이드·풀타임 잡 관리</p>
 		</a>
 
 		<a
