@@ -1,21 +1,24 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/config/colors';
-	import { show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-
-	const { me, update: update_me } = get_user_context();
-	const { api } = get_api_context();
 
 	import SetAvatar from './_components/SetAvatar.svelte';
 	import SetBasic from './_components/SetBasic.svelte';
 	import SetPersonal from './_components/SetPersonal.svelte';
+
+	const { me, update: update_me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { session } = $derived(data);
@@ -31,11 +34,13 @@
 		gender: '',
 		handle: '',
 		name: '',
+		email: '',
 		birth_date: '',
 		avatar_url: '',
 	});
 
 	let handle_error = $state(false); //id 유효성 체크
+	let email_error = $state(false); //email 유효성 체크
 
 	/**
 	 * 회원 가입 이전페이지 이동
@@ -52,12 +57,17 @@
 	 * 다음 버튼 disabled 검사
 	 */
 	const is_next_btn_disabled = () => {
-		const { phone, name, handle, gender, birth_date } = sign_up_form_data;
+		const { phone, name, handle, email, gender, birth_date } = sign_up_form_data;
 
 		switch (page_count) {
 			case 1:
 				return (
-					phone === '' || name === '' || handle === '' || handle_error === true
+					phone === '' ||
+					name === '' ||
+					handle === '' ||
+					email === '' ||
+					handle_error === true ||
+					email_error === true
 				);
 			case 2:
 				return gender === '' || birth_date === '';
@@ -72,9 +82,7 @@
 	const go_next = async () => {
 		if (page_count === 1) {
 			const handle_check_duplicate =
-				await api.users.select_handle_check_duplicate(
-					sign_up_form_data.handle,
-				);
+				await api.users.select_handle_check_duplicate(sign_up_form_data.handle);
 
 			console.log('handle_check_duplicate', handle_check_duplicate);
 
@@ -97,6 +105,7 @@
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
+				email: sign_up_form_data.email,
 				gender: sign_up_form_data.gender,
 				birth_date: sign_up_form_data.birth_date,
 			});
@@ -104,6 +113,7 @@
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
+				email: sign_up_form_data.email,
 				gender: sign_up_form_data.gender,
 				birth_date: sign_up_form_data.birth_date,
 				avatar_url: sign_up_form_data.avatar_url,
@@ -132,9 +142,19 @@
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
 </Header>
 
+<!-- Progress bar -->
+<div class="mb-4">
+	<div class="h-1 w-full rounded-full bg-gray-200">
+		<div
+			class="h-1 rounded-lg bg-blue-600 transition-all duration-300"
+			style="width: {page_count * (100 / 3)}%"
+		></div>
+	</div>
+</div>
+
 <main>
 	{#if page_count === 1}
-		<SetBasic bind:data={sign_up_form_data} bind:handle_error />
+		<SetBasic bind:data={sign_up_form_data} bind:handle_error bind:email_error />
 	{:else if page_count === 2}
 		<SetPersonal bind:data={sign_up_form_data} />
 	{:else if page_count === 3}

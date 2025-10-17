@@ -22,7 +22,7 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 		// 병렬 쿼리
 		const [proposals, review_permission, my_review] = await Promise.all([
 			api.expert_request_proposals.select_by_request_id(parseInt(params.id)),
-			user?.id ? api.expert_request_reviews.can_write_review(parseInt(params.id), user.id) : Promise.resolve({ can_write: false, proposal_id: null, expert_id: null }),
+			user?.id ? api.expert_request_reviews.can_write_review(parseInt(params.id), user.id) : Promise.resolve({ can_write: false, expert_id: null }),
 			user?.id ? api.expert_request_reviews.select_by_request_and_reviewer(parseInt(params.id), user.id) : Promise.resolve(null)
 		]);
 
@@ -31,7 +31,6 @@ export async function load({ params, parent, locals: { supabase }, setHeaders })
 			proposals,
 			user,
 			can_write_review: review_permission.can_write,
-			review_proposal_id: review_permission.proposal_id,
 			review_expert_id: review_permission.expert_id,
 			my_review,
 		};

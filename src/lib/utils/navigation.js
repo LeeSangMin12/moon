@@ -47,13 +47,23 @@ export function smartGoBack(user = null) {
 
 	// 서비스 관련 페이지들
 	if (pathname.startsWith('/service/')) {
-		goto('/service');
+		// 브라우저 히스토리 사용 (이전 페이지로 이동)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/service');
+		}
 		return;
 	}
 
 	// 전문가 요청 관련
 	if (pathname.startsWith('/expert-request/')) {
-		goto('/service?tab=1');
+		// 브라우저 히스토리 사용 (이전 페이지로 이동)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/service?tab=1');
+		}
 		return;
 	}
 
@@ -79,19 +89,34 @@ export function smartGoBack(user = null) {
 	// 커뮤니티 관련
 	if (pathname.startsWith('/community/')) {
 		if (pathname === '/community/regi') {
+			// 등록 페이지는 커뮤니티로
 			goto('/community');
 		} else if (pathname.match(/^\/community\/[^/]+$/)) {
-			// 커뮤니티 게시글 페이지
-			goto('/community');
+			// 커뮤니티 게시글 페이지 - 브라우저 히스토리 사용
+			if (window.history.length > 1) {
+				window.history.back();
+			} else {
+				goto('/community');
+			}
 		} else {
-			goto('/community');
+			// 기타 커뮤니티 하위 페이지
+			if (window.history.length > 1) {
+				window.history.back();
+			} else {
+				goto('/community');
+			}
 		}
 		return;
 	}
 
 	// 채팅 관련
 	if (pathname.startsWith('/chat/')) {
-		goto('/chat');
+		// 브라우저 히스토리 사용
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/chat');
+		}
 		return;
 	}
 
@@ -109,20 +134,34 @@ export function smartGoBack(user = null) {
 
 	// 사용자 프로필 페이지
 	if (pathname.match(/^\/@[^/]+$/)) {
-		// 사용자 프로필 페이지 -> 홈으로
-		goto('/');
+		// 브라우저 히스토리 사용 (검색, 게시글, 좋아요 등에서 올 수 있음)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/');
+		}
 		return;
 	}
 
 	// 검색 페이지
 	if (pathname === '/search') {
-		goto('/');
+		// 브라우저 히스토리 사용 (어느 페이지에서나 접근 가능)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/');
+		}
 		return;
 	}
 
 	// 알림 페이지
 	if (pathname === '/alarm') {
-		goto('/');
+		// 브라우저 히스토리 사용 (어느 페이지에서나 접근 가능)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/');
+		}
 		return;
 	}
 

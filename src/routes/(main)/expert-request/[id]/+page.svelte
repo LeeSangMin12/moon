@@ -51,7 +51,6 @@
 		proposals,
 		user,
 		can_write_review,
-		review_proposal_id,
 		review_expert_id,
 		my_review,
 	} = $state(data);
@@ -69,9 +68,7 @@
 	let attached_files = $state([]);
 	let file_input;
 
-	// 구매하기 모달 상태
-	let show_payment_modal = $state(false);
-	let selected_proposal = $state(null);
+	// 구매하기 모달 제거 (단순화)
 
 	// 리뷰 모달 상태
 	let show_review_modal = $state(false);
@@ -280,6 +277,13 @@
 		return user && proposal.expert_id === user.id;
 	};
 
+	// 수락된 전문가인지 확인
+	const is_accepted_expert = () => {
+		if (!user) return false;
+		const accepted_proposal = proposals.find((p) => p.status === 'accepted');
+		return accepted_proposal && accepted_proposal.expert_id === user.id;
+	};
+
 	// 비밀 제안 내용을 볼 수 있는지 확인
 	const can_view_secret_proposal = (proposal) => {
 		if (!proposal.is_secret) return true;
@@ -297,28 +301,24 @@
 		return result;
 	};
 
+	// 제안 수락 (단순화 - 입금 모달 제거)
 	const accept_proposal = async (proposal_id) => {
-		// 제안을 선택하고 결제 모달 표시
-		selected_proposal = proposals.find((p) => p.id === proposal_id);
-		show_payment_modal = true;
-	};
-
-	// 실제 제안 수락 및 결제 처리
-	const process_payment_and_accept = async () => {
-		if (!selected_proposal) return;
+		if (!confirm('이 제안을 수락하시겠습니까? 수락 후 프로젝트가 진행됩니다.')) {
+			return;
+		}
 
 		try {
+			const selected_proposal = proposals.find((p) => p.id === proposal_id);
+
+			// 제안 수락
 			await api.expert_request_proposals.accept_proposal(
-				selected_proposal.id,
-				expert_request.id,
+				proposal_id,
+				expert_request.id
 			);
 
 			// 전문가에게 알림 전송
 			try {
-				if (
-					selected_proposal.expert_id &&
-					selected_proposal.expert_id !== user.id
-				) {
+				if (selected_proposal?.expert_id && selected_proposal.expert_id !== user.id) {
 					await api.notifications.insert({
 						recipient_id: selected_proposal.expert_id,
 						actor_id: user.id,
@@ -328,7 +328,7 @@
 						payload: {
 							request_id: expert_request.id,
 							request_title: expert_request.title,
-							proposal_id: selected_proposal.id,
+							proposal_id: proposal_id,
 						},
 						link_url: `/expert-request/${expert_request.id}`,
 					});
@@ -337,18 +337,12 @@
 				console.error('Failed to insert notification (proposal.accepted):', e);
 			}
 
-			show_toast(
-				'success',
-				'결제가 완료되었습니다! 전문가가 연락을 드릴 예정입니다.',
-			);
-			show_payment_modal = false;
-			selected_proposal = null;
+			show_toast('success', '제안이 수락되었습니다! 전문가와 프로젝트를 진행해주세요.');
 
 			// 데이터 새로고침
-			proposals =
-				await api.expert_request_proposals.select_by_request_id(
-					expert_request.id,
-				);
+			proposals = await api.expert_request_proposals.select_by_request_id(
+				expert_request.id,
+			);
 			expert_request = await api.expert_requests.select_by_id(
 				expert_request.id,
 			);
@@ -368,22 +362,6 @@
 			show_toast('error', errorMessage);
 		}
 	};
-
-	// 결제 폼 데이터
-	let order_form_data = $state({
-		depositor_name: '',
-		bank: '',
-		account_number: '',
-		buyer_contact: '',
-		special_request: '',
-	});
-
-	const is_order_form_valid = $derived(
-		order_form_data.depositor_name.trim() &&
-			order_form_data.bank.trim() &&
-			order_form_data.account_number.trim() &&
-			order_form_data.buyer_contact.trim(),
-	);
 
 	const reject_proposal = async (proposal_id) => {
 		if (!confirm('이 제안을 거절하시겠습니까?')) {
@@ -414,10 +392,15 @@
 			await api.expert_requests.complete_project(expert_request.id);
 			show_toast('success', SUCCESS_MESSAGES.PROJECT_COMPLETED);
 
-			// 데이터 새로고침
-			expert_request = await api.expert_requests.select_by_id(
-				expert_request.id,
-			);
+			// 데이터 새로고침 - 리뷰 권한 정보도 함께 업데이트
+			const [updated_request, review_permission] = await Promise.all([
+				api.expert_requests.select_by_id(expert_request.id),
+				user?.id ? api.expert_request_reviews.can_write_review(expert_request.id, user.id) : Promise.resolve({ can_write: false, expert_id: null })
+			]);
+
+			expert_request = updated_request;
+			can_write_review = review_permission.can_write;
+			review_expert_id = review_permission.expert_id;
 		} catch (error) {
 			console.error('Project completion error:', error);
 
@@ -469,7 +452,6 @@
 				// 새 리뷰 작성
 				const review_data = {
 					request_id: expert_request.id,
-					proposal_id: review_proposal_id,
 					reviewer_id: user.id,
 					expert_id: review_expert_id,
 					rating: review_form.rating,
@@ -619,9 +601,30 @@
 
 			<!-- 보상금 -->
 			<div class="mb-8">
-				<span class="text-lg font-medium text-blue-600">
-					{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
-				</span>
+				{#if is_accepted_expert() && expert_request.commission_amount && expert_request.total_with_commission}
+					<!-- 수락된 전문가: 수수료 차감 후 정산 금액 표시 -->
+					<div class="space-y-2 text-sm">
+						<div class="flex justify-between">
+							<span class="text-gray-600">의뢰인 지불</span>
+							<span class="font-medium text-gray-900">₩{comma(expert_request.total_with_commission)}</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-gray-600">플랫폼 수수료 (5%)</span>
+							<span class="text-gray-400">-₩{comma(expert_request.commission_amount)}</span>
+						</div>
+						<div class="flex justify-between border-t border-gray-200 pt-2">
+							<span class="font-semibold text-gray-900">정산 금액</span>
+							<span class="text-lg font-semibold text-blue-600">
+								₩{comma(expert_request.total_with_commission - expert_request.commission_amount)}
+							</span>
+						</div>
+					</div>
+				{:else}
+					<!-- 의뢰인 및 기타: 보상금만 표시 -->
+					<span class="text-lg font-medium text-blue-600">
+						{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
+					</span>
+				{/if}
 			</div>
 
 			<!-- 메타 정보 -->
@@ -818,10 +821,11 @@
 					받은 제안 ({proposals.length}개)
 				</h2>
 
-				{#if can_submit_proposal()}
+				{#if user}
 					<button
-						class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+						class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 						onclick={() => (show_proposal_modal = true)}
+						disabled={!can_submit_proposal()}
 					>
 						제안하기
 					</button>
@@ -1200,162 +1204,6 @@
 					</button>
 				</div>
 			</form>
-		</div>
-	</Modal>
-{/if}
-
-<!-- 구매하기 모달 -->
-{#if show_payment_modal && selected_proposal}
-	<Modal
-		is_modal_open={show_payment_modal}
-		modal_position="bottom"
-		onModalClose={() => {
-			show_payment_modal = false;
-			selected_proposal = null;
-		}}
-	>
-		<div class="p-4">
-			<div class="flex justify-between">
-				<h3 class="font-semibold">전문가 서비스 구매하기</h3>
-				<button
-					onclick={() => {
-						show_payment_modal = false;
-						selected_proposal = null;
-					}}
-				>
-					<RiCloseLine size={24} color={colors.gray[400]} />
-				</button>
-			</div>
-
-			<div class="mt-4 rounded-lg bg-gray-50 p-4">
-				<div class="mb-2 flex items-center gap-3">
-					{#if selected_proposal.users?.avatar_url}
-						<img
-							src={selected_proposal.users.avatar_url}
-							alt=""
-							class="aspect-square h-8 w-8 rounded-full object-cover object-center"
-						/>
-					{:else}
-						<div
-							class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200"
-						>
-							<span class="text-xs text-gray-500">
-								{(selected_proposal.users?.name ||
-									selected_proposal.users?.handle)?.[0]?.toUpperCase()}
-							</span>
-						</div>
-					{/if}
-					<div>
-						<p class="text-sm font-medium">
-							{selected_proposal.users?.name || selected_proposal.users?.handle}
-						</p>
-						<p class="text-xs text-gray-500">전문가</p>
-					</div>
-				</div>
-				<p class="mb-2 line-clamp-2 text-sm text-gray-600">
-					{selected_proposal.message.substring(0, 100)}{selected_proposal
-						.message.length > 100
-						? '...'
-						: ''}
-				</p>
-				{#if selected_proposal.contact_info}
-					<p class="text-xs text-green-600">
-						📞 {selected_proposal.contact_info}
-					</p>
-				{/if}
-			</div>
-
-			<div class="mt-6 space-y-4">
-				<div>
-					<p class="text-sm font-medium">입금자명</p>
-					<input
-						bind:value={order_form_data.depositor_name}
-						type="text"
-						placeholder="입금자명을 입력해주세요"
-						class="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm focus:outline-none"
-					/>
-				</div>
-
-				<div>
-					<p class="text-sm font-medium">은행</p>
-					<input
-						bind:value={order_form_data.bank}
-						type="text"
-						placeholder="은행명을 입력해주세요"
-						class="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm focus:outline-none"
-					/>
-				</div>
-
-				<div>
-					<p class="text-sm font-medium">계좌번호</p>
-					<input
-						bind:value={order_form_data.account_number}
-						type="text"
-						placeholder="계좌번호를 입력해주세요"
-						class="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm focus:outline-none"
-					/>
-				</div>
-
-				<div>
-					<p class="text-sm font-medium">연락처</p>
-					<input
-						bind:value={order_form_data.buyer_contact}
-						type="text"
-						placeholder="전화번호 또는 카카오톡 ID 등 연락받을 연락처를 입력해주세요"
-						class="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm focus:outline-none"
-					/>
-				</div>
-
-				<div>
-					<p class="text-sm font-medium">특별 요청사항 (선택)</p>
-					<textarea
-						bind:value={order_form_data.special_request}
-						placeholder="추가로 요청하실 내용이 있으면 입력해주세요"
-						class="mt-1 w-full resize-none rounded-lg border border-gray-200 p-2 text-sm focus:outline-none"
-						rows="3"
-					></textarea>
-				</div>
-			</div>
-
-			<div class="my-4 h-px bg-gray-200"></div>
-
-			<div class="space-y-2">
-				<div class="flex justify-between border-t pt-2">
-					<p class="font-semibold">서비스 금액</p>
-					<p class="text-primary text-lg font-bold">
-						{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
-					</p>
-				</div>
-			</div>
-
-			<!-- 입금 계좌 안내 박스 -->
-			<div
-				class="mt-4 mb-6 rounded-md border border-gray-100 bg-gray-50 p-3 text-sm"
-			>
-				<div>
-					<p class="mb-3 text-base font-semibold">입금 계좌 안내</p>
-					<div class="flex">
-						<div class="mr-4 flex flex-col gap-1 text-gray-500">
-							<p>은행:</p>
-							<p>예금주:</p>
-							<p>계좌번호:</p>
-						</div>
-						<div class="flex flex-col gap-1 font-semibold text-gray-900">
-							<p>국민은행</p>
-							<p>이상민</p>
-							<p>939302-00-616198</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<button
-				onclick={process_payment_and_accept}
-				disabled={!is_order_form_valid}
-				class=" w-full rounded-xl bg-gray-900 py-4 font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-			>
-				주문하기
-			</button>
 		</div>
 	</Modal>
 {/if}

@@ -8,20 +8,22 @@
 	} from '$lib/utils/expert-request-utils';
 	import { goto } from '$app/navigation';
 
-	let { request } = $props();
+	let {
+		request,
+		href = `/expert-request/${request.id}`,
+		class: className = 'mb-4',
+		status: statusSnippet
+	} = $props();
 
 	const status = $derived(getRequestStatusDisplay(request.status));
 	const proposalCount = $derived(
 		request.expert_request_proposals?.[0]?.count || 0,
 	);
-	const userInitial = $derived(
-		(request.users?.name || request.users?.handle)?.[0]?.toUpperCase(),
-	);
 </script>
 
 <div
-	class="cursor-pointer transition-all"
-	onclick={() => goto(`/expert-request/${request.id}`)}
+	class="cursor-pointer transition-all {className}"
+	onclick={() => goto(href)}
 >
 	<!-- 상단: 카테고리 칩과 상태 -->
 	<div class="mb-1 flex items-start justify-between">
@@ -36,16 +38,22 @@
 				</div>
 			{/if}
 			<h3
-				class="mt-4 line-clamp-2 text-lg leading-tight font-medium text-gray-900"
+				class="mt-4 line-clamp-2 text-lg font-medium leading-tight text-gray-900"
 			>
 				{request.title}
 			</h3>
 		</div>
-		<span
-			class={`ml-3 flex-shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${status.bgColor} ${status.textColor}`}
-		>
-			{status.text}
-		</span>
+		{#if statusSnippet}
+			<div class="ml-3 flex-shrink-0">
+				{@render statusSnippet()}
+			</div>
+		{:else}
+			<span
+				class={`ml-3 flex-shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${status.bgColor} ${status.textColor}`}
+			>
+				{status.text}
+			</span>
+		{/if}
 	</div>
 
 	<!-- 메타 정보 -->
@@ -55,6 +63,8 @@
 		>
 		<span>•</span>
 		<span>{formatWorkLocation(request.work_location)}</span>
+		<span>•</span>
+		<span class="">제안 {proposalCount}개</span>
 	</div>
 
 	<!-- 보상금 -->

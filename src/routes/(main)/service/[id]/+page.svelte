@@ -38,13 +38,18 @@
 		can_write_review,
 		review_order_id,
 		my_review,
+		service_options,
 	} = $state(data);
 
 	// Modal States
-	let is_buy_modal_open = $state(false);
+	let is_options_modal_open = $state(false); // 옵션 선택 모달
 	let is_review_modal_open = $state(false);
 	let is_submitting_review = $state(false);
 	let editing_review = $state(null);
+
+	// Purchase Form Data
+	let selected_options = $state([]); // 선택된 옵션 IDs
+	let quantity = $state(1); // 수량
 
 	// Form Data
 	let order_form_data = $state({
@@ -70,6 +75,52 @@
 	// Utility Functions
 	const is_user_liked = (service_id) =>
 		service_likes.some((service) => service.service_id === service_id);
+
+	// 옵션 토글
+	const toggle_option = (option_id) => {
+		if (selected_options.includes(option_id)) {
+			selected_options = selected_options.filter((id) => id !== option_id);
+		} else {
+			selected_options = [...selected_options, option_id];
+		}
+	};
+
+	// 총 금액 계산 (구매자는 표시가격만 지불)
+	const calculate_total = $derived(() => {
+		if (!service?.price) return 0;
+
+		const base_price = service.price;
+		const options_price = (service_options || [])
+			.filter((opt) => selected_options.includes(opt.id))
+			.reduce((sum, opt) => sum + opt.price_add, 0);
+
+		return (base_price + options_price) * quantity;
+	});
+
+	// 수량 증가/감소
+	const increase_quantity = () => {
+		quantity = quantity + 1;
+	};
+
+	const decrease_quantity = () => {
+		if (quantity > 1) {
+			quantity = quantity - 1;
+		}
+	};
+
+	// checkout 페이지로 이동
+	const proceed_to_checkout = () => {
+		if (!check_login(me)) return;
+
+		// URL에 선택 정보를 쿼리 파라미터로 전달
+		const params = new URLSearchParams();
+		params.set('quantity', quantity);
+		if (selected_options.length > 0) {
+			params.set('options', selected_options.join(','));
+		}
+
+		goto(`/service/${service.id}/checkout?${params.toString()}`);
+	};
 
 	const format_date = (date_string) =>
 		new Date(date_string).toLocaleDateString('ko-KR', {
@@ -590,7 +641,7 @@
 				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
 				onclick={() => {
 					if (!check_login(me)) return;
-					is_buy_modal_open = true;
+					is_options_modal_open = true;
 				}}
 			>
 				구매하기
@@ -625,116 +676,81 @@
 	</div>
 </main>
 
-<!-- Purchase Modal -->
-<Modal bind:is_modal_open={is_buy_modal_open} modal_position="bottom">
-	<div class="p-4">
-		<div class="flex justify-between">
-			<h3 class="font-semibold">{service.title} 구매하기</h3>
-			<button onclick={() => (is_buy_modal_open = false)}>
+<!-- Options Selection Modal (Bottom Sheet) -->
+<Modal bind:is_modal_open={is_options_modal_open} modal_position="bottom">
+	<div class="p-5">
+		<div class="mb-5 flex items-start justify-between">
+			<div>
+				<h3 class="text-lg font-semibold">{service.title}</h3>
+				<p class="mt-1 text-sm text-gray-600">₩{comma(service.price)}</p>
+			</div>
+			<button onclick={() => (is_options_modal_open = false)}>
 				<RiCloseLine size={24} color={colors.gray[400]} />
 			</button>
 		</div>
 
-		<div class="mt-6 space-y-4">
-			<div>
-				<p class="text-sm font-medium">입금자명</p>
-				<input
-					bind:value={order_form_data.depositor_name}
-					type="text"
-					placeholder="입금자명을 입력해주세요"
-					class={INPUT_CLASS}
-				/>
-			</div>
-
-			<div>
-				<p class="text-sm font-medium">은행</p>
-				<input
-					bind:value={order_form_data.bank}
-					type="text"
-					placeholder="은행명을 입력해주세요"
-					class={INPUT_CLASS}
-				/>
-			</div>
-
-			<div>
-				<p class="text-sm font-medium">계좌번호</p>
-				<input
-					bind:value={order_form_data.account_number}
-					type="text"
-					placeholder="계좌번호를 입력해주세요"
-					class={INPUT_CLASS}
-				/>
-			</div>
-
-			<div>
-				<p class="text-sm font-medium">연락처</p>
-				<input
-					bind:value={order_form_data.buyer_contact}
-					type="text"
-					placeholder="전화번호 또는 인스타등 연락받을 연락처를 입력해주세요"
-					class={INPUT_CLASS}
-				/>
-			</div>
-
-			<div>
-				<p class="text-sm font-medium">특별 요청사항 (선택)</p>
-				<textarea
-					bind:value={order_form_data.special_request}
-					placeholder="추가로 요청하실 내용이 있으면 입력해주세요"
-					class="{INPUT_CLASS} resize-none"
-					rows="3"
-				></textarea>
-			</div>
-		</div>
-
-		<div class="my-4 h-px bg-gray-200"></div>
-
-		<div class="space-y-2">
-			<div class="flex justify-between">
-				<p class="text-sm text-gray-600">서비스 금액</p>
-				<p class="text-sm">₩{comma(service.price)}</p>
-			</div>
-			<div class="flex justify-between">
-				<p class="text-sm text-gray-600">플랫폼 수수료 (5%)</p>
-				<p class="text-sm text-gray-500">
-					+₩{comma(Math.floor(service.price * 0.05))}
-				</p>
-			</div>
-			<div class="flex justify-between border-t pt-2">
-				<p class="font-semibold">총 결제 금액</p>
-				<p class="text-primary text-lg font-bold">
-					₩{comma(service.price + Math.floor(service.price * 0.05))}
-				</p>
-			</div>
-		</div>
-
-		<!-- 입금 계좌 안내 박스 -->
-		<div
-			class="mt-4 mb-6 rounded-md border border-gray-100 bg-gray-50 p-3 text-sm"
-		>
-			<div>
-				<p class="mb-3 text-base font-semibold">입금 계좌 안내</p>
-				<div class="flex">
-					<div class="mr-4 flex flex-col gap-1 text-gray-500">
-						<p>은행:</p>
-						<p>예금주:</p>
-						<p>계좌번호:</p>
-					</div>
-					<div class="flex flex-col gap-1 font-semibold text-gray-900">
-						<p>국민은행</p>
-						<p>이상민</p>
-						<p>939302-00-616198</p>
-					</div>
+		{#if service_options && service_options.length > 0}
+			<div class="mb-5">
+				<p class="mb-3 text-sm font-medium text-gray-900">추가 옵션</p>
+				<div class="space-y-2">
+					{#each service_options as option}
+						<label
+							class="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
+						>
+							<div class="flex items-center">
+								<input
+									type="checkbox"
+									checked={selected_options.includes(option.id)}
+									onchange={() => toggle_option(option.id)}
+									class="mr-3 h-4 w-4 rounded border-gray-300"
+								/>
+								<div>
+									<p class="text-sm font-medium">{option.name}</p>
+									{#if option.description}
+										<p class="text-xs text-gray-500">{option.description}</p>
+									{/if}
+								</div>
+							</div>
+							<p class="text-sm font-medium text-gray-700">
+								+₩{comma(option.price_add)}
+							</p>
+						</label>
+					{/each}
 				</div>
+			</div>
+		{/if}
+
+		<div class="mb-5">
+			<p class="mb-3 text-sm font-medium text-gray-900">수량</p>
+			<div class="flex items-center">
+				<button
+					onclick={decrease_quantity}
+					class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-lg font-medium text-gray-700"
+				>
+					−
+				</button>
+				<span class="mx-4 text-lg font-medium">{quantity}</span>
+				<button
+					onclick={increase_quantity}
+					class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-lg font-medium text-gray-700"
+				>
+					+
+				</button>
+			</div>
+		</div>
+
+		<div class="mb-5 rounded-lg bg-gray-50 p-4">
+			<div class="flex items-center justify-between text-lg">
+				<span class="font-medium text-gray-900">총 금액</span>
+				<span class="font-bold text-gray-900">₩{comma(calculate_total())}</span>
 			</div>
 		</div>
 
 		<button
-			onclick={handle_order}
-			disabled={!is_order_form_valid}
-			class="{BUTTON_CLASS} mt-4"
+			onclick={proceed_to_checkout}
+			class="btn btn-primary h-12 w-full rounded-lg text-base font-medium"
 		>
-			주문하기
+			바로 구매하기
 		</button>
 	</div>
 </Modal>
