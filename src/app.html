@@ -52,15 +52,27 @@
 
 		<!-- Preload critical resources -->
 		<link rel="preload" href="%sveltekit.assets%/favicon.png" as="image" />
+
+		<!-- DNS prefetch -->
 		<link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
 		<link rel="dns-prefetch" href="//fonts.googleapis.com" />
-
-		<!-- Preconnect to external domains -->
-		<link rel="preconnect" href="https://www.googletagmanager.com" />
 		<link rel="dns-prefetch" href="//www.googletagmanager.com" />
 
-		<!-- Google Tag Manager - Single analytics solution -->
-		<!-- Configure Amplitude, Facebook Pixel, and GA4 inside GTM dashboard -->
+		<!-- Preconnect to external domains -->
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+		<link rel="preconnect" href="https://www.googletagmanager.com" />
+
+		<!-- Amplitude Analytics -->
+		<script src="https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"></script>
+		<script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.8.0-min.js.gz"></script>
+		<script>
+			window.amplitude.add(window.sessionReplay.plugin({ sampleRate: 1 }));
+			window.amplitude.init('abb3d09663149abdab499a9f7a871fe1', {
+				autocapture: { elementInteractions: true },
+			});
+		</script>
+
+		<!-- Google Tag Manager -->
 		<script>
 			(function (w, d, s, l, i) {
 				w[l] = w[l] || [];

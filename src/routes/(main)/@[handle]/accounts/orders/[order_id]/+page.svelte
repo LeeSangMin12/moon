@@ -172,7 +172,7 @@
 
 <main class="mx-4 pb-24">
 	<!-- 상태 배지 -->
-	<div class="mb-4 mt-4">
+	<div class="mt-4 mb-4">
 		<span
 			class="inline-block rounded-full px-3 py-1 text-sm font-semibold {get_status_color(
 				order.status,
@@ -210,13 +210,13 @@
 				</div>
 				<div class="flex justify-between">
 					<span class="text-gray-600">플랫폼 수수료 (5%)</span>
-					<span class="text-red-600">-₩{comma(order.commission_amount)}</span>
+					<span class="text-gray-400">-₩{comma(order.commission_amount)}</span>
 				</div>
 				<div
 					class="flex justify-between border-t border-gray-200 pt-3 text-base"
 				>
 					<span class="font-semibold text-gray-900">정산 금액</span>
-					<span class="text-2xl font-bold text-gray-900">
+					<span class="text-primary text-2xl font-bold">
 						₩{comma(order.total_with_commission - order.commission_amount)}
 					</span>
 				</div>
@@ -225,7 +225,7 @@
 			<!-- 구매자: 결제 금액만 표시 -->
 			<div class="flex items-baseline justify-between">
 				<span class="text-sm text-gray-600">결제 금액</span>
-				<span class="text-2xl font-bold text-gray-900"
+				<span class="text-primary text-2xl font-bold"
 					>₩{comma(order.total_with_commission)}</span
 				>
 			</div>
@@ -239,8 +239,7 @@
 		<div class="space-y-2 text-sm">
 			<div class="flex justify-between">
 				<span class="text-gray-600">서비스 단가</span>
-				<span class="font-medium text-gray-900"
-					>₩{comma(order.unit_price)}</span
+				<span class="font-medium text-gray-900">₩{comma(order.unit_price)}</span
 				>
 			</div>
 			<div class="flex justify-between">
@@ -300,7 +299,9 @@
 </main>
 
 <!-- 하단 고정 버튼 -->
-<div class="fixed bottom-0 w-full max-w-screen-md border-t border-gray-200 bg-white px-4 py-3">
+<div
+	class="fixed bottom-0 w-full max-w-screen-md border-t border-gray-200 bg-white px-4 py-3"
+>
 	<div class="pb-safe flex gap-2">
 		{#if is_seller}
 			{#if order.status === 'pending'}

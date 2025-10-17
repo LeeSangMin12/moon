@@ -246,21 +246,31 @@
 						>
 							<!-- 상태 배지 -->
 							<div class="mb-2">
-								<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(order.status)}">
+								<span
+									class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(
+										order.status,
+									)}"
+								>
 									{get_status_text(order.status)}
 								</span>
 							</div>
 
 							<!-- 서비스 제목 -->
-							<h3 class="mb-1 text-base font-bold text-gray-900">{order.service_title}</h3>
+							<h3 class="mb-1 text-base font-bold text-gray-900">
+								{order.service_title}
+							</h3>
 
 							<!-- 판매자 & 날짜 -->
-							<p class="mb-3 text-sm text-gray-500">@{order.seller.handle} · {format_date(order.created_at)}</p>
+							<p class="mb-3 text-sm text-gray-500">
+								@{order.seller.handle} · {format_date(order.created_at)}
+							</p>
 
 							<!-- 결제 금액 -->
 							<div class="flex items-baseline justify-between">
 								<span class="text-sm text-gray-600">결제 금액</span>
-								<span class="text-xl font-bold text-gray-900">₩{comma(order.total_with_commission)}</span>
+								<span class="text-primary text-xl font-bold"
+									>₩{comma(order.total_with_commission)}</span
+								>
 							</div>
 						</button>
 					{/each}
@@ -313,22 +323,32 @@
 						>
 							<!-- 상태 배지 -->
 							<div class="mb-2">
-								<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(order.status)}">
+								<span
+									class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(
+										order.status,
+									)}"
+								>
 									{get_status_text(order.status)}
 								</span>
 							</div>
 
 							<!-- 서비스 제목 -->
-							<h3 class="mb-1 text-base font-bold text-gray-900">{order.service_title}</h3>
+							<h3 class="mb-1 text-base font-bold text-gray-900">
+								{order.service_title}
+							</h3>
 
 							<!-- 구매자 & 날짜 -->
-							<p class="mb-3 text-sm text-gray-500">@{order.buyer.handle} · {format_date(order.created_at)}</p>
+							<p class="mb-3 text-sm text-gray-500">
+								@{order.buyer.handle} · {format_date(order.created_at)}
+							</p>
 
 							<!-- 정산 금액 -->
 							<div class="flex items-baseline justify-between">
 								<span class="text-sm text-gray-600">정산 금액</span>
-								<span class="text-xl font-bold text-gray-900">
-									₩{comma(order.total_with_commission - order.commission_amount)}
+								<span class="text-primary text-xl font-bold">
+									₩{comma(
+										order.total_with_commission - order.commission_amount,
+									)}
 								</span>
 							</div>
 						</button>
