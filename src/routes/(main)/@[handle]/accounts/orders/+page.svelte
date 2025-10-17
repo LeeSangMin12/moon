@@ -247,7 +247,7 @@
 							<!-- 상태 배지 -->
 							<div class="mb-2">
 								<span
-									class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(
+									class="inline-block rounded-md px-2.5 py-0.5 text-xs font-semibold {get_status_color(
 										order.status,
 									)}"
 								>
@@ -324,7 +324,7 @@
 							<!-- 상태 배지 -->
 							<div class="mb-2">
 								<span
-									class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {get_status_color(
+									class="inline-block rounded-md px-2.5 py-0.5 text-xs font-semibold {get_status_color(
 										order.status,
 									)}"
 								>

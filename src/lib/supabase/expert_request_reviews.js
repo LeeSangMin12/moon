@@ -192,44 +192,36 @@ export const create_expert_request_reviews_api = (supabase) => ({
 		return data;
 	},
 
-	// 리뷰 작성 가능 여부 확인 (완료된 프로젝트이고 수락된 제안이 있는지 확인)
+	// 리뷰 작성 가능 여부 확인 (완료된 프로젝트이고 선택된 전문가가 있는지 확인)
 	can_write_review: async (request_id, user_id) => {
-		// 1) 전문가 요청 상태 확인 (completed 상태인지)
+		// 1) 전문가 요청 상태 확인 (completed 상태이고 selected_expert_id가 있는지)
 		const { data: request, error: requestError } = await supabase
 			.from('expert_requests')
-			.select('id, status, requester_id')
+			.select('id, status, requester_id, selected_expert_id')
 			.eq('id', request_id)
 			.single();
 
 		if (requestError) {
 			console.error('전문가 요청 확인 실패:', requestError);
-			return { can_write: false, proposal_id: null, expert_id: null };
+			return { can_write: false, expert_id: null };
 		}
 
 		// 요청자가 아니면 리뷰 작성 불가
 		if (request.requester_id !== user_id) {
-			return { can_write: false, proposal_id: null, expert_id: null };
+			return { can_write: false, expert_id: null };
 		}
 
 		// 완료된 프로젝트가 아니면 리뷰 작성 불가
 		if (request.status !== 'completed') {
-			return { can_write: false, proposal_id: null, expert_id: null };
+			return { can_write: false, expert_id: null };
 		}
 
-		// 2) 수락된 제안 조회
-		const { data: acceptedProposal, error: proposalError } = await supabase
-			.from('expert_request_proposals')
-			.select('id, expert_id')
-			.eq('request_id', request_id)
-			.eq('status', 'accepted')
-			.maybeSingle();
-
-		if (proposalError || !acceptedProposal) {
-			console.error('수락된 제안 확인 실패:', proposalError);
-			return { can_write: false, proposal_id: null, expert_id: null };
+		// 선택된 전문가가 없으면 리뷰 작성 불가
+		if (!request.selected_expert_id) {
+			return { can_write: false, expert_id: null };
 		}
 
-		// 3) 이미 리뷰가 작성되었는지 확인
+		// 2) 이미 리뷰가 작성되었는지 확인
 		const { data: existingReview, error: reviewError } = await supabase
 			.from('expert_request_reviews')
 			.select('id')
@@ -239,18 +231,17 @@ export const create_expert_request_reviews_api = (supabase) => ({
 
 		if (reviewError && reviewError.code !== 'PGRST116') {
 			console.error('리뷰 확인 실패:', reviewError);
-			return { can_write: false, proposal_id: null, expert_id: null };
+			return { can_write: false, expert_id: null };
 		}
 
 		// 이미 리뷰가 있으면 작성 불가
 		if (existingReview) {
-			return { can_write: false, proposal_id: null, expert_id: null };
+			return { can_write: false, expert_id: null };
 		}
 
 		return {
 			can_write: true,
-			proposal_id: acceptedProposal.id,
-			expert_id: acceptedProposal.expert_id,
+			expert_id: request.selected_expert_id,
 		};
 	},
 });

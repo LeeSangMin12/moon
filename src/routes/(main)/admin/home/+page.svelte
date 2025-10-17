@@ -1,11 +1,10 @@
 <script>
+	import colors from '$lib/config/colors';
+	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
-	import { smartGoBack } from '$lib/utils/navigation';
 
 	import Header from '$lib/components/ui/Header.svelte';
-
-	import colors from '$lib/config/colors';
 </script>
 
 <Header>
@@ -18,6 +17,7 @@
 	<h1 class="text-3xl font-bold text-gray-900">Admin</h1>
 
 	<div class="mt-4 flex flex-col gap-4">
+		<a href="/admin/expert-requests">사이드·풀타임 잡 관리</a>
 		<a href="/admin/moon-charges">문 충전 관리</a>
 		<a href="/admin/withdrawals">출금 관리</a>
 		<a href="/admin/account-transition">계정 전환</a>

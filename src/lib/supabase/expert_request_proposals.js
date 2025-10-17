@@ -165,9 +165,10 @@ export const create_expert_request_proposals_api = (supabase) => ({
 		}
 	},
 
-	// 제안 수락 (다른 모든 제안은 자동으로 거절됨)
+	// 제안 수락 (다른 모든 제안은 자동으로 거절됨, 단순화)
 	accept_proposal: async (proposal_id, request_id) => {
-		const { error } = await supabase.rpc('accept_proposal', {
+		// RPC 호출 (입금 정보 제거, 전문가 선택만)
+		const { data, error } = await supabase.rpc('accept_proposal', {
 			proposal_id_param: proposal_id,
 			request_id_param: request_id
 		});
@@ -175,6 +176,8 @@ export const create_expert_request_proposals_api = (supabase) => ({
 		if (error) {
 			throw new Error(`제안 수락 실패: ${error.message}`);
 		}
+
+		return data;
 	},
 
 	// 제안 거절

@@ -186,7 +186,7 @@
 				return;
 			}
 
-			// API 호출로 전문가 요청 저장
+			// API 호출로 전문가 요청 저장 (draft 상태)
 			const new_request = await api.expert_requests.insert(
 				{
 					title: request_form_data.title,
@@ -206,9 +206,8 @@
 				me.id,
 			);
 
-			// 성공 메시지 표시
-			show_toast('success', '전문가 찾기 요청이 등록되었습니다!');
-			goto('/service');
+			// 결제 페이지로 리다이렉트
+			goto(`/expert-request/checkout?request_id=${new_request.id}`);
 		} catch (e) {
 			console.error('Error saving expert request:', e);
 			show_toast('error', '요청 등록 중 오류가 발생했습니다.');

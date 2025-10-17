@@ -289,11 +289,11 @@
 
 	<!-- 요청사항 -->
 	{#if order.special_request}
-		<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
-			<h3 class="mb-2 text-sm font-semibold text-amber-900">
+		<div class="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+			<h3 class="mb-2 text-sm font-semibold text-gray-900">
 				{is_seller ? '구매자 요청사항' : '요청사항'}
 			</h3>
-			<p class="text-sm text-amber-800">{order.special_request}</p>
+			<p class="text-sm text-gray-700">{order.special_request}</p>
 		</div>
 	{/if}
 </main>
