@@ -55,6 +55,8 @@
 		>
 		<span>•</span>
 		<span>{formatWorkLocation(request.work_location)}</span>
+		<span>•</span>
+		<span class="">제안 {proposalCount}개</span>
 	</div>
 
 	<!-- 보상금 -->

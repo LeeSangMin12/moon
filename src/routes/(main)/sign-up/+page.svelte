@@ -1,21 +1,24 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/config/colors';
-	import { show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-
-	const { me, update: update_me } = get_user_context();
-	const { api } = get_api_context();
 
 	import SetAvatar from './_components/SetAvatar.svelte';
 	import SetBasic from './_components/SetBasic.svelte';
 	import SetPersonal from './_components/SetPersonal.svelte';
+
+	const { me, update: update_me } = get_user_context();
+	const { api } = get_api_context();
 
 	let { data } = $props();
 	let { session } = $derived(data);
@@ -72,9 +75,7 @@
 	const go_next = async () => {
 		if (page_count === 1) {
 			const handle_check_duplicate =
-				await api.users.select_handle_check_duplicate(
-					sign_up_form_data.handle,
-				);
+				await api.users.select_handle_check_duplicate(sign_up_form_data.handle);
 
 			console.log('handle_check_duplicate', handle_check_duplicate);
 
@@ -131,6 +132,16 @@
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
 </Header>
+
+<!-- Progress bar -->
+<div class="mb-4">
+	<div class="h-1 w-full rounded-full bg-gray-200">
+		<div
+			class="h-1 rounded-lg bg-blue-600 transition-all duration-300"
+			style="width: {page_count * (100 / 3)}%"
+		></div>
+	</div>
+</div>
 
 <main>
 	{#if page_count === 1}

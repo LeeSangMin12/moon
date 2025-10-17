@@ -13,19 +13,6 @@
 </script>
 
 <div class="mx-4 mt-8">
-	<p class="ml-1 font-semibold">전화번호</p>
-
-	<div class="mt-2">
-		<input
-			type="tel"
-			placeholder="예: 01012345678"
-			bind:value={data.phone}
-			class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
-		/>
-	</div>
-</div>
-
-<div class="mx-4 mt-8">
 	<p class="ml-1 font-semibold">이름</p>
 
 	<div class="mt-2">
@@ -56,4 +43,17 @@
 			아이디에는 영어, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있습니다.
 		</p>
 	{/if}
+</div>
+
+<div class="mx-4 mt-8">
+	<p class="ml-1 font-semibold">전화번호</p>
+
+	<div class="mt-2">
+		<input
+			type="tel"
+			placeholder="예: 01012345678"
+			bind:value={data.phone}
+			class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+		/>
+	</div>
 </div>
