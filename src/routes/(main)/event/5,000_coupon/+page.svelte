@@ -53,7 +53,7 @@
 		<!-- WELCOME5000 텍스트 영역 위에 배치 -->
 		<button
 			onclick={copy_coupon}
-			class="absolute top-[46.5%] left-[10%] h-[2.4%] w-[80%] cursor-pointer transition-all hover:bg-black/5 {dev_mode
+			class="absolute top-[47%] left-[10%] h-[2.4%] w-[80%] cursor-pointer transition-all hover:bg-black/5 {dev_mode
 				? 'border-2 border-dashed border-red-500 bg-red-500/20'
 				: ''}"
 			aria-label="쿠폰 코드 복사"

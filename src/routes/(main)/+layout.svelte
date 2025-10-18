@@ -9,6 +9,7 @@
 
 	import Login_prompt_modal from '$lib/components/ui/Login_prompt_modal.svelte';
 	import PerformanceMonitor from '$lib/components/ui/PerformanceMonitor.svelte';
+	import CouponPopup from '$lib/components/ui/CouponPopup.svelte';
 
 	// global_store는 UI 상태이므로 그대로 사용
 	import { is_login_prompt_modal, loading } from '$lib/store/global_store';
@@ -79,3 +80,4 @@
 {/if}
 
 <Login_prompt_modal bind:is_modal_open={$is_login_prompt_modal} />
+<CouponPopup />
