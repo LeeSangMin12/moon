@@ -32,6 +32,8 @@ import { create_expert_request_reviews_api } from '$lib/supabase/expert_request_
 import { create_proposal_attachments_api } from '$lib/supabase/proposal_attachments';
 import { create_coffee_chats_api } from '$lib/supabase/coffee_chats';
 import { create_proposal_attachments_bucket_api } from '$lib/supabase/bucket/proposals/attachments';
+import { create_coupons_api } from '$lib/supabase/coupons';
+import { create_user_coupons_api } from '$lib/supabase/user_coupons';
 
 export const create_api = (supabase) => ({
 	communities: create_communities_api(supabase),
@@ -63,6 +65,8 @@ export const create_api = (supabase) => ({
 	expert_request_reviews: create_expert_request_reviews_api(supabase),
 	proposal_attachments: create_proposal_attachments_api(supabase),
 	coffee_chats: create_coffee_chats_api(supabase),
+	coupons: create_coupons_api(supabase),
+	user_coupons: create_user_coupons_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

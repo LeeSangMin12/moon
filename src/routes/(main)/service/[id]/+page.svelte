@@ -1,6 +1,19 @@
 <script>
 	// Assets & Navigation
+
+	// Utils & Stores
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
 	import profile_png from '$lib/img/common/user/profile.png';
+	import {
+		check_login,
+		comma,
+		copy_to_clipboard,
+		show_toast,
+	} from '$lib/utils/common';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import {
@@ -15,16 +28,6 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
-
-	// Utils & Stores
-	import colors from '$lib/config/colors';
-	import {
-		check_login,
-		comma,
-		copy_to_clipboard,
-		show_toast,
-	} from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -108,9 +111,18 @@
 		}
 	};
 
+	// 자기 서비스인지 확인
+	const is_own_service = $derived(me && service.users?.id === me.id);
+
 	// checkout 페이지로 이동
 	const proceed_to_checkout = () => {
 		if (!check_login(me)) return;
+
+		// 자기 서비스는 구매 불가
+		if (is_own_service) {
+			show_toast('error', '자신의 서비스는 구매할 수 없습니다.');
+			return;
+		}
 
 		// URL에 선택 정보를 쿼리 파라미터로 전달
 		const params = new URLSearchParams();
@@ -119,7 +131,10 @@
 			params.set('options', selected_options.join(','));
 		}
 
-		goto(`/service/${service.id}/checkout?${params.toString()}`);
+		// replaceState: true로 현재 히스토리를 교체 (뒤로가기 시 무한루프 방지)
+		goto(`/service/${service.id}/checkout?${params.toString()}`, {
+			replaceState: true,
+		});
 	};
 
 	const format_date = (date_string) =>
@@ -300,10 +315,7 @@
 			updated_review_permission,
 		] = await Promise.all([
 			api.service_reviews.select_by_service_id(service.id),
-			api.service_reviews.select_by_service_and_reviewer(
-				service.id,
-				me.id,
-			),
+			api.service_reviews.select_by_service_and_reviewer(service.id, me.id),
 			api.services.select_by_id(service.id),
 			api.service_reviews.can_write_review(service.id, me.id),
 		]);
@@ -529,7 +541,8 @@
 				font-size: 1.125rem;
 				font-weight: 600;
 			}
-			.prose ul, .prose ol {
+			.prose ul,
+			.prose ol {
 				margin-bottom: 1rem;
 				padding-left: 1.5rem;
 			}
@@ -637,26 +650,35 @@
 	<!-- Bottom Action Bar -->
 	<div class="fixed bottom-0 w-full max-w-screen-md bg-white px-4 py-3.5">
 		<div class="pb-safe flex space-x-2">
-			<button
-				class="btn btn-primary flex h-9 flex-1 items-center justify-center"
-				onclick={() => {
-					if (!check_login(me)) return;
-					is_options_modal_open = true;
-				}}
-			>
-				구매하기
-			</button>
-			<button
-				onclick={() => {
-					copy_to_clipboard(
-						service.contact_info,
-						'문의 링크가 복사되었습니다.',
-					);
-				}}
-				class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
-			>
-				문의하기
-			</button>
+			{#if !is_own_service}
+				<button
+					class="btn btn-primary flex h-9 flex-1 items-center justify-center"
+					onclick={() => {
+						if (!check_login(me)) return;
+						is_options_modal_open = true;
+					}}
+				>
+					구매하기
+				</button>
+				<button
+					onclick={() => {
+						copy_to_clipboard(
+							service.contact_info,
+							'문의 링크가 복사되었습니다.',
+						);
+					}}
+					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+				>
+					문의하기
+				</button>
+			{:else}
+				<button
+					onclick={() => goto(`/@${me.handle}/accounts/orders`)}
+					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+				>
+					내 서비스 관리
+				</button>
+			{/if}
 			{#if is_user_liked(service.id)}
 				<button
 					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"

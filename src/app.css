@@ -1,15 +1,15 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "daisyui";
 @plugin "daisyui/theme" {
-  name: "light";
-  default: true;
+	name: 'light';
+	default: true;
 
-  --color-primary: #237BF8;
-  --color-secondary: #E9F0FF;
-  --color-third: #1977F2;
-	--color-error: #F82349;
+	--color-primary: #237bf8;
+	--color-secondary: #e9f0ff;
+	--color-third: #1977f2;
+	--color-error: #f82349;
 }
 
 :root {
@@ -20,7 +20,7 @@
 		BlinkMacSystemFont,
 		system-ui,
 		Roboto,
-		'Helvetica Neue',	
+		'Helvetica Neue',
 		'Segoe UI',
 		'Apple SD Gothic Neo',
 		'Noto Sans KR',
@@ -51,25 +51,25 @@ pre {
 		sans-serif;
 }
 
-main{
-  padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
-  padding-bottom: calc(constant(safe-area-inset-bottom) + 100px);
+main {
+	padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
+	padding-bottom: calc(constant(safe-area-inset-bottom) + 100px);
 }
 
 /* 없으면 margin,padding이 적용이 안됨 */
 *::before,
 *::after {
 	margin: 0;
-	padding:0;
+	padding: 0;
 }
 
 /* 숫자 입력 시 스핀 버튼 제거 */
 @layer base {
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
+	input[type='number']::-webkit-inner-spin-button,
+	input[type='number']::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
 }
 
 .pt-safe {
@@ -77,7 +77,7 @@ main{
 	padding-top: constant(safe-area-inset-top);
 }
 
-.pb-safe{
+.pb-safe {
 	padding-bottom: env(safe-area-inset-bottom);
 	padding-bottom: constant(safe-area-inset-bottom);
 }
@@ -87,64 +87,65 @@ main{
 	display: none;
 }
 .scrollbar-hide {
-	-ms-overflow-style: none;  /* IE and Edge */
-	scrollbar-width: none;  /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
 }
 
-.btn{
-	@apply shadow-none border-none;
+.btn {
+	@apply shadow-none;
 }
 .btn-gray {
-  @apply border-none bg-gray-200;
+	@apply border-none bg-gray-200;
 }
 
 /* Performance optimizations */
 img {
-  max-width: 100%;
-  height: auto;
+	max-width: 100%;
+	height: auto;
 }
 
 /* Reduce layout shift */
 .aspect-ratio-16-9 {
-  aspect-ratio: 16 / 9;
+	aspect-ratio: 16 / 9;
 }
 
 /* Critical CSS for LCP optimization */
 .line-clamp-8 {
-  display: -webkit-box;
-  -webkit-line-clamp: 8;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 8;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
 .max-h-32 {
-  max-height: 8rem;
+	max-height: 8rem;
 }
 
 /* Prevent layout shifts */
 .animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .5;
-  }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
 }
 
 /* Optimize text rendering */
 body {
-  text-rendering: optimizeSpeed;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeSpeed;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Critical content optimization */
 pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
 }

@@ -4,6 +4,8 @@ import { comma } from '$lib/utils/common';
 
 // 요청 상태 상수
 export const REQUEST_STATUS = {
+	DRAFT: 'draft',
+	PENDING_PAYMENT: 'pending_payment',
 	OPEN: 'open',
 	IN_PROGRESS: 'in_progress',
 	COMPLETED: 'completed',
@@ -20,31 +22,41 @@ export const PROPOSAL_STATUS = {
 // 요청 상태 표시 정보 반환
 export const getRequestStatusDisplay = (status) => {
 	const statusMap = {
-		[REQUEST_STATUS.OPEN]: { 
-			text: '모집중', 
-			bgColor: 'bg-emerald-50', 
-			textColor: 'text-emerald-600' 
+		[REQUEST_STATUS.DRAFT]: {
+			text: '결제 대기',
+			bgColor: 'bg-amber-50',
+			textColor: 'text-amber-600'
 		},
-		[REQUEST_STATUS.IN_PROGRESS]: { 
-			text: '진행중', 
-			bgColor: 'bg-amber-50', 
-			textColor: 'text-amber-600' 
+		[REQUEST_STATUS.PENDING_PAYMENT]: {
+			text: '승인 대기',
+			bgColor: 'bg-blue-50',
+			textColor: 'text-blue-600'
 		},
-		[REQUEST_STATUS.COMPLETED]: { 
-			text: '완료', 
-			bgColor: 'bg-gray-50', 
-			textColor: 'text-gray-500' 
+		[REQUEST_STATUS.OPEN]: {
+			text: '모집중',
+			bgColor: 'bg-emerald-50',
+			textColor: 'text-emerald-600'
 		},
-		[REQUEST_STATUS.CANCELLED]: { 
-			text: '취소됨', 
-			bgColor: 'bg-red-50', 
-			textColor: 'text-red-600' 
+		[REQUEST_STATUS.IN_PROGRESS]: {
+			text: '진행중',
+			bgColor: 'bg-amber-50',
+			textColor: 'text-amber-600'
+		},
+		[REQUEST_STATUS.COMPLETED]: {
+			text: '완료',
+			bgColor: 'bg-gray-50',
+			textColor: 'text-gray-500'
+		},
+		[REQUEST_STATUS.CANCELLED]: {
+			text: '취소됨',
+			bgColor: 'bg-red-50',
+			textColor: 'text-red-600'
 		}
 	};
-	return statusMap[status] || { 
-		text: '알 수 없음', 
-		bgColor: 'bg-gray-50', 
-		textColor: 'text-gray-500' 
+	return statusMap[status] || {
+		text: '알 수 없음',
+		bgColor: 'bg-gray-50',
+		textColor: 'text-gray-500'
 	};
 };
 

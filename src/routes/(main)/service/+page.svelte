@@ -2,7 +2,9 @@
 	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import free_lawyer_png from '$lib/img/common/banner/free_lawyer.png';
+	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
+	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 	import sell_service_png from '$lib/img/common/banner/sell_service.png';
 	import { onMount } from 'svelte';
@@ -13,12 +15,10 @@
 	import ExpertRequestTab from '$lib/components/ExpertRequestTab.svelte';
 	import ServiceTab from '$lib/components/ServiceTab.svelte';
 
-	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
-
-	const { api } = get_api_context();
-
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
+
+	const { api } = get_api_context();
 
 	const TITLE = '서비스';
 
@@ -30,20 +30,31 @@
 
 	const images = [
 		{
+			title: '5,000_coupon',
+			src: five_thousand_coupon_png,
+			url: '/event/5,000_coupon',
+		},
+		{
 			title: 'leave_opinion',
 			src: leave_opinion_png,
 			url: 'https://forms.gle/ZjxT8S4BmsBHsfv87',
 		},
 		{
-			title: 'sell_service',
-			src: sell_service_png,
-			url: '/regi/service',
+			title: 'free_outsourcing',
+			src: free_outsourcing_png,
+			url: '/event/free_outsourcing',
 		},
 	];
 
 	// Initialize with empty data - will be populated when promises resolve
-	const serviceData = createServiceData({ services: [], service_likes: [] }, api);
-	const expertRequestData = createExpertRequestData({ expert_requests: [] }, api);
+	const serviceData = createServiceData(
+		{ services: [], service_likes: [] },
+		api,
+	);
+	const expertRequestData = createExpertRequestData(
+		{ expert_requests: [] },
+		api,
+	);
 
 	// Resolve streamed services promise
 	onMount(async () => {
@@ -125,12 +136,13 @@
 				serviceData.services[serviceData.services.length - 1]?.id || '';
 		} else {
 			if (searchText.trim()) {
-				const results =
-					await api.expert_requests.select_by_search(searchText);
+				const results = await api.expert_requests.select_by_search(searchText);
 				expertRequestData.expertRequests = results;
 			} else {
-				const response =
-					await api.expert_requests.select_infinite_scroll('', '');
+				const response = await api.expert_requests.select_infinite_scroll(
+					'',
+					'',
+				);
 				expertRequestData.expertRequests = response.data || response;
 			}
 			expertInfiniteScroll.lastId =

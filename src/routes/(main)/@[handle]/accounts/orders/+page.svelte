@@ -347,7 +347,7 @@
 								<span class="text-sm text-gray-600">정산 금액</span>
 								<span class="text-primary text-xl font-bold">
 									₩{comma(
-										order.total_with_commission - order.commission_amount,
+										order.total_with_commission + (order.coupon_discount || 0) - order.commission_amount,
 									)}
 								</span>
 							</div>

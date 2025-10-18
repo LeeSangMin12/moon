@@ -32,12 +32,64 @@
 		special_request: '',
 	});
 
+	// 쿠폰 관련
+	let coupon_code = $state('');
+	let applied_coupon = $state(null);
+	let coupon_error = $state('');
+
 	// 가격 계산 (판매자 부담 방식)
 	const base_amount = service.price * quantity;
 	const options_amount =
 		selected_options.reduce((sum, opt) => sum + opt.price_add, 0) * quantity;
 	const total = base_amount + options_amount; // 구매자는 표시가격 그대로 지불
-	const commission = Math.floor(total * 0.05); // 판매자에게서 차감될 수수료 (5%)
+
+	// 쿠폰 할인 금액 계산
+	const discount_amount = $derived(
+		applied_coupon ? api.coupons.calculate_discount(applied_coupon, total) : 0
+	);
+
+	// 최종 결제 금액 (쿠폰 적용 후)
+	const final_total = $derived(total - discount_amount);
+	const commission = $derived(Math.floor(total * 0.05)); // 판매자에게서 차감될 수수료 (5%) - 원래 가격 기준, 쿠폰은 플랫폼 부담
+
+	// 쿠폰 적용
+	const apply_coupon = async () => {
+		coupon_error = '';
+
+		if (!coupon_code.trim()) {
+			coupon_error = '쿠폰 코드를 입력해주세요.';
+			return;
+		}
+
+		const coupon = await api.coupons.select_by_code(coupon_code.trim());
+
+		if (!coupon) {
+			coupon_error = '존재하지 않는 쿠폰입니다.';
+			return;
+		}
+
+		const validation = await api.coupons.validate_coupon(
+			coupon,
+			me.id,
+			'service_purchase',
+			total
+		);
+
+		if (!validation.valid) {
+			coupon_error = validation.message;
+			return;
+		}
+
+		applied_coupon = coupon;
+		show_toast('success', '쿠폰이 적용되었습니다!');
+	};
+
+	// 쿠폰 제거
+	const remove_coupon = () => {
+		applied_coupon = null;
+		coupon_code = '';
+		coupon_error = '';
+	};
 
 	// 폼 유효성
 	const is_form_valid = $derived(
@@ -53,10 +105,10 @@
 
 		update_global_store('loading', true);
 		try {
-			// 주문 생성 (판매자 부담 방식)
-			// - 구매자는 표시가격(total) 지불
-			// - 판매자는 (total - commission) 수령
-			// - 플랫폼은 commission 수익
+			// 주문 생성 (쿠폰 적용)
+			// - 구매자는 final_total(쿠폰 적용 후 금액) 지불
+			// - 판매자는 (total - commission) 수령 (원래 가격 - 수수료)
+			// - 플랫폼은 commission 수익, 쿠폰 할인은 플랫폼이 부담
 			const order_data = {
 				buyer_id: me.id,
 				seller_id: service.users.id,
@@ -65,7 +117,9 @@
 				quantity: quantity,
 				unit_price: service.price, // 기본 단가
 				commission_amount: commission, // 판매자에게서 차감될 수수료
-				total_with_commission: total, // 구매자 지불 금액 (표시가격 그대로)
+				total_with_commission: final_total, // 구매자 지불 금액 (쿠폰 적용 후)
+				coupon_id: applied_coupon?.id || null,
+				coupon_discount: discount_amount,
 				depositor_name: form_data.depositor_name.trim(),
 				bank: form_data.bank.trim(),
 				account_number: form_data.account_number.trim(),
@@ -74,6 +128,18 @@
 			};
 
 			const new_order = await api.service_orders.insert(order_data);
+
+			// 쿠폰 사용 기록
+			if (applied_coupon) {
+				await api.user_coupons.insert({
+					user_id: me.id,
+					coupon_id: applied_coupon.id,
+					order_id: new_order.id,
+					discount_amount: discount_amount,
+				});
+
+				await api.coupons.increment_usage(applied_coupon.id);
+			}
 
 			// 선택된 옵션 저장
 			if (selected_options.length > 0) {
@@ -124,7 +190,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => goto(`/service/${service.id}`)}>
+	<button slot="left" onclick={() => goto(`/service/${service.id}`, { replaceState: true })}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">주문하기</h1>
@@ -157,11 +223,64 @@
 
 			<div class="my-3 h-px bg-gray-200"></div>
 
+			<div class="flex justify-between text-sm">
+				<span class="text-gray-600">소계</span>
+				<span class="font-medium text-gray-900">₩{comma(total)}</span>
+			</div>
+
+			{#if discount_amount > 0}
+				<div class="flex justify-between text-sm">
+					<span class="text-blue-600">쿠폰 할인</span>
+					<span class="font-medium text-blue-600">-₩{comma(discount_amount)}</span>
+				</div>
+			{/if}
+
+			<div class="my-2 h-px bg-gray-200"></div>
+
 			<div class="flex justify-between text-base">
-				<span class="font-semibold text-gray-900">총 결제금액</span>
-				<span class="font-bold text-gray-900">₩{comma(total)}</span>
+				<span class="font-semibold text-gray-900">최종 결제금액</span>
+				<span class="text-xl font-bold text-blue-600">₩{comma(final_total)}</span>
 			</div>
 		</div>
+	</div>
+
+	<!-- 쿠폰 입력 -->
+	<div class="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+		<h3 class="mb-3 text-sm font-semibold text-gray-900">쿠폰</h3>
+
+		{#if !applied_coupon}
+			<div class="flex gap-2">
+				<input
+					bind:value={coupon_code}
+					type="text"
+					placeholder="쿠폰 코드 입력"
+					class="input input-bordered flex-1 h-11 focus:border-gray-400 focus:outline-none"
+					onkeydown={(e) => e.key === 'Enter' && apply_coupon()}
+				/>
+				<button
+					onclick={apply_coupon}
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+				>
+					적용
+				</button>
+			</div>
+			{#if coupon_error}
+				<p class="mt-2 text-sm text-red-600">{coupon_error}</p>
+			{/if}
+		{:else}
+			<div class="flex items-center justify-between rounded-lg bg-blue-50 p-3">
+				<div class="flex-1">
+					<p class="font-medium text-blue-900">{applied_coupon.name}</p>
+					<p class="text-sm text-blue-700">-₩{comma(discount_amount)} 할인</p>
+				</div>
+				<button
+					onclick={remove_coupon}
+					class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800"
+				>
+					취소
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- 입금 계좌 안내 -->
@@ -275,7 +394,7 @@
 			disabled={!is_form_valid}
 			class="btn btn-primary h-12 w-full rounded-lg text-base font-medium disabled:cursor-not-allowed disabled:opacity-50"
 		>
-			₩{comma(total)} 주문하기
+			₩{comma(final_total)} 주문하기
 		</button>
 	</div>
 </div>

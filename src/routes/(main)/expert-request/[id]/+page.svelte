@@ -1,5 +1,11 @@
 <script>
 	import { servicemark } from '@tiptap/extension-typography';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { check_login, comma, show_toast } from '$lib/utils/common';
 	import {
 		ERROR_MESSAGES,
 		formatBudget,
@@ -25,10 +31,6 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
-
-	import colors from '$lib/config/colors';
-	import { check_login, comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -186,10 +188,9 @@
 			show_proposal_modal = false;
 
 			// 제안서 목록 새로고침
-			proposals =
-				await api.expert_request_proposals.select_by_request_id(
-					expert_request.id,
-				);
+			proposals = await api.expert_request_proposals.select_by_request_id(
+				expert_request.id,
+			);
 
 			// 폼 초기화
 			proposal_form = {
@@ -303,7 +304,9 @@
 
 	// 제안 수락 (단순화 - 입금 모달 제거)
 	const accept_proposal = async (proposal_id) => {
-		if (!confirm('이 제안을 수락하시겠습니까? 수락 후 프로젝트가 진행됩니다.')) {
+		if (
+			!confirm('이 제안을 수락하시겠습니까? 수락 후 프로젝트가 진행됩니다.')
+		) {
 			return;
 		}
 
@@ -313,12 +316,15 @@
 			// 제안 수락
 			await api.expert_request_proposals.accept_proposal(
 				proposal_id,
-				expert_request.id
+				expert_request.id,
 			);
 
 			// 전문가에게 알림 전송
 			try {
-				if (selected_proposal?.expert_id && selected_proposal.expert_id !== user.id) {
+				if (
+					selected_proposal?.expert_id &&
+					selected_proposal.expert_id !== user.id
+				) {
 					await api.notifications.insert({
 						recipient_id: selected_proposal.expert_id,
 						actor_id: user.id,
@@ -337,7 +343,10 @@
 				console.error('Failed to insert notification (proposal.accepted):', e);
 			}
 
-			show_toast('success', '제안이 수락되었습니다! 전문가와 프로젝트를 진행해주세요.');
+			show_toast(
+				'success',
+				'제안이 수락되었습니다! 전문가와 프로젝트를 진행해주세요.',
+			);
 
 			// 데이터 새로고침
 			proposals = await api.expert_request_proposals.select_by_request_id(
@@ -373,10 +382,9 @@
 			show_toast('success', SUCCESS_MESSAGES.PROPOSAL_REJECTED);
 
 			// 제안 목록 새로고침
-			proposals =
-				await api.expert_request_proposals.select_by_request_id(
-					expert_request.id,
-				);
+			proposals = await api.expert_request_proposals.select_by_request_id(
+				expert_request.id,
+			);
 		} catch (error) {
 			console.error('Proposal rejection error:', error);
 			show_toast('error', ERROR_MESSAGES.SERVER_ERROR);
@@ -395,7 +403,12 @@
 			// 데이터 새로고침 - 리뷰 권한 정보도 함께 업데이트
 			const [updated_request, review_permission] = await Promise.all([
 				api.expert_requests.select_by_id(expert_request.id),
-				user?.id ? api.expert_request_reviews.can_write_review(expert_request.id, user.id) : Promise.resolve({ can_write: false, expert_id: null })
+				user?.id
+					? api.expert_request_reviews.can_write_review(
+							expert_request.id,
+							user.id,
+						)
+					: Promise.resolve({ can_write: false, expert_id: null }),
 			]);
 
 			expert_request = updated_request;
@@ -533,9 +546,7 @@
 		try {
 			const attachments_promises = proposals.map(async (proposal) => {
 				const attachments =
-					await api.proposal_attachments.select_by_proposal_id(
-						proposal.id,
-					);
+					await api.proposal_attachments.select_by_proposal_id(proposal.id);
 				return { proposal_id: proposal.id, attachments };
 			});
 
@@ -599,6 +610,14 @@
 				</span>
 			</div>
 
+			<!-- 거절 사유 (본인에게만 표시) -->
+			{#if expert_request.status === 'cancelled' && is_requester() && expert_request.reject_reason}
+				<div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+					<h3 class="mb-2 text-sm font-semibold text-red-900">거절 사유</h3>
+					<p class="text-sm text-red-700">{expert_request.reject_reason}</p>
+				</div>
+			{/if}
+
 			<!-- 보상금 -->
 			<div class="mb-8">
 				{#if is_accepted_expert() && expert_request.commission_amount && expert_request.total_with_commission}
@@ -606,23 +625,31 @@
 					<div class="space-y-2 text-sm">
 						<div class="flex justify-between">
 							<span class="text-gray-600">의뢰인 지불</span>
-							<span class="font-medium text-gray-900">₩{comma(expert_request.total_with_commission)}</span>
+							<span class="font-medium text-gray-900"
+								>₩{comma(expert_request.total_with_commission)}</span
+							>
 						</div>
 						<div class="flex justify-between">
 							<span class="text-gray-600">플랫폼 수수료 (5%)</span>
-							<span class="text-gray-400">-₩{comma(expert_request.commission_amount)}</span>
+							<span class="text-gray-400"
+								>-₩{comma(expert_request.commission_amount)}</span
+							>
 						</div>
 						<div class="flex justify-between border-t border-gray-200 pt-2">
 							<span class="font-semibold text-gray-900">정산 금액</span>
 							<span class="text-lg font-semibold text-blue-600">
-								₩{comma(expert_request.total_with_commission - expert_request.commission_amount)}
+								₩{comma(
+									expert_request.total_with_commission -
+										expert_request.commission_amount,
+								)}
 							</span>
 						</div>
 					</div>
 				{:else}
 					<!-- 의뢰인 및 기타: 보상금만 표시 -->
 					<span class="text-lg font-medium text-blue-600">
-						{get_price_unit_label(expert_request.price_unit)} {comma(expert_request.reward_amount)}원
+						{get_price_unit_label(expert_request.price_unit)}
+						{comma(expert_request.reward_amount)}원
 					</span>
 				{/if}
 			</div>
@@ -1307,5 +1334,3 @@
 		</div>
 	</Modal>
 {/if}
-
-<Bottom_nav />

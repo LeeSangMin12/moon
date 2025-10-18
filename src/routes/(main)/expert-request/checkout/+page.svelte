@@ -32,6 +32,19 @@
 		account_number: '',
 	});
 
+	// 쿠폰 관련
+	let coupon_code = $state('');
+	let applied_coupon = $state(null);
+	let coupon_error = $state('');
+
+	// 쿠폰 할인 금액 계산
+	const discount_amount = $derived(
+		applied_coupon ? api.coupons.calculate_discount(applied_coupon, REGISTRATION_FEE) : 0
+	);
+
+	// 최종 결제 금액 (쿠폰 적용 후)
+	const final_fee = $derived(REGISTRATION_FEE - discount_amount);
+
 	// 폼 유효성
 	const is_form_valid = $derived(
 		form_data.depositor_name.trim() &&
@@ -39,21 +52,81 @@
 			form_data.account_number.trim(),
 	);
 
+	// 쿠폰 적용
+	const apply_coupon = async () => {
+		coupon_error = '';
+
+		if (!coupon_code.trim()) {
+			coupon_error = '쿠폰 코드를 입력해주세요.';
+			return;
+		}
+
+		const coupon = await api.coupons.select_by_code(coupon_code.trim());
+
+		if (!coupon) {
+			coupon_error = '존재하지 않는 쿠폰입니다.';
+			return;
+		}
+
+		const validation = await api.coupons.validate_coupon(
+			coupon,
+			me.id,
+			'job_registration',
+			REGISTRATION_FEE
+		);
+
+		if (!validation.valid) {
+			coupon_error = validation.message;
+			return;
+		}
+
+		applied_coupon = coupon;
+		show_toast('success', '쿠폰이 적용되었습니다!');
+	};
+
+	// 쿠폰 제거
+	const remove_coupon = () => {
+		applied_coupon = null;
+		coupon_code = '';
+		coupon_error = '';
+	};
+
 	// 결제 제출
 	const submit_payment = async () => {
 		if (!check_login(me) || !is_form_valid) return;
 
 		update_global_store('loading', true);
 		try {
-			// 결제 완료 처리
-			await api.expert_requests.complete_registration_payment(request.id, {
-				depositor_name: form_data.depositor_name.trim(),
-				bank: form_data.bank.trim(),
-				account_number: form_data.account_number.trim(),
-			});
+			// 결제 완료 처리 (쿠폰 적용)
+			await api.expert_requests.complete_registration_payment(
+				request.id,
+				{
+					depositor_name: form_data.depositor_name.trim(),
+					bank: form_data.bank.trim(),
+					account_number: form_data.account_number.trim(),
+				},
+				applied_coupon
+					? {
+							coupon_id: applied_coupon.id,
+							coupon_discount: discount_amount,
+					  }
+					: null
+			);
+
+			// 쿠폰 사용 기록
+			if (applied_coupon) {
+				await api.user_coupons.insert({
+					user_id: me.id,
+					coupon_id: applied_coupon.id,
+					expert_request_id: request.id,
+					discount_amount: discount_amount,
+				});
+
+				await api.coupons.increment_usage(applied_coupon.id);
+			}
 
 			show_toast('success', '입금 정보가 제출되었습니다. 관리자 승인 후 공고가 게시됩니다.');
-			goto('/service');
+			goto(`/expert-request/${request.id}`, { replaceState: true });
 		} catch (error) {
 			console.error('결제 처리 실패:', error);
 			show_toast('error', '결제 처리에 실패했습니다. 다시 시도해주세요.');
@@ -142,14 +215,72 @@
 				</button>
 			</div>
 			<div
-				class="flex items-center justify-between border-t border-gray-200 pt-2"
+				class="space-y-2 border-t border-gray-200 pt-2"
 			>
-				<span class="font-semibold text-gray-900">입금 금액</span>
-				<span class="text-lg font-bold text-blue-600"
-					>₩{comma(REGISTRATION_FEE)}</span
-				>
+				<div class="flex items-center justify-between text-sm">
+					<span class="text-gray-600">등록비</span>
+					<span class="font-medium text-gray-900">₩{comma(REGISTRATION_FEE)}</span>
+				</div>
+
+				{#if discount_amount > 0}
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-blue-600">쿠폰 할인</span>
+						<span class="font-medium text-blue-600">-₩{comma(discount_amount)}</span>
+					</div>
+					<div class="h-px bg-gray-200"></div>
+				{/if}
+
+				<div class="flex items-center justify-between">
+					<span class="font-semibold text-gray-900">최종 입금 금액</span>
+					<span class="text-lg font-bold text-blue-600">₩{comma(final_fee)}</span>
+				</div>
 			</div>
 		</div>
+	</div>
+
+	<!-- 쿠폰 입력 -->
+	<div class="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+		<h3 class="mb-3 text-sm font-semibold text-gray-900">쿠폰</h3>
+
+		{#if !applied_coupon}
+			<div class="flex gap-2">
+				<input
+					bind:value={coupon_code}
+					type="text"
+					placeholder="쿠폰 코드 입력"
+					class="input input-bordered flex-1 h-11 focus:border-gray-400 focus:outline-none"
+					onkeydown={(e) => e.key === 'Enter' && apply_coupon()}
+				/>
+				<button
+					onclick={apply_coupon}
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+				>
+					적용
+				</button>
+			</div>
+			{#if coupon_error}
+				<p class="mt-2 text-sm text-red-600">{coupon_error}</p>
+			{/if}
+		{:else}
+			<div class="flex items-center justify-between rounded-lg bg-blue-50 p-3">
+				<div class="flex-1">
+					<p class="font-medium text-blue-900">{applied_coupon.name}</p>
+					<p class="text-sm text-blue-700">
+						{#if discount_amount >= REGISTRATION_FEE}
+							무료 등록
+						{:else}
+							-₩{comma(discount_amount)} 할인
+						{/if}
+					</p>
+				</div>
+				<button
+					onclick={remove_coupon}
+					class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800"
+				>
+					취소
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- 입금 정보 입력 -->
@@ -206,7 +337,11 @@
 			disabled={!is_form_valid}
 			class="btn btn-primary h-12 w-full rounded-lg text-base font-medium disabled:cursor-not-allowed disabled:opacity-50"
 		>
-			₩{comma(REGISTRATION_FEE)} 결제하고 등록하기
+			{#if final_fee === 0}
+				무료로 등록하기
+			{:else}
+				₩{comma(final_fee)} 결제하고 등록하기
+			{/if}
 		</button>
 	</div>
 </div>
