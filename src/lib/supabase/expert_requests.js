@@ -236,16 +236,24 @@ export const create_expert_requests_api = (supabase) => ({
 	},
 
 	// 등록비 결제 완료 처리 (입금 대기 상태로 변경)
-	complete_registration_payment: async (request_id, payment_info) => {
+	complete_registration_payment: async (request_id, payment_info, coupon_data = null) => {
+		const update_data = {
+			is_paid: false, // 아직 관리자 승인 전
+			registration_paid_at: new Date().toISOString(),
+			status: 'pending_payment', // 입금 대기 상태
+			payment_info: payment_info, // 입금 정보 저장 (JSONB)
+			updated_at: new Date().toISOString(),
+		};
+
+		// 쿠폰 정보가 있으면 추가
+		if (coupon_data) {
+			update_data.coupon_id = coupon_data.coupon_id;
+			update_data.coupon_discount = coupon_data.coupon_discount;
+		}
+
 		const { data, error } = await supabase
 			.from('expert_requests')
-			.update({
-				is_paid: false, // 아직 관리자 승인 전
-				registration_paid_at: new Date().toISOString(),
-				status: 'pending_payment', // 입금 대기 상태
-				payment_info: payment_info, // 입금 정보 저장 (JSONB)
-				updated_at: new Date().toISOString(),
-			})
+			.update(update_data)
 			.eq('id', request_id)
 			.select()
 			.single();
@@ -273,6 +281,28 @@ export const create_expert_requests_api = (supabase) => ({
 
 		if (error) {
 			throw new Error(`승인 처리 실패: ${error.message}`);
+		}
+
+		return data;
+	},
+
+	// 관리자 거절 (입금 거절)
+	reject_payment: async (request_id, reject_reason = null) => {
+		const { data, error } = await supabase
+			.from('expert_requests')
+			.update({
+				is_paid: false,
+				status: 'cancelled', // 거절 시 취소 상태
+				reject_reason: reject_reason, // 거절 사유 (선택)
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', request_id)
+			.eq('status', 'pending_payment') // pending_payment 상태인 것만 거절 가능
+			.select()
+			.single();
+
+		if (error) {
+			throw new Error(`거절 처리 실패: ${error.message}`);
 		}
 
 		return data;

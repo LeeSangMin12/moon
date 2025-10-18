@@ -6,7 +6,7 @@
 	} from '$lib/contexts/app-context.svelte.js';
 	import { comma, show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
-	import { RiArrowLeftSLine, RiCheckLine } from 'svelte-remixicon';
+	import { RiArrowLeftSLine, RiCheckLine, RiCloseLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
@@ -17,7 +17,7 @@
 	let { data } = $props();
 	let { pending_requests } = $state(data);
 
-	const TITLE = '전문가 요청 승인 관리';
+	const TITLE = '사이드·풀타임 잡 관리';
 
 	// 모달 상태
 	let show_detail_modal = $state(false);
@@ -50,6 +50,30 @@
 		} catch (error) {
 			console.error('승인 실패:', error);
 			show_toast('error', '승인 처리에 실패했습니다.');
+		}
+	};
+
+	// 거절 처리
+	const reject_request = async (request_id) => {
+		const reject_reason = prompt('거절 사유를 입력해주세요 (선택):');
+		if (reject_reason === null) {
+			// 취소 버튼을 누른 경우
+			return;
+		}
+
+		if (!confirm('이 공고를 거절하시겠습니까? 거절 후에는 취소할 수 없습니다.')) {
+			return;
+		}
+
+		try {
+			await api.expert_requests.reject_payment(request_id, reject_reason.trim() || null);
+			show_toast('success', '공고가 거절되었습니다.');
+
+			// 목록에서 제거
+			pending_requests = pending_requests.filter((r) => r.id !== request_id);
+		} catch (error) {
+			console.error('거절 실패:', error);
+			show_toast('error', '거절 처리에 실패했습니다.');
 		}
 	};
 
@@ -148,10 +172,27 @@
 									{request.payment_info?.account_number || '-'}
 								</span>
 							</div>
+							{#if request.coupon_discount && request.coupon_discount > 0}
+								<div class="flex justify-between border-t border-blue-200 pt-2">
+									<span class="text-blue-700">등록비</span>
+									<span class="text-blue-900">
+										₩{comma(request.registration_amount || 4900)}
+									</span>
+								</div>
+								<div class="flex justify-between">
+									<span class="text-blue-700">쿠폰 할인</span>
+									<span class="text-blue-900">
+										-₩{comma(request.coupon_discount)}
+									</span>
+								</div>
+							{/if}
 							<div class="flex justify-between border-t border-blue-200 pt-2">
-								<span class="font-semibold text-blue-900">입금 금액</span>
+								<span class="font-semibold text-blue-900">최종 입금 금액</span>
 								<span class="text-lg font-bold text-blue-600">
-									₩{comma(request.registration_amount || 4900)}
+									₩{comma(
+										(request.registration_amount || 4900) -
+											(request.coupon_discount || 0),
+									)}
 								</span>
 							</div>
 						</div>
@@ -175,16 +216,23 @@
 					<div class="flex gap-2">
 						<button
 							onclick={() => open_detail_modal(request)}
-							class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+							class="btn btn-outline flex-1"
 						>
 							상세보기
 						</button>
 						<button
 							onclick={() => approve_request(request.id)}
-							class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+							class="btn btn-primary flex-1"
 						>
 							<RiCheckLine size={20} />
 							승인
+						</button>
+						<button
+							onclick={() => reject_request(request.id)}
+							class="btn btn-error"
+						>
+							<RiCloseLine size={20} />
+							거절
 						</button>
 					</div>
 				</div>
@@ -327,11 +375,32 @@
 					<div class="space-y-1 text-sm">
 						<div class="flex justify-between">
 							<span class="text-blue-700">등록비</span>
-							<span class="font-bold text-blue-600"
+							<span class="font-medium text-blue-900"
 								>₩{comma(selected_request.registration_amount || 4900)}</span
 							>
 						</div>
-						<div class="flex justify-between">
+						{#if selected_request.coupon_discount && selected_request.coupon_discount > 0}
+							<div class="flex justify-between">
+								<span class="text-blue-700">쿠폰 할인</span>
+								<span class="font-medium text-blue-900"
+									>-₩{comma(selected_request.coupon_discount)}</span
+								>
+							</div>
+							<div class="flex justify-between border-t border-blue-200 pt-1">
+								<span class="font-semibold text-blue-900">최종 입금 금액</span>
+								<span class="font-bold text-blue-600"
+									>₩{comma(
+										(selected_request.registration_amount || 4900) -
+											selected_request.coupon_discount,
+									)}</span
+								>
+							</div>
+						{/if}
+						<div
+							class="flex justify-between {selected_request.coupon_discount
+								? ''
+								: 'border-t border-blue-200 pt-1'}"
+						>
 							<span class="text-blue-700">입금 제출일</span>
 							<span class="font-medium text-blue-900"
 								>{format_date(selected_request.registration_paid_at)}</span
@@ -345,19 +414,29 @@
 			<div class="mt-6 flex gap-3">
 				<button
 					onclick={close_detail_modal}
-					class="flex-1 rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+					class="btn btn-outline flex-1"
 				>
 					닫기
+				</button>
+				<button
+					onclick={() => {
+						reject_request(selected_request.id);
+						close_detail_modal();
+					}}
+					class="btn btn-error"
+				>
+					<RiCloseLine size={20} />
+					거절
 				</button>
 				<button
 					onclick={() => {
 						approve_request(selected_request.id);
 						close_detail_modal();
 					}}
-					class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+					class="btn btn-primary flex-1"
 				>
 					<RiCheckLine size={20} />
-					승인하기
+					승인
 				</button>
 			</div>
 		</div>

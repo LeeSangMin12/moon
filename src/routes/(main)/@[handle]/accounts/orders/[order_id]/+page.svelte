@@ -208,6 +208,14 @@
 						>₩{comma(order.total_with_commission)}</span
 					>
 				</div>
+				{#if order.coupon_discount && order.coupon_discount > 0}
+					<div class="flex justify-between">
+						<span class="text-gray-600">쿠폰 보전 (플랫폼 부담)</span>
+						<span class="font-medium text-blue-600"
+							>+₩{comma(order.coupon_discount)}</span
+						>
+					</div>
+				{/if}
 				<div class="flex justify-between">
 					<span class="text-gray-600">플랫폼 수수료 (5%)</span>
 					<span class="text-gray-400">-₩{comma(order.commission_amount)}</span>
@@ -217,17 +225,48 @@
 				>
 					<span class="font-semibold text-gray-900">정산 금액</span>
 					<span class="text-primary text-2xl font-bold">
-						₩{comma(order.total_with_commission - order.commission_amount)}
+						₩{comma(
+							order.total_with_commission +
+								(order.coupon_discount || 0) -
+								order.commission_amount,
+						)}
 					</span>
 				</div>
 			</div>
 		{:else}
-			<!-- 구매자: 결제 금액만 표시 -->
-			<div class="flex items-baseline justify-between">
-				<span class="text-sm text-gray-600">결제 금액</span>
-				<span class="text-primary text-2xl font-bold"
-					>₩{comma(order.total_with_commission)}</span
-				>
+			<!-- 구매자: 결제 금액 표시 -->
+			<div class="space-y-2 text-sm">
+				{#if order.coupon_discount && order.coupon_discount > 0}
+					<div class="flex justify-between">
+						<span class="text-gray-600">원래 금액</span>
+						<span class="font-medium text-gray-900"
+							>₩{comma(
+								order.total_with_commission + order.coupon_discount,
+							)}</span
+						>
+					</div>
+					<div class="flex justify-between">
+						<span class="text-gray-600">쿠폰 할인</span>
+						<span class="font-medium text-blue-600"
+							>-₩{comma(order.coupon_discount)}</span
+						>
+					</div>
+					<div
+						class="flex justify-between border-t border-gray-200 pt-3 text-base"
+					>
+						<span class="font-semibold text-gray-900">최종 결제 금액</span>
+						<span class="text-primary text-2xl font-bold"
+							>₩{comma(order.total_with_commission)}</span
+						>
+					</div>
+				{:else}
+					<div class="flex items-baseline justify-between">
+						<span class="text-sm text-gray-600">결제 금액</span>
+						<span class="text-primary text-2xl font-bold"
+							>₩{comma(order.total_with_commission)}</span
+						>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -300,33 +339,33 @@
 
 <!-- 하단 고정 버튼 -->
 <div
-	class="fixed bottom-0 w-full max-w-screen-md border-t border-gray-200 bg-white px-4 py-3"
+	class="fixed bottom-0 w-full max-w-screen-md border-gray-200 bg-white px-4 py-3"
 >
 	<div class="pb-safe flex gap-2">
 		{#if is_seller}
 			{#if order.status === 'pending'}
 				<button
 					onclick={handle_approve_order}
-					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+					class="btn-primary btn flex-1 rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					결제 승인
 				</button>
 				<button
 					onclick={handle_cancel_order}
-					class="rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+					class="btn-gray btn rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					취소
 				</button>
 			{:else if order.status === 'paid'}
 				<button
 					onclick={handle_complete_order}
-					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+					class="btn-primary btn flex-1 rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					서비스 완료
 				</button>
 				<button
 					onclick={handle_cancel_order}
-					class="rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+					class="btn-gray btn rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					취소
 				</button>
@@ -342,7 +381,7 @@
 			<!-- 구매자 -->
 			<button
 				onclick={() => goto(`/service/${order.service_id}`)}
-				class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+				class="btn-gray btn flex-1 rounded-lg px-4 py-3 text-sm font-semibold"
 			>
 				서비스 보기
 			</button>
@@ -350,7 +389,7 @@
 			{#if order.status === 'pending'}
 				<button
 					onclick={handle_cancel_order}
-					class="rounded-lg border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+					class="btn btn-outline btn-error rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					주문 취소
 				</button>
@@ -359,7 +398,7 @@
 			{#if order.status === 'completed'}
 				<button
 					onclick={() => goto(`/service/${order.service_id}#reviews`)}
-					class="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+					class="btn-primary btn flex-1 rounded-lg px-4 py-3 text-sm font-semibold"
 				>
 					리뷰 작성
 				</button>

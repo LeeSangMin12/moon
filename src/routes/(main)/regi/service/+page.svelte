@@ -153,7 +153,7 @@
 			}
 
 			show_toast('success', '서비스가 저장되었습니다.');
-			goto('/service');
+			goto(`/service/${new_service.id}`, { replaceState: true });
 		} finally {
 			update_global_store('loading', false);
 		}
