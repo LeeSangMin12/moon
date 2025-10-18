@@ -1,19 +1,56 @@
 <!doctype html>
 <html lang="ko" data-theme="light">
 	<head>
+		<!-- Critical meta tags first -->
 		<meta charset="utf-8" />
 		<meta
 			name="viewport"
 			content="viewport-fit=cover, height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
 		/>
 
+		<!-- DNS prefetch and preconnect for performance -->
+		<link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+		<link rel="dns-prefetch" href="//fonts.googleapis.com" />
+		<link rel="dns-prefetch" href="//www.googletagmanager.com" />
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+		<link rel="preconnect" href="https://www.googletagmanager.com" />
+
+		<!-- Google Tag Manager (should be as early as possible) -->
+		<script>
+			(function (w, d, s, l, i) {
+				w[l] = w[l] || [];
+				w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+				var f = d.getElementsByTagName(s)[0],
+					j = d.createElement(s),
+					dl = l != 'dataLayer' ? '&l=' + l : '';
+				j.async = true;
+				j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+				f.parentNode.insertBefore(j, f);
+			})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
+		</script>
+		<!-- End Google Tag Manager -->
+
+		<!-- Google Analytics -->
+		<script
+			async
+			src="https://www.googletagmanager.com/gtag/js?id=G-NW4YCE6L55"
+		></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag() {
+				dataLayer.push(arguments);
+			}
+			gtag('js', new Date());
+			gtag('config', 'G-NW4YCE6L55');
+		</script>
+
+		<!-- SEO meta tags -->
 		<title>외주할 땐 문 | 외주·사이드잡·풀타임 전문가 매칭 플랫폼</title>
 		<link rel="canonical" href="https://moon.it.kr" />
 		<meta
 			name="description"
 			content="문에서 외주부터 채용까지. 수수료 5%와 실명 리뷰, 분쟁 없는 계약/결제로 빠르고 안전하게 진행하세요."
 		/>
-
 		<meta
 			name="keywords"
 			content="문, 외주, 커뮤니티, 외주 커뮤니티, 사이드잡, 풀타임잡, 외주 매칭, 사이드잡 매칭, 풀타임잡 매칭, 외주 견적, 사이드잡 견적, 풀타임잡 견적, 외주 의뢰, 사이드잡 의뢰, 풀타임잡 의뢰, 외주 찾기, 사이드잡 찾기, 풀타임잡 찾기, 외주 추천, 사이드잡 추천, 풀타임잡 추천, 외주 연결, 사이드잡 연결, 풀타임잡 연결, 외주 플랫폼, 사이드잡 플랫폼, 풀타임잡 플랫폼, 외주 서비스, 사이드잡 서비스, 풀타임잡 서비스, 외주 등록, 사이드잡 등록, 풀타임잡 등록, 외주 상담, 사이드잡 상담, 풀타임잡 상담, 외주 포트폴리오, 사이드잡 포트폴리오, 풀타임잡 포트폴리오, 외주 리뷰, 사이드잡 리뷰, 풀타임잡 리뷰, 외주 평가, 사이드잡 평가, 풀타임잡 평가, 외주 비교, 사이드잡 비교, 풀타임잡 비교, 외주 검색, 사이드잡 검색, 풀타임잡 검색, 외주 매칭 플랫폼, 사이드잡 매칭 플랫폼, 풀타임잡 매칭 플랫폼, 외주 중개, 사이드잡 중개, 풀타임잡 중개, 외주 네트워크, 사이드잡 네트워크, 풀타임잡 네트워크, 외주 커뮤니티, 사이드잡 커뮤니티, 풀타임잡 커뮤니티"
@@ -31,12 +68,12 @@
 			property="og:description"
 			content="문에서 외주부터 채용까지. 수수료 5%와 실명 리뷰, 분쟁 없는 계약/결제로 빠르고 안전하게 진행하세요."
 		/>
+		<meta property="og:image" content="%sveltekit.assets%/open_graph_img.png" />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="문 이미지" />
 		<meta property="og:site_name" content="문" />
 		<meta property="og:locale" content="ko_KR" />
-		<meta property="og:image" content="%sveltekit.assets%/open_graph_img.png" />
-		<meta property="og:image:alt" content="문 이미지" />
 
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
@@ -54,19 +91,11 @@
 			content="%sveltekit.assets%/open_graph_img.png"
 		/>
 
+		<!-- Favicon and icons -->
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 
 		<!-- Preload critical resources -->
 		<link rel="preload" href="%sveltekit.assets%/favicon.png" as="image" />
-
-		<!-- DNS prefetch -->
-		<link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
-		<link rel="dns-prefetch" href="//fonts.googleapis.com" />
-		<link rel="dns-prefetch" href="//www.googletagmanager.com" />
-
-		<!-- Preconnect to external domains -->
-		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-		<link rel="preconnect" href="https://www.googletagmanager.com" />
 
 		<!-- Amplitude Analytics -->
 		<script src="https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"></script>
@@ -77,21 +106,6 @@
 				autocapture: { elementInteractions: true },
 			});
 		</script>
-
-		<!-- Google Tag Manager -->
-		<script>
-			(function (w, d, s, l, i) {
-				w[l] = w[l] || [];
-				w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-				var f = d.getElementsByTagName(s)[0],
-					j = d.createElement(s),
-					dl = l != 'dataLayer' ? '&l=' + l : '';
-				j.async = true;
-				j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-				f.parentNode.insertBefore(j, f);
-			})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
-		</script>
-		<!-- End Google Tag Manager -->
 
 		%sveltekit.head%
 	</head>
