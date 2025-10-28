@@ -66,32 +66,6 @@
 	</button>
 
 	<button
-		onclick={() => goto('/search')}
-		onmouseenter={() => handlePreload('/search')}
-		ontouchstart={() => handlePreload('/search')}
-		class="flex flex-col items-center gap-0.5"
-	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			height="20px"
-			viewBox="0 -960 960 960"
-			width="20px"
-			fill={$page.url.pathname === '/search'
-				? colors.gray[700]
-				: colors.gray[400]}
-			><path
-				d="M380-320q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l224 224q11 11 11 28t-11 28q-11 11-28 11t-28-11L532-372q-30 24-69 38t-83 14Zm0-80q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
-			/>
-		</svg>
-
-		<p
-			class={`${$page.url.pathname === '/search' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
-		>
-			검색
-		</p>
-	</button>
-
-	<button
 		onclick={() => goto('/service')}
 		onmouseenter={() => handlePreload('/service')}
 		ontouchstart={() => handlePreload('/service')}
@@ -114,6 +88,32 @@
 			class={`${$page.url.pathname === '/service' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
 		>
 			서비스
+		</p>
+	</button>
+
+	<button
+		onclick={() => goto('/outsourcing')}
+		onmouseenter={() => handlePreload('/outsourcing')}
+		ontouchstart={() => handlePreload('/outsourcing')}
+		class="flex flex-col items-center gap-0.5"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			height="20px"
+			viewBox="0 -960 960 960"
+			width="20px"
+			fill={$page.url.pathname === '/outsourcing'
+				? colors.gray[700]
+				: colors.gray[400]}
+			><path
+				d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm240-600h160v-80H400v80Z"
+			/>
+		</svg>
+
+		<p
+			class={`${$page.url.pathname === '/outsourcing' ? 'text-gray-800' : 'text-gray-400'} text-[10px]`}
+		>
+			외주
 		</p>
 	</button>
 

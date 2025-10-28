@@ -1,22 +1,29 @@
 <script>
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
+	import { check_login } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
-	import { RiAddLine, RiNotificationFill } from 'svelte-remixicon';
+	import {
+		RiAddLine,
+		RiNotificationFill,
+		RiSearchLine,
+	} from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
-	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 	import PostSkeleton from '$lib/components/ui/PostSkeleton.svelte';
+	import TabSelector from '$lib/components/ui/TabSelector.svelte';
+
+	import { update_global_store } from '$lib/store/global_store.js';
 
 	// Dynamic imports for code splitting
 	let Post = $state();
 	let Icon = $state();
-
-	import colors from '$lib/config/colors';
-	import { check_login } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
-	import { update_global_store } from '$lib/store/global_store.js';
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -41,7 +48,7 @@
 		// Dynamic import components
 		const [PostModule, IconModule] = await Promise.all([
 			import('$lib/components/Post.svelte'),
-			import('$lib/components/ui/Icon.svelte')
+			import('$lib/components/ui/Icon.svelte'),
 		]);
 		Post = PostModule.default;
 		Icon = IconModule.default;
@@ -69,9 +76,7 @@
 	const refresh_unread_count = async () => {
 		try {
 			if (!me?.id) return;
-			unread_count = await api.notifications.select_unread_count(
-				me.id,
-			);
+			unread_count = await api.notifications.select_unread_count(me.id);
 		} catch (e) {
 			console.error('Failed to load unread notifications count:', e);
 		}
@@ -87,7 +92,9 @@
 
 		// Use untrack to prevent infinite loops
 		const community_id =
-			current_selected === 0 ? '' : (current_communities[current_selected - 1]?.id ?? '');
+			current_selected === 0
+				? ''
+				: (current_communities[current_selected - 1]?.id ?? '');
 
 		// Check cache first
 		const cache_key = community_id || 'all';
@@ -99,12 +106,17 @@
 		}
 
 		// Load from API only if not cached
-		api.posts.select_infinite_scroll('', community_id, 10).then((initial_posts) => {
-			posts = initial_posts;
-			last_post_id = initial_posts.at(-1)?.id ?? '';
-			// Update cache
-			posts_cache.set(cache_key, { posts: initial_posts, last_post_id: initial_posts.at(-1)?.id ?? '' });
-		});
+		api.posts
+			.select_infinite_scroll('', community_id, 10)
+			.then((initial_posts) => {
+				posts = initial_posts;
+				last_post_id = initial_posts.at(-1)?.id ?? '';
+				// Update cache
+				posts_cache.set(cache_key, {
+					posts: initial_posts,
+					last_post_id: initial_posts.at(-1)?.id ?? '',
+				});
+			});
 	});
 
 	/**
@@ -172,7 +184,12 @@
 	};
 
 	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
-	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
+	const handle_gift_comment_added = async ({
+		gift_content,
+		gift_moon_point,
+		parent_comment_id,
+		post_id,
+	}) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
 		await api.post_comments.insert({
 			post_id,
@@ -191,12 +208,13 @@
 		(updated_posts) => {
 			posts = updated_posts;
 			// 캐시도 함께 업데이트
-			const cache_key = selected === 0 ? 'all' : (joined_communities[selected - 1]?.id || '');
+			const cache_key =
+				selected === 0 ? 'all' : joined_communities[selected - 1]?.id || '';
 			if (posts_cache.has(cache_key)) {
 				posts_cache.set(cache_key, { posts: updated_posts, last_post_id });
 			}
 		},
-		me
+		me,
 	);
 </script>
 
@@ -211,16 +229,22 @@
 <Header>
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 
-	<button onclick={() => goto('/alarm')} slot="right" class="relative">
-		<RiNotificationFill size={20} color={colors.gray[400]} />
-		{#if unread_count > 0}
-			<span
-				class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
-			>
-				{unread_count > 99 ? '99+' : unread_count}
-			</span>
-		{/if}
-	</button>
+	<div slot="right" class="flex items-center gap-4">
+		<button onclick={() => goto('/search')}>
+			<RiSearchLine size={20} color={colors.gray[400]} />
+		</button>
+
+		<button onclick={() => goto('/alarm')} class="relative">
+			<RiNotificationFill size={20} color={colors.gray[400]} />
+			{#if unread_count > 0}
+				<span
+					class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
+				>
+					{unread_count > 99 ? '99+' : unread_count}
+				</span>
+			{/if}
+		</button>
+	</div>
 </Header>
 <main>
 	<TabSelector {tabs} bind:selected />
@@ -236,11 +260,11 @@
 		{#each posts as post}
 			<div class="mt-4">
 				<Post
-				{post}
-				onGiftCommentAdded={handle_gift_comment_added}
-				onBookmarkChanged={handle_bookmark_changed}
-				onVoteChanged={handle_vote_changed}
-			/>
+					{post}
+					onGiftCommentAdded={handle_gift_comment_added}
+					onBookmarkChanged={handle_bookmark_changed}
+					onVoteChanged={handle_vote_changed}
+				/>
 			</div>
 		{/each}
 	{/if}
