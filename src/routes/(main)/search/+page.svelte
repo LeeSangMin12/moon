@@ -1,4 +1,10 @@
 <script>
+	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app-context.svelte.js';
 	import { goto } from '$app/navigation';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -8,10 +14,6 @@
 	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 	import Service from '$lib/components/Service.svelte';
-
-	import colors from '$lib/config/colors';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
@@ -40,17 +42,21 @@
 			search_data.community_members =
 				await api.community_members.select_by_user_id(me.id);
 		} else if (selected === 2) {
-			search_data.services =
-				await api.services.select_by_search(search_text);
-			search_data.service_likes =
-				await api.service_likes.select_by_user_id(me.id);
+			search_data.services = await api.services.select_by_search(search_text);
+			search_data.service_likes = await api.service_likes.select_by_user_id(
+				me.id,
+			);
 		} else if (selected === 3) {
-			search_data.profiles =
-				await api.users.select_by_search(search_text);
+			search_data.profiles = await api.users.select_by_search(search_text);
 		}
 	};
 
-	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
+	const handle_gift_comment_added = async ({
+		gift_content,
+		gift_moon_point,
+		parent_comment_id,
+		post_id,
+	}) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
 		await api.post_comments.insert({
 			post_id,
@@ -67,7 +73,7 @@
 		(updated_posts) => {
 			search_data.posts = updated_posts;
 		},
-		me
+		me,
 	);
 </script>
 
@@ -81,12 +87,12 @@
 
 <header class="sticky top-0 z-50 bg-white whitespace-nowrap">
 	<nav class="pt-safe">
-		<div class="z-10 flex h-[56px] w-full items-center">
-			<!-- <button onclick={() => goto('/')}>
+		<div class="z-10 flex h-[56px] w-full items-center gap-2 px-2">
+			<button onclick={() => window.history.back()}>
 				<Icon attribute="arrow_left" size={28} color={colors.gray[600]} />
-			</button> -->
+			</button>
 
-			<div class="relative w-full px-2">
+			<div class="relative w-full">
 				<input
 					type="text"
 					placeholder="검색어를 입력하세요"
@@ -119,11 +125,11 @@
 		{#each search_data.posts as post}
 			<div class="mt-4">
 				<Post
-				{post}
-				onGiftCommentAdded={handle_gift_comment_added}
-				onBookmarkChanged={handle_bookmark_changed}
-				onVoteChanged={handle_vote_changed}
-			/>
+					{post}
+					onGiftCommentAdded={handle_gift_comment_added}
+					onBookmarkChanged={handle_bookmark_changed}
+					onVoteChanged={handle_vote_changed}
+				/>
 			</div>
 		{/each}
 	{:else if selected === 1 && search_data.communities.length > 0}
@@ -153,5 +159,3 @@
 		</div>
 	{/if}
 </main>
-
-<Bottom_nav />
