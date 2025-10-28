@@ -5,7 +5,6 @@
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
 	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
-	import { onMount } from 'svelte';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
@@ -18,6 +17,8 @@
 	const { api } = get_api_context();
 
 	const TITLE = '외주';
+
+	let { data } = $props();
 
 	const tabs = ['사이드잡', '풀타임잡'];
 	let selected_tab = $state(0);
@@ -40,17 +41,11 @@
 		},
 	];
 
-	// Initialize with empty data
+	// Initialize with server-loaded data
 	const expertRequestData = createExpertRequestData(
-		{ expert_requests: [] },
+		{ expert_requests: data.expert_requests || [] },
 		api,
 	);
-
-	// Load expert requests on mount
-	onMount(async () => {
-		const response = await api.expert_requests.select_infinite_scroll('');
-		expertRequestData.expertRequests = response.data || response;
-	});
 
 	const expertInfiniteScroll = createInfiniteScroll({
 		items: {
@@ -77,11 +72,8 @@
 			const results = await api.expert_requests.select_by_search(searchText);
 			expertRequestData.expertRequests = results;
 		} else {
-			const response = await api.expert_requests.select_infinite_scroll(
-				'',
-				'',
-			);
-			expertRequestData.expertRequests = response.data || response;
+			// 검색어가 없으면 서버에서 로드한 초기 데이터로 복원
+			expertRequestData.expertRequests = data.expert_requests || [];
 		}
 		expertInfiniteScroll.lastId =
 			expertRequestData.expertRequests[
