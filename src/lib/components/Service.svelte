@@ -17,9 +17,12 @@
 	let is_liked = $state(false);
 	let is_loading = $state(false);
 
+	// service_likes를 Set으로 변환하여 O(1) 조회
+	let liked_service_ids = $derived(new Set(service_likes.map((s) => s.service_id)));
+
 	// props 변경 시 로컬 상태 동기화
 	$effect(() => {
-		is_liked = service_likes.some((s) => s.service_id === service.id);
+		is_liked = liked_service_ids.has(service.id);
 	});
 
 	const handle_like = async (service_id) => {

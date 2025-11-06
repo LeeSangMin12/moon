@@ -40,7 +40,7 @@ export const create_services_api = (supabase) => ({
 	select_infinite_scroll: async (last_service_id) => {
 		let query = supabase
 			.from('services')
-			.select('id, title, author_id, images, created_at, price')
+			.select('id, title, author_id, images, created_at, price, rating, rating_count')
 			.order('created_at', { ascending: false })
 			.limit(20);
 
