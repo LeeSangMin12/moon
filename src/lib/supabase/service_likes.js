@@ -15,7 +15,7 @@ export const create_service_likes_api = (supabase) => ({
 	insert: async (service_id, user_id) => {
 		const { error } = await supabase
 			.from('service_likes')
-			.insert({ service_id, user_id });
+			.upsert({ service_id, user_id }, { onConflict: 'service_id,user_id' });
 
 		if (error) throw new Error(`Failed to insert: ${error.message}`);
 	},

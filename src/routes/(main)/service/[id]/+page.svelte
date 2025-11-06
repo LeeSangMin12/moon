@@ -19,13 +19,16 @@
 	import {
 		RiArrowLeftSLine,
 		RiCloseLine,
+		RiDeleteBinLine,
 		RiHeartFill,
+		RiPencilLine,
 		RiStarFill,
 	} from 'svelte-remixicon';
 
 	// Components
 	import CustomCarousel from '$lib/components/ui/Carousel.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
 
@@ -47,6 +50,7 @@
 	// Modal States
 	let is_options_modal_open = $state(false); // 옵션 선택 모달
 	let is_review_modal_open = $state(false);
+	let is_service_config_modal_open = $state(false); // 서비스 설정 모달
 	let is_submitting_review = $state(false);
 	let editing_review = $state(null);
 
@@ -418,6 +422,25 @@
 			review_form_data.title.trim() &&
 			review_form_data.content.trim(),
 	);
+
+	// Service Management Handlers
+	const handle_delete_service = async () => {
+		if (!confirm('정말 이 서비스를 삭제하시겠습니까?')) return;
+
+		try {
+			await api.services.delete(service.id);
+			show_toast('success', '서비스가 삭제되었습니다.');
+			goto(`/@${me.handle}`, { replaceState: true });
+		} catch (error) {
+			console.error('서비스 삭제 실패:', error);
+			show_toast('error', '서비스 삭제에 실패했습니다.');
+		}
+	};
+
+	const open_service_config_modal = () => {
+		if (!check_login(me)) return;
+		is_service_config_modal_open = true;
+	};
 </script>
 
 <svelte:head>
@@ -476,6 +499,13 @@
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">서비스</h1>
+	<div slot="right">
+		{#if is_own_service}
+			<button onclick={open_service_config_modal}>
+				<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
+			</button>
+		{/if}
+	</div>
 </Header>
 
 <main>
@@ -855,5 +885,23 @@
 				{editing_review ? '리뷰 수정하기' : '리뷰 작성하기'}
 			{/if}
 		</button>
+	</div>
+</Modal>
+
+<!-- Service Config Modal -->
+<Modal
+	bind:is_modal_open={is_service_config_modal_open}
+	modal_position="bottom"
+>
+	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
+		<div class="flex w-full flex-col items-center rounded-lg bg-white">
+			<a
+				href={`/regi/service/${service.id}`}
+				class="flex w-full items-center gap-3 p-3"
+			>
+				<RiPencilLine size={20} color={colors.gray[400]} />
+				<p class="text-gray-600">수정하기</p>
+			</a>
+		</div>
 	</div>
 </Modal>

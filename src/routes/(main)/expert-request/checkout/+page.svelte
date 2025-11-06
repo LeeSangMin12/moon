@@ -39,7 +39,9 @@
 
 	// 쿠폰 할인 금액 계산
 	const discount_amount = $derived(
-		applied_coupon ? api.coupons.calculate_discount(applied_coupon, REGISTRATION_FEE) : 0
+		applied_coupon
+			? api.coupons.calculate_discount(applied_coupon, REGISTRATION_FEE)
+			: 0,
 	);
 
 	// 최종 결제 금액 (쿠폰 적용 후)
@@ -72,7 +74,7 @@
 			coupon,
 			me.id,
 			'job_registration',
-			REGISTRATION_FEE
+			REGISTRATION_FEE,
 		);
 
 		if (!validation.valid) {
@@ -109,8 +111,8 @@
 					? {
 							coupon_id: applied_coupon.id,
 							coupon_discount: discount_amount,
-					  }
-					: null
+						}
+					: null,
 			);
 
 			// 쿠폰 사용 기록
@@ -125,7 +127,10 @@
 				await api.coupons.increment_usage(applied_coupon.id);
 			}
 
-			show_toast('success', '입금 정보가 제출되었습니다. 관리자 승인 후 공고가 게시됩니다.');
+			show_toast(
+				'success',
+				'입금 정보가 제출되었습니다. 관리자 승인 후 공고가 게시됩니다.',
+			);
 			goto(`/expert-request/${request.id}`, { replaceState: true });
 		} catch (error) {
 			console.error('결제 처리 실패:', error);
@@ -191,48 +196,52 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">은행</span>
-					<span class="font-medium text-gray-900">국민은행</span>
+					<span class="font-medium text-gray-900">부산은행</span>
 				</div>
 			</div>
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">예금주</span>
-					<span class="font-medium text-gray-900">이상민</span>
+					<span class="font-medium text-gray-900">퓨처밴스 이상민</span>
 				</div>
 			</div>
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">계좌번호</span>
-					<span class="text-primary font-medium">939302-00-616198</span>
+					<span class="text-primary font-medium">101-2094-2262-04</span>
 				</div>
 				<button
 					onclick={() => {
-						copy_to_clipboard('939302-00-616198', '계좌번호가 복사되었습니다.');
+						copy_to_clipboard('101-2094-2262-04', '계좌번호가 복사되었습니다.');
 					}}
 					class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
 				>
 					복사
 				</button>
 			</div>
-			<div
-				class="space-y-2 border-t border-gray-200 pt-2"
-			>
+			<div class="space-y-2 border-t border-gray-200 pt-2">
 				<div class="flex items-center justify-between text-sm">
 					<span class="text-gray-600">등록비</span>
-					<span class="font-medium text-gray-900">₩{comma(REGISTRATION_FEE)}</span>
+					<span class="font-medium text-gray-900"
+						>₩{comma(REGISTRATION_FEE)}</span
+					>
 				</div>
 
 				{#if discount_amount > 0}
 					<div class="flex items-center justify-between text-sm">
 						<span class="text-blue-600">쿠폰 할인</span>
-						<span class="font-medium text-blue-600">-₩{comma(discount_amount)}</span>
+						<span class="font-medium text-blue-600"
+							>-₩{comma(discount_amount)}</span
+						>
 					</div>
 					<div class="h-px bg-gray-200"></div>
 				{/if}
 
 				<div class="flex items-center justify-between">
 					<span class="font-semibold text-gray-900">최종 입금 금액</span>
-					<span class="text-lg font-bold text-blue-600">₩{comma(final_fee)}</span>
+					<span class="text-lg font-bold text-blue-600"
+						>₩{comma(final_fee)}</span
+					>
 				</div>
 			</div>
 		</div>
@@ -248,7 +257,7 @@
 					bind:value={coupon_code}
 					type="text"
 					placeholder="쿠폰 코드 입력"
-					class="input input-bordered flex-1 h-11 focus:border-gray-400 focus:outline-none"
+					class="input input-bordered h-11 flex-1 focus:border-gray-400 focus:outline-none"
 					onkeydown={(e) => e.key === 'Enter' && apply_coupon()}
 				/>
 				<button

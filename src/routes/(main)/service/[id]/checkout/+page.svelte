@@ -45,7 +45,7 @@
 
 	// 쿠폰 할인 금액 계산
 	const discount_amount = $derived(
-		applied_coupon ? api.coupons.calculate_discount(applied_coupon, total) : 0
+		applied_coupon ? api.coupons.calculate_discount(applied_coupon, total) : 0,
 	);
 
 	// 최종 결제 금액 (쿠폰 적용 후)
@@ -72,7 +72,7 @@
 			coupon,
 			me.id,
 			'service_purchase',
-			total
+			total,
 		);
 
 		if (!validation.valid) {
@@ -190,7 +190,10 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => goto(`/service/${service.id}`, { replaceState: true })}>
+	<button
+		slot="left"
+		onclick={() => goto(`/service/${service.id}`, { replaceState: true })}
+	>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">주문하기</h1>
@@ -231,7 +234,9 @@
 			{#if discount_amount > 0}
 				<div class="flex justify-between text-sm">
 					<span class="text-blue-600">쿠폰 할인</span>
-					<span class="font-medium text-blue-600">-₩{comma(discount_amount)}</span>
+					<span class="font-medium text-blue-600"
+						>-₩{comma(discount_amount)}</span
+					>
 				</div>
 			{/if}
 
@@ -239,7 +244,9 @@
 
 			<div class="flex justify-between text-base">
 				<span class="font-semibold text-gray-900">최종 결제금액</span>
-				<span class="text-xl font-bold text-blue-600">₩{comma(final_total)}</span>
+				<span class="text-xl font-bold text-blue-600"
+					>₩{comma(final_total)}</span
+				>
 			</div>
 		</div>
 	</div>
@@ -254,7 +261,7 @@
 					bind:value={coupon_code}
 					type="text"
 					placeholder="쿠폰 코드 입력"
-					class="input input-bordered flex-1 h-11 focus:border-gray-400 focus:outline-none"
+					class="input input-bordered h-11 flex-1 focus:border-gray-400 focus:outline-none"
 					onkeydown={(e) => e.key === 'Enter' && apply_coupon()}
 				/>
 				<button
@@ -290,23 +297,23 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">은행</span>
-					<span class="font-medium text-gray-900">국민은행</span>
+					<span class="font-medium text-gray-900">부산은행</span>
 				</div>
 			</div>
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">예금주</span>
-					<span class="font-medium text-gray-900">이상민</span>
+					<span class="font-medium text-gray-900">퓨처밴스 이상민</span>
 				</div>
 			</div>
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="w-16 text-gray-600">계좌번호</span>
-					<span class="text-primary font-medium">939302-00-616198</span>
+					<span class="text-primary font-medium">101-2094-2262-04</span>
 				</div>
 				<button
 					onclick={() => {
-						copy_to_clipboard('939302-00-616198', '계좌번호가 복사되었습니다.');
+						copy_to_clipboard('101-2094-2262-04', '계좌번호가 복사되었습니다.');
 					}}
 					class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
 				>

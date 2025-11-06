@@ -13,32 +13,64 @@
 
 	let { service = [], service_likes = [], onLikeChanged } = $props();
 
+	// 로컬 상태: 좋아요 여부와 로딩 상태
+	let is_liked = $state(false);
+	let is_loading = $state(false);
+
+	// service_likes를 Set으로 변환하여 O(1) 조회
+	let liked_service_ids = $derived(new Set(service_likes.map((s) => s.service_id)));
+
+	// props 변경 시 로컬 상태 동기화
+	$effect(() => {
+		is_liked = liked_service_ids.has(service.id);
+	});
+
 	const handle_like = async (service_id) => {
-		if (!check_login(me)) return;
+		if (!check_login(me) || is_loading) return;
 
-		await api.service_likes.insert(service_id, me.id);
-		const updated_likes = [...service_likes, { service_id }];
-		show_toast('success', '서비스 좋아요를 눌렀어요!');
+		// 낙관적 업데이트: UI를 즉시 변경
+		is_liked = true;
+		is_loading = true;
 
-		// 부모 컴포넌트에 알림
-		onLikeChanged?.({ service_id, likes: updated_likes });
+		try {
+			await api.service_likes.insert(service_id, me.id);
+			show_toast('success', '서비스 좋아요를 눌렀어요!');
+
+			// 부모 컴포넌트에 알림
+			const updated_likes = [...service_likes, { service_id }];
+			onLikeChanged?.({ service_id, likes: updated_likes });
+		} catch (error) {
+			// 실패 시 롤백
+			is_liked = false;
+			console.error('Failed to like service:', error);
+			show_toast('error', '좋아요 처리에 실패했어요.');
+		} finally {
+			is_loading = false;
+		}
 	};
 
 	const handle_unlike = async (service_id) => {
-		if (!check_login(me)) return;
+		if (!check_login(me) || is_loading) return;
 
-		await api.service_likes.delete(service_id, me.id);
-		const updated_likes = service_likes.filter(
-			(service) => service.service_id !== service_id,
-		);
-		show_toast('success', '서비스 좋아요를 취소했어요!');
+		// 낙관적 업데이트: UI를 즉시 변경
+		is_liked = false;
+		is_loading = true;
 
-		// 부모 컴포넌트에 알림
-		onLikeChanged?.({ service_id, likes: updated_likes });
-	};
+		try {
+			await api.service_likes.delete(service_id, me.id);
+			show_toast('success', '서비스 좋아요를 취소했어요!');
 
-	const is_user_liked = (service_id) => {
-		return service_likes.some((service) => service.service_id === service_id);
+			// 부모 컴포넌트에 알림
+			const updated_likes = service_likes.filter((s) => s.service_id !== service_id);
+			onLikeChanged?.({ service_id, likes: updated_likes });
+		} catch (error) {
+			// 실패 시 롤백
+			is_liked = true;
+			console.error('Failed to unlike service:', error);
+			show_toast('error', '좋아요 취소에 실패했어요.');
+		} finally {
+			is_loading = false;
+		}
 	};
 </script>
 
@@ -77,12 +109,12 @@
 				₩{comma(service.price)}
 			</span>
 
-			{#if is_user_liked(service.id)}
-				<button onclick={() => handle_unlike(service.id)}>
+			{#if is_liked}
+				<button onclick={() => handle_unlike(service.id)} disabled={is_loading}>
 					<RiHeartFill size={18} color={colors.warning} />
 				</button>
 			{:else}
-				<button onclick={() => handle_like(service.id)}>
+				<button onclick={() => handle_like(service.id)} disabled={is_loading}>
 					<RiHeartFill size={18} color={colors.gray[400]} />
 				</button>
 			{/if}

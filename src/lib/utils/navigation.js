@@ -56,19 +56,30 @@ export function smartGoBack(user = null) {
 		return;
 	}
 
+	// 외주 관련 페이지들
+	if (pathname.startsWith('/outsourcing/')) {
+		// 브라우저 히스토리 사용 (이전 페이지로 이동)
+		if (window.history.length > 1) {
+			window.history.back();
+		} else {
+			goto('/outsourcing');
+		}
+		return;
+	}
+
 	// 전문가 요청 관련
 	if (pathname.startsWith('/expert-request/')) {
 		// 브라우저 히스토리 사용 (이전 페이지로 이동)
 		if (window.history.length > 1) {
 			window.history.back();
 		} else {
-			goto('/service?tab=1');
+			goto('/outsourcing');
 		}
 		return;
 	}
 
 	if (pathname.startsWith('/regi/expert-request')) {
-		goto('/service');
+		goto('/outsourcing');
 		return;
 	}
 
@@ -79,7 +90,7 @@ export function smartGoBack(user = null) {
 		} else if (pathname.startsWith('/regi/post')) {
 			goto('/community');
 		} else if (pathname.startsWith('/regi/expert-request')) {
-			goto('/service');
+			goto('/outsourcing');
 		} else {
 			goto('/');
 		}

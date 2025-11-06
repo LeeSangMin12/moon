@@ -3,12 +3,14 @@ import { create_api } from '$lib/supabase/api';
 export async function load({ params, parent, locals: { supabase }, setHeaders }) {
 	const api = create_api(supabase);
 
-	// 사용자별 데이터(서비스 좋아요)가 포함되므로 캐시 비활성화
-	setHeaders({
-		'Cache-Control': 'private, max-age=0, must-revalidate',
-	});
-
 	const { user } = await parent();
+
+	// 로그인한 사용자는 private 캐시, 미로그인 사용자는 public 캐시
+	setHeaders({
+		'Cache-Control': user?.id
+			? 'private, max-age=60, must-revalidate'
+			: 'public, max-age=300, stale-while-revalidate=600',
+	});
 
 	// Parallel queries
 	const [services, service_likes] = await Promise.all([
