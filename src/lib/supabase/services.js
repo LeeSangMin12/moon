@@ -17,6 +17,10 @@ export const create_services_api = (supabase) => ({
 		if (error) throw new Error(`Failed to update service: ${error.message}`);
 		return data;
 	},
+	delete: async (id) => {
+		const { error } = await supabase.from('services').delete().eq('id', id);
+		if (error) throw new Error(`Failed to delete service: ${error.message}`);
+	},
 
 	select: async () => {
 		const { data, error } = await supabase.from('services').select('*');
@@ -37,7 +41,7 @@ export const create_services_api = (supabase) => ({
 		let query = supabase
 			.from('services')
 			.select('id, title, author_id, images, created_at, price')
-			.order('id', { ascending: false })
+			.order('created_at', { ascending: false })
 			.limit(20);
 
 		if (last_service_id !== '') {

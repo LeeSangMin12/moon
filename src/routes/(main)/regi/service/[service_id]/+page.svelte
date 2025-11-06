@@ -1,116 +1,169 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { smartGoBack } from '$lib/utils/navigation';
-	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { RiArrowLeftSLine, RiMenuLine } from 'svelte-remixicon';
+	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
+	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
 	import colors from '$lib/config/colors';
-	import { show_toast } from '$lib/utils/common';
+	import { check_login, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
 	const { me } = get_user_context();
 	const { api } = get_api_context();
 
-	const TITLE = '게시글 수정';
+	const TITLE = '서비스 수정';
 
 	let { data } = $props();
-	let { post, community_members } = $state(data);
+	let { service, service_options } = $state(data);
 
-	const community_select_options = $derived([
-		{ value: null, label: '모두에게', group: '대상' },
-		...(community_members || []).map((item) => ({
-			value: item.communities.id,
-			label: item.communities.title,
-			group: '커뮤니티',
-		})),
-	]);
-	let community_select_value = $state({
-		value: post.communities?.id || null,
-		label: post.communities?.title || '모두에게',
-		group: post.communities?.id ? '커뮤니티' : '대상',
-	});
-
-	let post_form_data = $state({
-		title: post.title,
-		content: post.content,
-		images: post.images || [],
+	let service_form_data = $state({
+		title: service.title || '',
+		content: service.content || '',
+		price: service.price || 0,
+		contact_info: service.contact_info || '',
+		images: service.images || [],
+		options: service_options || [],
 	});
 
 	/**
 	 * 이미지 추가
 	 */
 	const add_img = (event) => {
-		const selected_images = event.target.files; //input요소 선택한 파일
-		let images_copy = [...post_form_data.images]; //선택된 이미지의 복사본
+		const selected_images = event.target.files;
+		let images_copy = [...service_form_data.images];
 
-		//미리보기용 이미지 uri 생성후 복사본에 추가
 		for (let i = 0; i < selected_images.length; i++) {
 			selected_images[i].uri = URL.createObjectURL(selected_images[i]);
+
+			// 이미지 크기 확인 및 권장사항 안내
+			const img = new Image();
+			img.onload = () => {
+				const aspectRatio = img.width / img.height;
+				const isRecommendedSize = img.width >= 652 && img.height >= 488;
+				const isRecommendedRatio = aspectRatio >= 1.3 && aspectRatio <= 1.4;
+
+				if (!isRecommendedSize || !isRecommendedRatio) {
+					show_toast(
+						'info',
+						'권장 크기: 652x488px (4:3 비율)로 업로드하면 더 좋은 품질을 얻을 수 있어요!',
+					);
+				}
+			};
+			img.src = selected_images[i].uri;
 
 			images_copy.push(selected_images[i]);
 		}
 
-		//이미지 개수가 7개 이상이면 에러
 		if (images_copy.length > 7) {
 			alert('이미지 개수는 7개를 초과할 수 없습니다.');
 			return;
 		}
 
-		// 이미지 상태 업데이트
-		post_form_data.images = images_copy;
+		service_form_data.images = images_copy;
 	};
 
 	/**
 	 * 이미지 삭제
 	 */
 	const delete_img = (idx) => {
-		const update_images = [...post_form_data.images];
+		const update_images = [...service_form_data.images];
 		update_images.splice(idx, 1);
-		post_form_data.images = update_images;
+		service_form_data.images = update_images;
 	};
 
-	const save_post = async () => {
+	/**
+	 * 옵션 추가
+	 */
+	const add_option = () => {
+		service_form_data.options = [
+			...service_form_data.options,
+			{ name: '', price_add: 0, description: '', display_order: service_form_data.options.length }
+		];
+	};
+
+	/**
+	 * 옵션 삭제
+	 */
+	const delete_option = (idx) => {
+		const updated_options = [...service_form_data.options];
+		updated_options.splice(idx, 1);
+		updated_options.forEach((opt, i) => opt.display_order = i);
+		service_form_data.options = updated_options;
+	};
+
+	const save_service = async () => {
 		update_global_store('loading', true);
 		try {
-			await api.posts.update(post.id, {
-				community_id: community_select_value.value,
-				title: post_form_data.title,
-				content: post_form_data.content,
+			if (!me?.id) {
+				show_toast('error', '로그인이 필요합니다.');
+				return;
+			}
+
+			// 서비스 기본 정보 업데이트
+			await api.services.update(service.id, {
+				title: service_form_data.title,
+				content: service_form_data.content,
+				price: service_form_data.price,
+				contact_info: service_form_data.contact_info,
 			});
 
-			if (post_form_data.images.length > 0) {
+			// 이미지 처리
+			if (service_form_data.images.length > 0) {
 				const uploaded_images = await modify_images(
-					post.id,
-					post_form_data.images,
+					service.id,
+					service_form_data.images,
 				);
-				await api.posts.update(post.id, {
+				await api.services.update(service.id, {
 					images: uploaded_images,
 				});
 			}
 
-			show_toast('success', '게시글이 수정되었습니다.');
-			goto(`/@${post.users?.handle || 'unknown'}/post/${post.id}`, { replaceState: true });
+			// 옵션 처리: 기존 옵션 모두 삭제 후 재삽입
+			await api.service_options.delete_by_service_id(service.id);
+
+			if (service_form_data.options.length > 0) {
+				const options_to_insert = service_form_data.options
+					.filter(opt => opt.name.trim() && opt.price_add > 0)
+					.map(opt => ({
+						service_id: service.id,
+						name: opt.name.trim(),
+						price_add: opt.price_add,
+						description: opt.description?.trim() || null,
+						display_order: opt.display_order,
+					}));
+
+				if (options_to_insert.length > 0) {
+					await api.service_options.insert_bulk(options_to_insert);
+				}
+			}
+
+			show_toast('success', '서비스가 수정되었습니다.');
+			goto(`/service/${service.id}`, { replaceState: true });
+		} catch (error) {
+			console.error('서비스 수정 실패:', error);
+			show_toast('error', '서비스 수정에 실패했습니다.');
 		} finally {
 			update_global_store('loading', false);
 		}
 	};
 
-	const modify_images = async (post_id, images) => {
+	const modify_images = async (service_id, images) => {
 		return Promise.all(
 			images.map(async (img_file, i) => {
+				// 기존 이미지인 경우 (uri만 있고 name이 없음)
 				if (img_file?.name === undefined) return { uri: img_file.uri };
 
+				// 새로 업로드하는 이미지
 				const file_ext = img_file.name.split('.').pop();
-				const file_path = `${post_id}/${Date.now()}-${i}.${file_ext}`;
+				const file_path = `${service_id}/${Date.now()}-${i}.${file_ext}`;
 
-				await api.post_images.upload(file_path, img_file);
+				await api.service_images.upload(file_path, img_file);
 				return {
-					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/posts/images/${file_path}`,
+					uri: `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/services/images/${file_path}`,
 				};
 			}),
 		);
@@ -134,17 +187,11 @@
 </Header>
 
 <main class="mx-4">
-	<div class="rounded-lg border border-gray-200">
-		<Select
-			items={community_select_options}
-			bind:value={community_select_value}
-			groupBy={(item) => item.group}
-			clearable={false}
-		/>
-	</div>
-
-	<div class="mt-6">
-		<span class="ml-1 text-sm font-medium">썸네일 이미지 (선택)</span>
+	<div class="">
+		<span class="ml-1 text-sm font-medium">서비스 이미지</span>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			권장 크기: 652x488px (4:3 비율), 최대 7개
+		</p>
 
 		<div class="mt-2 flex overflow-x-auto">
 			<label for="input-file">
@@ -173,23 +220,25 @@
 					</svg>
 
 					<span class="text-xs text-gray-900"
-						>{post_form_data.images.length}/7</span
+						>{service_form_data.images.length}/7</span
 					>
 				</div>
 			</label>
 
 			<div class="flex flex-row">
-				{#each post_form_data.images as img, idx}
-					<div class="relative min-w-max">
-						<img
-							key={idx}
-							class="ml-3 h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-							src={img.uri}
-							alt={img.name}
-						/>
+				{#each service_form_data.images as img, idx}
+					<div class="relative ml-3 min-w-max">
+						<div class="aspect-[4/3] h-24 w-32 overflow-hidden rounded-lg">
+							<img
+								key={idx}
+								class="h-full w-full object-cover"
+								src={img.uri}
+								alt={img.name || 'service image'}
+							/>
+						</div>
 						<button onclick={() => delete_img(idx)} aria-label="삭제">
 							<svg
-								class="absolute top-[-2px] left-20"
+								class="absolute -top-1 -right-1"
 								xmlns="http://www.w3.org/2000/svg"
 								width="1.3rem"
 								height="1.3rem"
@@ -206,39 +255,128 @@
 		</div>
 	</div>
 
-	<div class="mt-8">
-		<p class="ml-1 text-sm font-medium">글 제목</p>
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">서비스 제목</p>
 
 		<div class="mt-2">
 			<input
-				bind:value={post_form_data.title}
+				bind:value={service_form_data.title}
 				type="text"
 				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
 			/>
 		</div>
 	</div>
 
-	<div class="mt-8 flex flex-col">
-		<p class="ml-1 text-sm font-medium">글 내용</p>
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">서비스 가격</p>
 
 		<div class="mt-2">
-			<textarea
-				bind:value={post_form_data.content}
+			<input
+				bind:value={service_form_data.price}
+				type="number"
+				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+			/>
+		</div>
+	</div>
+
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">추가 옵션 (선택)</p>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			고객이 선택할 수 있는 추가 옵션을 등록해보세요
+		</p>
+
+		<div class="mt-3 space-y-3">
+			{#each service_form_data.options as option, idx}
+				<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+					<div class="mb-3 flex items-center justify-between">
+						<span class="text-sm font-medium text-gray-700">옵션 {idx + 1}</span>
+						<button
+							onclick={() => delete_option(idx)}
+							class="text-sm text-gray-500 hover:text-gray-700"
+							type="button"
+						>
+							삭제
+						</button>
+					</div>
+
+					<div class="space-y-3">
+						<div>
+							<input
+								bind:value={option.name}
+								type="text"
+								placeholder="옵션 이름 (예: 소스파일 제공)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+
+						<div>
+							<input
+								bind:value={option.price_add}
+								type="number"
+								placeholder="추가 금액 (원)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+
+						<div>
+							<input
+								bind:value={option.description}
+								type="text"
+								placeholder="설명 (선택)"
+								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+							/>
+						</div>
+					</div>
+				</div>
+			{/each}
+
+			<button
+				onclick={add_option}
+				type="button"
+				class="flex h-11 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+			>
+				+ 옵션 추가
+			</button>
+		</div>
+	</div>
+
+	<div class="mt-4">
+		<p class="ml-1 text-sm font-medium">문의 연락처</p>
+		<p class="mt-1 ml-1 text-xs text-gray-500">
+			고객이 서비스 문의 시 연락할 수 있는 연락처를 입력해주세요
+		</p>
+
+		<div class="mt-2">
+			<input
+				bind:value={service_form_data.contact_info}
 				type="text"
-				class="textarea input input-bordered focus:border-primary h-40 w-full focus:outline-none"
-			></textarea>
+				placeholder="예: 010-1234-5678, 카카오톡 링크, 인스타그램 링크"
+				class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
+			/>
+		</div>
+	</div>
+
+	<div class="mt-4 flex flex-col">
+		<p class="ml-1 text-sm font-medium">서비스 내용</p>
+
+		<div class="mt-2">
+			<SimpleEditor bind:content={service_form_data.content} />
 		</div>
 	</div>
 </main>
+
 <div class="fixed bottom-0 w-full max-w-screen-md bg-white px-5 py-3.5">
 	<div class="pb-safe flex space-x-2">
 		<button
-			disabled={post_form_data.title.length === 0 ||
-				post_form_data.content.length === 0}
+			disabled={service_form_data.title.length === 0 ||
+				service_form_data.content.length === 0 ||
+				service_form_data.price === 0 ||
+				service_form_data.contact_info.length === 0 ||
+				service_form_data.images.length === 0}
 			class="btn btn-primary flex flex-1 items-center justify-center"
-			onclick={save_post}
+			onclick={save_service}
 		>
-			게시하기
+			수정하기
 		</button>
 	</div>
 </div>
