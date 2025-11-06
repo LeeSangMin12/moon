@@ -35,19 +35,18 @@
 
 	let { data } = $props();
 
-	// Props에서 직접 사용
-	let { community, community_participants } = $derived(data);
+	// Props에서 직접 사용 (읽기 전용)
+	let community = $derived(data.community);
+	let community_participants = $derived(data.community_participants);
+	let community_members_state = $derived(data.community_members);
+	let participant_count = $derived(data.community.community_members?.[0]?.count ?? 0);
 
-	// 로컬 상태로 관리 (서버 invalidate 시 동기화 필요)
-	let posts = $state(data.posts);
-	let community_members_state = $state(data.community_members);
-	let participant_count = $state(data.community.community_members?.[0]?.count ?? 0);
+	// 로컬에서 수정 가능한 데이터만 state로 관리
+	let posts = $state([]);
 
-	// data 변경 시 로컬 상태 동기화 (invalidate 후 서버 데이터 반영)
+	// data.posts 변경 시 동기화 (invalidate 후 서버 데이터 반영)
 	$effect(() => {
 		posts = data.posts;
-		community_members_state = data.community_members;
-		participant_count = data.community.community_members?.[0]?.count ?? 0;
 	});
 
 	let is_participants_modal_open = $state(false);

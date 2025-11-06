@@ -16,6 +16,7 @@
 	} from '$lib/utils/common';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import {
 		RiArrowLeftSLine,
 		RiCloseLine,
@@ -37,15 +38,15 @@
 
 	// Props & Data
 	let { data } = $props();
-	let {
-		service,
-		service_likes,
-		service_reviews,
-		can_write_review,
-		review_order_id,
-		my_review,
-		service_options,
-	} = $state(data);
+	let { service, service_options } = $state(data);
+
+	// 클라이언트에서 lazy load할 데이터
+	let service_likes = $state([]);
+	let service_reviews = $state([]);
+	let can_write_review = $state(false);
+	let review_order_id = $state(null);
+	let my_review = $state(null);
+	let is_loading_secondary_data = $state(true);
 
 	// Modal States
 	let is_options_modal_open = $state(false); // 옵션 선택 모달
@@ -441,6 +442,32 @@
 		if (!check_login(me)) return;
 		is_service_config_modal_open = true;
 	};
+
+	// 나머지 데이터를 클라이언트에서 lazy load
+	onMount(async () => {
+		try {
+			const [likes, reviews, permission, user_review] = await Promise.all([
+				me?.id ? api.service_likes.select_by_user_id(me.id) : Promise.resolve([]),
+				api.service_reviews.select_by_service_id(service.id),
+				me?.id
+					? api.service_reviews.can_write_review(service.id, me.id)
+					: Promise.resolve({ can_write: false, order_id: null }),
+				me?.id
+					? api.service_reviews.select_by_service_and_reviewer(service.id, me.id)
+					: Promise.resolve(null),
+			]);
+
+			service_likes = likes;
+			service_reviews = reviews;
+			can_write_review = permission.can_write;
+			review_order_id = permission.order_id;
+			my_review = user_review;
+		} catch (error) {
+			console.error('Failed to load secondary data:', error);
+		} finally {
+			is_loading_secondary_data = false;
+		}
+	});
 </script>
 
 <svelte:head>

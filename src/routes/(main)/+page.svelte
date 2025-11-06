@@ -53,18 +53,34 @@
 		Post = PostModule.default;
 		Icon = IconModule.default;
 
-		// Initialize data (no longer using streaming)
+		// Initialize posts immediately
 		posts = data.posts || [];
 		last_post_id = posts[posts.length - 1]?.id || '';
 
-		joined_communities = data.joined_communities || [];
-		tabs = ['최신', ...joined_communities.map((c) => c.title)];
-
 		infinite_scroll();
 
-		// 초기 알림 미읽음 카운트 로드
-		refresh_unread_count();
+		// Lazy load secondary data
+		load_secondary_data();
 	});
+
+	const load_secondary_data = async () => {
+		try {
+			// Load communities and notification count in background
+			const [communities] = await Promise.all([
+				me?.id
+					? api.community_members.select_by_user_id(me.id).then(cms => cms.map(cm => cm.communities))
+					: Promise.resolve([]),
+			]);
+
+			joined_communities = communities;
+			tabs = ['최신', ...joined_communities.map((c) => c.title)];
+
+			// Load notification count
+			refresh_unread_count();
+		} catch (error) {
+			console.error('Failed to load secondary data:', error);
+		}
+	};
 
 	// 사용자 변경 시 미읽음 카운트 갱신
 	$effect(() => {

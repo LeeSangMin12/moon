@@ -13,17 +13,14 @@
 
 	let { service = [], service_likes = [], onLikeChanged } = $props();
 
-	// 로컬 상태: 좋아요 여부와 로딩 상태
-	let is_liked = $state(false);
+	// 로딩 상태만 state로 관리
 	let is_loading = $state(false);
 
 	// service_likes를 Set으로 변환하여 O(1) 조회
 	let liked_service_ids = $derived(new Set(service_likes.map((s) => s.service_id)));
 
-	// props 변경 시 로컬 상태 동기화
-	$effect(() => {
-		is_liked = liked_service_ids.has(service.id);
-	});
+	// 좋아요 여부는 $derived로 계산 (안티패턴 수정)
+	let is_liked = $derived(liked_service_ids.has(service.id));
 
 	const handle_like = async (service_id) => {
 		if (!check_login(me) || is_loading) return;

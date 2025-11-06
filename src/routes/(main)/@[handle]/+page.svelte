@@ -42,34 +42,59 @@
 
 	let { data } = $props();
 
-	// 서버에서 받은 읽기 전용 데이터 - $derived 사용
+	// 서버에서 받은 데이터 - $derived로 직접 사용
 	let user = $derived(data.user);
-	let following_count = $derived(data.following_count);
+	let posts = $derived(data.posts);
 
-	// 로컬에서 수정되는 데이터 - $state 사용
-	let posts = $state(data.posts);
-	let follower_count = $state(data.follower_count);
+	// 클라이언트에서 로드하는 데이터
+	let follower_count = $state(0);
+	let following_count = $state(0);
 
-	// 서버 데이터 변경 시 로컬 상태 동기화 (params 변경 시 load 함수가 재실행됨)
+	// user.id 변경 시에만 팔로우 카운트 로드 (적절한 $effect 사용)
 	$effect(() => {
-		posts = data.posts;
-		follower_count = data.follower_count;
+		if (!user?.id) return;
+		load_follow_counts(user.id);
 	});
+
+	const load_follow_counts = async (userId) => {
+		try {
+			const [follower, following] = await Promise.all([
+				api.user_follows.get_follower_count(userId),
+				api.user_follows.get_following_count(userId),
+			]);
+			follower_count = follower;
+			following_count = following;
+		} catch (error) {
+			console.error('Failed to load follow counts:', error);
+		}
+	};
 
 	let tabs = ['게시글', '댓글', '서비스', '받은리뷰'];
 	let selected = $state(0);
-	let selected_data = $state({
-		posts: data.posts || [],
-		post_comments: [],
-		services: [],
-		service_likes: [],
-		service_reviews: [],
-		expert_request_reviews: [],
+
+	// 각 탭별 데이터를 개별 state로 관리
+	let tab_posts = $state([]);
+	let tab_post_comments = $state([]);
+	let tab_services = $state([]);
+	let tab_service_likes = $state([]);
+	let tab_service_reviews = $state([]);
+	let tab_expert_request_reviews = $state([]);
+
+	// selected_data는 $derived로 계산
+	let selected_data = $derived({
+		posts: tab_posts,
+		post_comments: tab_post_comments,
+		services: tab_services,
+		service_likes: tab_service_likes,
+		service_reviews: tab_service_reviews,
+		expert_request_reviews: tab_expert_request_reviews,
 	});
 
-	// posts가 변경될 때 selected_data.posts도 업데이트
+	// posts가 로드되면 tab_posts 초기화
 	$effect(() => {
-		selected_data.posts = posts || [];
+		if (posts && posts.length > 0) {
+			tab_posts = posts;
+		}
 	});
 
 	let is_following = $state(false);
@@ -168,26 +193,22 @@
 	const load_tab_data = async (tab_index) => {
 		if (tab_index === 0) {
 			// 게시글 탭
-			selected_data.posts = await api.posts.select_by_user_id(user.id);
+			tab_posts = await api.posts.select_by_user_id(user.id);
 		} else if (tab_index === 1) {
 			// 댓글 탭
-			selected_data.post_comments =
-				await api.post_comments.select_by_user_id(user.id);
+			tab_post_comments = await api.post_comments.select_by_user_id(user.id);
 		} else if (tab_index === 2) {
 			// 서비스 탭
-			selected_data.services = await api.services.select_by_user_id(
-				user.id,
-			);
-			selected_data.service_likes =
-				await api.service_likes.select_by_user_id(user.id);
+			tab_services = await api.services.select_by_user_id(user.id);
+			tab_service_likes = await api.service_likes.select_by_user_id(user.id);
 		} else if (tab_index === 3) {
 			// 받은리뷰 탭 - 서비스 리뷰와 전문가 리뷰 모두 조회
 			const [service_reviews, expert_reviews] = await Promise.all([
 				api.service_reviews.select_by_service_author_id(user.id),
 				api.expert_request_reviews.select_by_expert_id(user.id),
 			]);
-			selected_data.service_reviews = service_reviews;
-			selected_data.expert_request_reviews = expert_reviews;
+			tab_service_reviews = service_reviews;
+			tab_expert_request_reviews = expert_reviews;
 		}
 	};
 
@@ -209,17 +230,16 @@
 
 	// Post 이벤트 핸들러 (composable 사용)
 	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
-		() => posts,
+		() => tab_posts,
 		(updated_posts) => {
-			posts = updated_posts;
-			selected_data.posts = updated_posts;
+			tab_posts = updated_posts;
 		},
 		me
 	);
 
 	// Service 좋아요 변경 핸들러
 	const handle_service_like_changed = ({ service_id, likes }) => {
-		selected_data.service_likes = likes;
+		tab_service_likes = likes;
 	};
 
 	const open_follow_modal = async (type) => {
