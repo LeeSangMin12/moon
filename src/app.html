@@ -30,20 +30,6 @@
 		</script>
 		<!-- End Google Tag Manager -->
 
-		<!-- Google Analytics -->
-		<script
-			async
-			src="https://www.googletagmanager.com/gtag/js?id=G-NW4YCE6L55"
-		></script>
-		<script>
-			window.dataLayer = window.dataLayer || [];
-			function gtag() {
-				dataLayer.push(arguments);
-			}
-			gtag('js', new Date());
-			gtag('config', 'G-NW4YCE6L55');
-		</script>
-
 		<!-- SEO meta tags -->
 		<title>외주할 땐 문 | 외주·사이드잡·풀타임 전문가 매칭 플랫폼</title>
 		<link rel="canonical" href="https://moon.it.kr" />
@@ -96,16 +82,6 @@
 
 		<!-- Preload critical resources -->
 		<link rel="preload" href="%sveltekit.assets%/favicon.png" as="image" />
-
-		<!-- Amplitude Analytics -->
-		<script src="https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"></script>
-		<script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.8.0-min.js.gz"></script>
-		<script>
-			window.amplitude.add(window.sessionReplay.plugin({ sampleRate: 1 }));
-			window.amplitude.init('abb3d09663149abdab499a9f7a871fe1', {
-				autocapture: { elementInteractions: true },
-			});
-		</script>
 
 		%sveltekit.head%
 	</head>
