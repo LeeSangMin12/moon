@@ -28,6 +28,8 @@ const DEFAULT_USER = {
 	moon_point: 0,
 	rating: 0,
 	website_url: '',
+	user_follows: [],
+	user_followers: [],
 };
 
 // ============================================================================

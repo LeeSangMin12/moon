@@ -81,12 +81,10 @@
 	 */
 	const go_next = async () => {
 		if (page_count === 1) {
-			const handle_check_duplicate =
-				await api.users.select_handle_check_duplicate(sign_up_form_data.handle);
+			const handle_exists =
+				await api.users.check_handle_exists(sign_up_form_data.handle);
 
-			console.log('handle_check_duplicate', handle_check_duplicate);
-
-			if (handle_check_duplicate?.handle) {
+			if (handle_exists) {
 				show_toast('error', '중복된 사용자 이름입니다.');
 				return;
 			}
