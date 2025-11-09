@@ -1,6 +1,6 @@
 <script>
 	import colors from '$lib/config/colors';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { comma } from '$lib/utils/common';
 	import {
 		getProposalStatusDisplay,
@@ -13,7 +13,7 @@
 	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 	import ExpertRequestCard from '$lib/components/ExpertRequestCard.svelte';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 
 	let { data } = $props();
 	let { my_requests, my_proposals } = $state(data);

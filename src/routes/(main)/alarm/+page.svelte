@@ -8,10 +8,10 @@
 	import Header from '$lib/components/ui/Header.svelte';
 
 	import colors from '$lib/config/colors';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 	let { notifications } = $state(data);

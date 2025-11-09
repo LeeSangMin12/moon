@@ -1,11 +1,15 @@
 <script>
+	import colors from '$lib/config/colors';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { goto, preloadData } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 
-	import colors from '$lib/config/colors';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	const me = get_user_context();
 
-	const { me } = get_user_context();
+	onMount(() => {
+		console.log(me);
+	});
 
 	// Preload data on hover/mouseenter for faster navigation
 	const handlePreload = (path) => {
@@ -20,7 +24,8 @@
 		onclick={() => goto('/')}
 		onmouseenter={() => handlePreload('/')}
 		ontouchstart={() => handlePreload('/')}
-		class="flex flex-col items-center gap-0.5">
+		class="flex flex-col items-center gap-0.5"
+	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			height="20px"

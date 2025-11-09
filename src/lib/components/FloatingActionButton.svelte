@@ -3,9 +3,9 @@
 	import colors from '$lib/config/colors';
 	import { check_login } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 	let { href } = $props();
 
 	const handleClick = () => {

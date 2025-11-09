@@ -1,7 +1,7 @@
 <script>
 	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
 	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
@@ -15,7 +15,7 @@
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
 
-	const { api } = get_api_context();
+	const api = get_api_context();
 
 	const TITLE = '서비스';
 

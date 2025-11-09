@@ -17,11 +17,11 @@
 
 	import colors from '$lib/config/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	const TITLE = '커뮤니티';
 

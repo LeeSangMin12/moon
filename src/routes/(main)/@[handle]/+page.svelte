@@ -23,7 +23,7 @@
 
 	import colors from '$lib/config/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
 
@@ -37,8 +37,8 @@
 		'기타',
 	];
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 

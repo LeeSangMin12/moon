@@ -3,7 +3,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -18,7 +18,7 @@
 	import SetPersonal from './_components/SetPersonal.svelte';
 
 	const { me, update: update_me } = get_user_context();
-	const { api } = get_api_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 	let { session } = $derived(data);

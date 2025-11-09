@@ -1,0 +1,216 @@
+/**
+ * 홈 페이지 데이터 관리 Composable
+ *
+ * 홈 페이지의 게시물, 커뮤니티, 알림 데이터를 관리합니다.
+ * 탭 전환, 무한스크롤, 알림 카운트 갱신 등의 로직을 캡슐화합니다.
+ *
+ * @param {Object} api - Supabase API 인스턴스
+ * @param {Object} me - 현재 로그인한 사용자 객체
+ * @param {Array} initial_posts - 초기 게시물 배열 (서버에서 로드된 데이터)
+ * @returns {Object} 홈 페이지 데이터 및 메서드
+ *
+ * @example
+ * const home_data = createHomeData(api, me, data.posts);
+ *
+ * // 무한스크롤 설정
+ * $effect(() => {
+ *   const cleanup = home_data.setup_infinite_scroll();
+ *   return cleanup;
+ * });
+ */
+export function createHomeData(api, me, initial_posts = []) {
+	// ===== State =====
+	/** @type {Array} 표시할 게시물 목록 */
+	let posts = $state(initial_posts);
+
+	/** @type {Array} 사용자가 가입한 커뮤니티 목록 */
+	let joined_communities = $state([]);
+
+	/** @type {Array} 탭 목록 (['최신', ...커뮤니티명]) */
+	let tabs = $state(['최신']);
+
+	/** @type {number} 현재 선택된 탭 인덱스 */
+	let selected = $state(0);
+
+	/** @type {number} 읽지 않은 알림 개수 */
+	let unread_count = $state(0);
+
+	/** @type {string} 무한스크롤용 마지막 게시물 ID */
+	let last_post_id = $state('');
+
+	/** @type {boolean} 무한스크롤 로딩 중 여부 */
+	let is_infinite_loading = $state(false);
+
+	/** @type {IntersectionObserver|null} 무한스크롤 옵저버 */
+	let observer = $state(null);
+
+	// ===== Initialization =====
+	/**
+	 * 초기 데이터 설정
+	 * posts와 last_post_id를 초기화합니다.
+	 */
+	function initialize_posts() {
+		posts = initial_posts;
+		last_post_id = posts[posts.length - 1]?.id || '';
+	}
+
+	/**
+	 * 보조 데이터 로딩 (커뮤니티, 알림)
+	 * 초기 렌더링 후 백그라운드에서 로드됩니다.
+	 */
+	async function load_secondary_data() {
+		try {
+			if (!me?.id) return;
+
+			// 사용자가 가입한 커뮤니티 로드
+			const community_members = await api.community_members.select_by_user_id(me.id);
+			joined_communities = community_members.map(cm => cm.communities);
+			tabs = ['최신', ...joined_communities.map(c => c.title)];
+
+			// 알림 카운트 로드
+			await refresh_unread_count();
+		} catch (error) {
+			console.error('Failed to load secondary data:', error);
+		}
+	}
+
+	// ===== Notification =====
+	/**
+	 * 읽지 않은 알림 개수 갱신
+	 */
+	async function refresh_unread_count() {
+		try {
+			if (!me?.id) return;
+			unread_count = await api.notifications.select_unread_count(me.id);
+		} catch (error) {
+			console.error('Failed to load unread notifications count:', error);
+		}
+	}
+
+	// ===== Posts Loading =====
+	/**
+	 * 선택된 탭에 따라 게시물 로드
+	 * @param {number} tab_index - 탭 인덱스 (0: 최신, 1+: 커뮤니티)
+	 */
+	async function load_posts_by_tab(tab_index) {
+		try {
+			const community_id = tab_index === 0
+				? ''
+				: (joined_communities[tab_index - 1]?.id ?? '');
+
+			const loaded_posts = await api.posts.select_infinite_scroll('', community_id, 10);
+			posts = loaded_posts;
+			last_post_id = loaded_posts.at(-1)?.id ?? '';
+		} catch (error) {
+			console.error('Failed to load posts:', error);
+		}
+	}
+
+	// ===== Infinite Scroll =====
+	/**
+	 * 무한스크롤 더보기 데이터 로드
+	 */
+	async function load_more_data() {
+		if (is_infinite_loading) return;
+
+		try {
+			is_infinite_loading = true;
+
+			const community_id = selected === 0
+				? ''
+				: (joined_communities[selected - 1]?.id ?? '');
+
+			const new_posts = await api.posts.select_infinite_scroll(
+				last_post_id,
+				community_id,
+				10
+			);
+
+			// 새로운 게시물이 있을 때만 추가
+			if (new_posts.length > 0) {
+				posts = [...posts, ...new_posts];
+				last_post_id = new_posts.at(-1)?.id ?? '';
+			}
+		} catch (error) {
+			console.error('Failed to load more posts:', error);
+		} finally {
+			is_infinite_loading = false;
+		}
+	}
+
+	/**
+	 * 무한스크롤 IntersectionObserver 설정
+	 * @returns {Function} cleanup 함수
+	 */
+	function setup_infinite_scroll() {
+		// 기존 observer 정리
+		if (observer) {
+			observer.disconnect();
+		}
+
+		const target = document.getElementById('infinite_scroll');
+		if (!target) {
+			console.warn('Infinite scroll target not found');
+			return () => {};
+		}
+
+		observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (
+						entry.isIntersecting &&
+						!is_infinite_loading &&
+						posts.length >= 10
+					) {
+						load_more_data();
+					}
+				});
+			},
+			{
+				rootMargin: '200px 0px',
+				threshold: 0.01,
+			}
+		);
+
+		observer.observe(target);
+
+		// cleanup 함수 반환
+		return () => {
+			if (observer) {
+				observer.disconnect();
+				observer = null;
+			}
+		};
+	}
+
+	// ===== Post Updates =====
+	/**
+	 * 게시물 배열 업데이트
+	 * 북마크, 좋아요 등 변경 시 사용
+	 * @param {Array} updated_posts - 업데이트된 게시물 배열
+	 */
+	function update_posts(updated_posts) {
+		posts = updated_posts;
+	}
+
+	// ===== Public API =====
+	return {
+		// State (읽기 전용으로 반환)
+		get posts() { return posts; },
+		get joined_communities() { return joined_communities; },
+		get tabs() { return tabs; },
+		get selected() { return selected; },
+		set selected(value) { selected = value; },
+		get unread_count() { return unread_count; },
+		get is_infinite_loading() { return is_infinite_loading; },
+
+		// Methods
+		initialize_posts,
+		load_secondary_data,
+		refresh_unread_count,
+		load_posts_by_tab,
+		load_more_data,
+		setup_infinite_scroll,
+		update_posts,
+	};
+}

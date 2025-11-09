@@ -1,6 +1,6 @@
 <script>
 	import colors from '$lib/config/colors';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -9,7 +9,7 @@
 
 	const TITLE = '이벤트';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 
 	let screen_size;
 </script>

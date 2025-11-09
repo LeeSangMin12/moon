@@ -7,9 +7,9 @@
 
 	import colors from '$lib/config/colors';
 	import { show_toast } from '$lib/utils/common';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 
 	let { data } = $props();
 	let { supabase } = $derived(data);

@@ -5,9 +5,9 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 
 	import colors from '$lib/config/colors';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 
 	const TITLE = '회원 정보 설정';
 

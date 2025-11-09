@@ -4,7 +4,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { goto } from '$app/navigation';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -15,8 +15,8 @@
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 	import Service from '$lib/components/Service.svelte';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let search_text = $state('');
 	let search_data = $state({

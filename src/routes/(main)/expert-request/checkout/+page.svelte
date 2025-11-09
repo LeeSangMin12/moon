@@ -3,7 +3,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import {
 		check_login,
 		comma,
@@ -17,8 +17,8 @@
 
 	import { update_global_store } from '$lib/store/global_store.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 	let { request } = $state(data);

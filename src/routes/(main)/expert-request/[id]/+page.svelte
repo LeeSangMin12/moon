@@ -4,7 +4,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { check_login, comma, show_toast } from '$lib/utils/common';
 	import {
 		ERROR_MESSAGES,
@@ -32,8 +32,8 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	const get_price_unit_label = (unit) => {
 		const unit_map = {
