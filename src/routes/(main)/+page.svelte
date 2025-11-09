@@ -98,9 +98,6 @@
 		}
 	};
 
-	// Cache posts by community to avoid unnecessary API calls
-	let posts_cache = $state(new Map());
-
 	$effect(() => {
 		// Track dependencies
 		const current_selected = selected;
@@ -112,26 +109,12 @@
 				? ''
 				: (current_communities[current_selected - 1]?.id ?? '');
 
-		// Check cache first
-		const cache_key = community_id || 'all';
-		if (posts_cache.has(cache_key)) {
-			const cached = posts_cache.get(cache_key);
-			posts = cached.posts;
-			last_post_id = cached.last_post_id;
-			return;
-		}
-
-		// Load from API only if not cached
+		// Load posts from API
 		api.posts
 			.select_infinite_scroll('', community_id, 10)
 			.then((initial_posts) => {
 				posts = initial_posts;
 				last_post_id = initial_posts.at(-1)?.id ?? '';
-				// Update cache
-				posts_cache.set(cache_key, {
-					posts: initial_posts,
-					last_post_id: initial_posts.at(-1)?.id ?? '',
-				});
 			});
 	});
 

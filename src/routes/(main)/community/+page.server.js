@@ -1,16 +1,9 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ params, parent, locals: { supabase }, setHeaders }) {
+export async function load({ params, parent, locals: { supabase } }) {
 	const api = create_api(supabase);
 
 	const { user } = await parent();
-
-	// 커뮤니티 목록은 공개 데이터이므로 캐시 활성화
-	setHeaders({
-		'Cache-Control': user?.id
-			? 'private, max-age=60, must-revalidate'
-			: 'public, max-age=300, stale-while-revalidate=600',
-	});
 
 	console.log('[Community Page] User ID:', user?.id);
 

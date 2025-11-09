@@ -1,11 +1,7 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ parent, locals: { supabase }, setHeaders }) {
+export async function load({ parent, locals: { supabase } }) {
 	const api = create_api(supabase);
-
-	setHeaders({
-		'Cache-Control': 'private, max-age=0, must-revalidate',
-	});
 
 	const { user } = await parent();
 

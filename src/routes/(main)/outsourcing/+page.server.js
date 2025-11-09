@@ -1,12 +1,7 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ locals: { supabase }, setHeaders }) {
+export async function load({ locals: { supabase } }) {
 	const api = create_api(supabase);
-
-	// 공개 데이터이지만 짧은 캐시 시간 설정
-	setHeaders({
-		'Cache-Control': 'public, max-age=60, must-revalidate',
-	});
 
 	// 초기 expert_requests 데이터 로드
 	const expert_requests_response = await api.expert_requests.select_infinite_scroll('');
