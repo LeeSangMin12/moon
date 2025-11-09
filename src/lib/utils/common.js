@@ -284,30 +284,3 @@ export const check_login = (user) => {
 	}
 	return true;
 };
-
-// 서비스 워커 관련 유틸리티 함수들
-export const swUtils = {
-	// 이미지 캐시 강제 갱신
-	clearImageCache: async () => {
-		if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-			navigator.serviceWorker.controller.postMessage({
-				type: 'CLEAR_IMAGE_CACHE',
-			});
-		}
-	},
-
-	// 서비스 워커 업데이트 강제 적용
-	skipWaiting: () => {
-		if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-			navigator.serviceWorker.controller.postMessage({
-				type: 'SKIP_WAITING',
-			});
-		}
-	},
-
-	// 이미지 URL에 캐시 버스터 추가
-	addCacheBuster: (url, timestamp = Date.now()) => {
-		const separator = url.includes('?') ? '&' : '?';
-		return `${url}${separator}v=${timestamp}`;
-	},
-};
