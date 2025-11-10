@@ -1,25 +1,37 @@
 <script>
-	import { onMount } from 'svelte';
-
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ExpertRequestCard from '$lib/components/ExpertRequestCard.svelte';
 	import FloatingActionButton from '$lib/components/FloatingActionButton.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
 	/**
+	 * @typedef {Object} ExpertRequestData
+	 * @property {Array} expert_requests - 외주 요청 목록
+	 * @property {boolean} is_infinite_loading - 무한 스크롤 로딩 상태
+	 */
+
+	/**
+	 * @typedef {Object} InfiniteScroll
+	 * @property {Function} initializeLastId - lastId 초기화 함수
+	 * @property {Function} setupObserver - 무한 스크롤 옵저버 설정 함수
+	 * @property {string} lastId - 마지막 아이템 ID
+	 */
+
+	/**
 	 * @typedef {Object} Props
-	 * @property {Object} expert_request_data - 외주 요청 데이터 객체
-	 * @property {Object} infinite_scroll - 무한 스크롤 객체
-	 * @property {string} job_type - 작업 유형 ('sidejob' | 'fulltime')
+	 * @property {ExpertRequestData} expert_request_data - 외주 요청 데이터 객체
+	 * @property {InfiniteScroll} infinite_scroll - 무한 스크롤 객체
+	 * @property {('sidejob'|'fulltime')} job_type - 작업 유형
 	 */
 
 	/** @type {Props} */
 	let { expert_request_data, infinite_scroll, job_type } = $props();
 
 	/**
-	 * 컴포넌트 마운트 시 무한 스크롤 초기화
+	 * 무한 스크롤 초기화 및 옵저버 설정
+	 * 컴포넌트 마운트 시 자동 실행, 언마운트 시 cleanup
 	 */
-	onMount(() => {
+	$effect(() => {
 		infinite_scroll.initializeLastId();
 		const cleanup = infinite_scroll.setupObserver();
 		return cleanup;

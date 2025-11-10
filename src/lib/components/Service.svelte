@@ -46,7 +46,7 @@
 
 		try {
 			await api.service_likes[action](service_id, me.id);
-			show_toast(success_message, 'success');
+			show_toast('success', success_message);
 
 			const updated_likes = current_status
 				? service_likes.filter((s) => s.service_id !== service_id)
@@ -55,7 +55,7 @@
 			onLikeChanged?.({ service_id, likes: updated_likes });
 		} catch (error) {
 			console.error(`Failed to ${action} service like:`, error);
-			show_toast('좋아요 처리에 실패했어요.', 'error');
+			show_toast('error', '좋아요 처리에 실패했어요.');
 		} finally {
 			is_loading = false;
 		}

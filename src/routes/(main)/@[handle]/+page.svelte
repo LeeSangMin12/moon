@@ -192,11 +192,43 @@
 		}
 	};
 
+	/**
+	 * 게시물에 사용자 상호작용 데이터 추가
+	 * @param {Array} post_list - 게시물 배열
+	 * @returns {Promise<Array>} votes/bookmarks가 포함된 게시물 배열
+	 */
+	const attach_user_interactions = async (post_list) => {
+		if (!me?.id || post_list.length === 0) {
+			return post_list;
+		}
+
+		try {
+			const [all_votes, all_bookmarks] = await Promise.all([
+				api.post_votes.select_by_user_id(me.id),
+				api.post_bookmarks.select_by_user_id_lightweight(me.id),
+			]);
+
+			const post_ids = new Set(post_list.map((p) => p.id));
+			const votes = all_votes.filter((v) => post_ids.has(v.post_id));
+			const bookmarks = all_bookmarks.filter((b) => post_ids.has(b.post_id));
+
+			return post_list.map((post) => ({
+				...post,
+				post_votes: votes.filter((v) => v.post_id === post.id),
+				post_bookmarks: bookmarks.filter((b) => b.post_id === post.id),
+			}));
+		} catch (error) {
+			console.error('Failed to attach user interactions:', error);
+			return post_list;
+		}
+	};
+
 	const load_tab_data = async (tab_index) => {
 		if (!api?.posts) return;
 		if (tab_index === 0) {
 			// 게시글 탭
-			tab_posts = await api.posts.select_by_user_id(user.id);
+			const loaded_posts = await api.posts.select_by_user_id(user.id);
+			tab_posts = await attach_user_interactions(loaded_posts);
 		} else if (tab_index === 1) {
 			// 댓글 탭
 			tab_post_comments = await api.post_comments.select_by_user_id(user.id);

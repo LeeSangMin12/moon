@@ -14,16 +14,10 @@
 	import Banner from '../service/Banner.svelte';
 	import SearchInput from '../service/SearchInput.svelte';
 
-	/**
-	 * @typedef {Object} ExpertRequestData
-	 * @property {Array} expert_requests - 외주 요청 목록
-	 * @property {boolean} is_infinite_loading - 무한 스크롤 로딩 상태
-	 * @property {Function} load_more_expert_requests - 추가 데이터 로드 함수
-	 */
-
-	const api = get_api_context();
+	// ===== Constants =====
 	const TITLE = '외주';
 	const TABS = ['사이드잡', '풀타임잡'];
+	const JOB_TYPES = ['sidejob', 'fulltime'];
 	const BANNER_IMAGES = [
 		{
 			title: '5,000_coupon',
@@ -42,80 +36,106 @@
 		},
 	];
 
+	// ===== Context =====
+	const api = get_api_context();
+
+	// ===== Props =====
 	let { data } = $props();
+
+	// ===== State =====
 	let selected_tab = $state(0);
 	let search_text = $state('');
 
-	// job_type별로 데이터와 무한 스크롤 분리 (재생성 방지)
+	// ===== Helper Functions =====
+	/**
+	 * 무한 스크롤 설정을 생성하는 헬퍼 함수
+	 * @param {Object} data - expert request 데이터 객체
+	 * @returns {Object} 무한 스크롤 설정 객체
+	 */
+	function create_infinite_scroll_config(data) {
+		return {
+			items: {
+				get value() {
+					return data.expert_requests;
+				},
+			},
+			loadMore: data.load_more_expert_requests,
+			isLoading: {
+				get value() {
+					return data.is_infinite_loading;
+				},
+				set value(val) {
+					data.is_infinite_loading = val;
+				},
+			},
+			targetId: 'expert_infinite_scroll',
+		};
+	}
+
+	// ===== Data Management =====
 	const sidejob_data = create_expert_request_data(
 		{ expert_requests: data.sidejob_requests || [] },
 		api,
-		'sidejob'
+		JOB_TYPES[0]
 	);
 
 	const fulltime_data = create_expert_request_data(
 		{ expert_requests: data.fulltime_requests || [] },
 		api,
-		'fulltime'
+		JOB_TYPES[1]
 	);
 
-	const sidejob_infinite_scroll = create_infinite_scroll({
-		items: {
-			get value() {
-				return sidejob_data.expert_requests;
-			},
-		},
-		loadMore: sidejob_data.load_more_expert_requests,
-		isLoading: {
-			get value() {
-				return sidejob_data.is_infinite_loading;
-			},
-			set value(val) {
-				sidejob_data.is_infinite_loading = val;
-			},
-		},
-		targetId: 'expert_infinite_scroll',
-	});
+	const sidejob_infinite_scroll = create_infinite_scroll(create_infinite_scroll_config(sidejob_data));
+	const fulltime_infinite_scroll = create_infinite_scroll(create_infinite_scroll_config(fulltime_data));
 
-	const fulltime_infinite_scroll = create_infinite_scroll({
-		items: {
-			get value() {
-				return fulltime_data.expert_requests;
-			},
-		},
-		loadMore: fulltime_data.load_more_expert_requests,
-		isLoading: {
-			get value() {
-				return fulltime_data.is_infinite_loading;
-			},
-			set value(val) {
-				fulltime_data.is_infinite_loading = val;
-			},
-		},
-		targetId: 'expert_infinite_scroll',
-	});
-
-	// 현재 선택된 탭의 데이터 가져오기
+	// ===== Derived State =====
+	/**
+	 * 현재 선택된 탭의 데이터
+	 * @type {Object}
+	 */
 	const current_data = $derived(selected_tab === 0 ? sidejob_data : fulltime_data);
+
+	/**
+	 * 현재 선택된 탭의 무한 스크롤 설정
+	 * @type {Object}
+	 */
 	const current_infinite_scroll = $derived(
 		selected_tab === 0 ? sidejob_infinite_scroll : fulltime_infinite_scroll
 	);
-	const current_job_type = $derived(selected_tab === 0 ? 'sidejob' : 'fulltime');
 
 	/**
-	 * 검색 핸들러
+	 * 현재 선택된 작업 유형
+	 * @type {string}
+	 */
+	const current_job_type = $derived(JOB_TYPES[selected_tab]);
+
+	/**
+	 * 현재 탭의 초기 데이터
+	 * @type {Array}
+	 */
+	const initial_requests = $derived(
+		selected_tab === 0 ? data.sidejob_requests : data.fulltime_requests
+	);
+
+	// ===== Event Handlers =====
+	/**
+	 * 검색 실행 핸들러
+	 * 검색어가 있으면 검색, 없으면 초기 데이터로 복원
+	 * @returns {Promise<void>}
 	 */
 	const handle_search = async () => {
-		if (search_text.trim()) {
-			const results = await api.expert_requests.select_by_search(search_text);
+		const trimmed = search_text.trim();
+
+		if (trimmed) {
+			const results = await api.expert_requests.select_by_search(trimmed);
 			current_data.expert_requests = results;
 		} else {
-			// 검색어가 없으면 초기 데이터로 복원
-			current_data.expert_requests =
-				selected_tab === 0 ? data.sidejob_requests : data.fulltime_requests;
+			current_data.expert_requests = initial_requests;
 		}
-		current_infinite_scroll.lastId =
-			current_data.expert_requests[current_data.expert_requests.length - 1]?.id || '';
+
+		// 무한 스크롤 lastId 업데이트
+		const last_request = current_data.expert_requests[current_data.expert_requests.length - 1];
+		current_infinite_scroll.lastId = last_request?.id || '';
 	};
 </script>
 

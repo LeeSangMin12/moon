@@ -51,9 +51,22 @@ export function create_home_data(api, me, initial_posts = []) {
 	/**
 	 * 초기 데이터 설정
 	 * posts와 last_post_id를 초기화합니다.
+	 * 서버에서 이미 votes/bookmarks가 있으면 그대로 사용합니다.
 	 */
-	function initialize_posts() {
-		posts = initial_posts;
+	async function initialize_posts() {
+		// 서버에서 이미 votes/bookmarks가 있는지 확인
+		const has_interactions = initial_posts.length > 0 &&
+			initial_posts[0].hasOwnProperty('post_votes') &&
+			initial_posts[0].hasOwnProperty('post_bookmarks');
+
+		if (has_interactions) {
+			// 이미 서버에서 붙여서 왔으면 그대로 사용
+			posts = initial_posts;
+		} else {
+			// 없으면 클라이언트에서 조회
+			posts = await attach_user_interactions(initial_posts);
+		}
+
 		last_post_id = posts[posts.length - 1]?.id || '';
 	}
 
@@ -92,6 +105,37 @@ export function create_home_data(api, me, initial_posts = []) {
 
 	// ===== Posts Loading =====
 	/**
+	 * 사용자의 투표/북마크 데이터를 게시물에 합치기
+	 * @param {Array} post_list - 게시물 배열
+	 * @returns {Promise<Array>} votes/bookmarks가 포함된 게시물 배열
+	 */
+	async function attach_user_interactions(post_list) {
+		if (!me?.id || post_list.length === 0) {
+			return post_list;
+		}
+
+		try {
+			const [all_votes, all_bookmarks] = await Promise.all([
+				api.post_votes.select_by_user_id(me.id),
+				api.post_bookmarks.select_by_user_id_lightweight(me.id),
+			]);
+
+			const post_ids = new Set(post_list.map((p) => p.id));
+			const votes = all_votes.filter((v) => post_ids.has(v.post_id));
+			const bookmarks = all_bookmarks.filter((b) => post_ids.has(b.post_id));
+
+			return post_list.map((post) => ({
+				...post,
+				post_votes: votes.filter((v) => v.post_id === post.id),
+				post_bookmarks: bookmarks.filter((b) => b.post_id === post.id),
+			}));
+		} catch (error) {
+			console.error('Failed to attach user interactions:', error);
+			return post_list;
+		}
+	}
+
+	/**
 	 * 선택된 탭에 따라 게시물 로드
 	 * @param {number} tab_index - 탭 인덱스 (0: 최신, 1+: 커뮤니티)
 	 */
@@ -101,12 +145,16 @@ export function create_home_data(api, me, initial_posts = []) {
 		is_tab_loading = true;
 
 		try {
-			const community_id = tab_index === 0
-				? ''
-				: (joined_communities[tab_index - 1]?.id ?? '');
+			const community_id =
+				tab_index === 0 ? '' : joined_communities[tab_index - 1]?.id ?? '';
 
-			const loaded_posts = await api.posts.select_infinite_scroll('', community_id, 10);
-			posts = loaded_posts;
+			const loaded_posts = await api.posts.select_infinite_scroll(
+				'',
+				community_id,
+				10,
+			);
+
+			posts = await attach_user_interactions(loaded_posts);
 			last_post_id = loaded_posts.at(-1)?.id ?? '';
 		} catch (error) {
 			console.error('Failed to load posts:', error);
@@ -125,18 +173,18 @@ export function create_home_data(api, me, initial_posts = []) {
 		try {
 			is_infinite_loading = true;
 
-			const community_id = selected === 0
-				? ''
-				: (joined_communities[selected - 1]?.id ?? '');
+			const community_id =
+				selected === 0 ? '' : joined_communities[selected - 1]?.id ?? '';
 
 			const new_posts = await api.posts.select_infinite_scroll(
 				last_post_id,
 				community_id,
-				10
+				10,
 			);
 
 			if (new_posts.length > 0) {
-				posts = [...posts, ...new_posts];
+				const posts_with_interactions = await attach_user_interactions(new_posts);
+				posts = [...posts, ...posts_with_interactions];
 				last_post_id = new_posts.at(-1)?.id ?? '';
 			}
 		} catch (error) {

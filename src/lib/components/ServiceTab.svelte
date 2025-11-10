@@ -15,6 +15,16 @@
 	 */
 	let { serviceData, infiniteScroll } = $props();
 
+	/**
+	 * Handles like status change from Service component
+	 * @param {Object} event - Like change event
+	 * @param {string} event.service_id - Service ID
+	 * @param {Array} event.likes - Updated likes array
+	 */
+	const handleLikeChanged = ({ service_id, likes }) => {
+		serviceData.serviceLikes = likes;
+	};
+
 	$effect(() => {
 		infiniteScroll.initializeLastId();
 		const observer = infiniteScroll.setupObserver();
@@ -28,7 +38,7 @@
 <section>
 	<div class="mt-4 grid grid-cols-2 gap-4 px-4 sm:grid-cols-3">
 		{#each serviceData.services as service}
-			<Service {service} service_likes={serviceData.serviceLikes} />
+			<Service {service} service_likes={serviceData.serviceLikes} onLikeChanged={handleLikeChanged} />
 		{/each}
 	</div>
 

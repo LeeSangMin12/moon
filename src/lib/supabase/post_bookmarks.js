@@ -36,6 +36,11 @@ export const create_post_bookmarks_api = (supabase) => ({
 
 	/**
 	 * Gets all bookmarks for a user with full post details (for bookmark page)
+	 *
+	 * 성능 최적화:
+	 * - post_votes, post_bookmarks 제거 (별도 API로 현재 사용자 것만 로드)
+	 * - 모든 사용자의 투표/북마크 대신 필요한 것만 가져와 99% 데이터 절감
+	 *
 	 * @param {string} user_id - User ID
 	 * @returns {Promise<Array>} Array of bookmarks with full post data
 	 */
@@ -49,11 +54,11 @@ export const create_post_bookmarks_api = (supabase) => ({
 					id,
 					title,
 					content,
+					images,
+					like_count,
 					created_at,
 					users:author_id(id, handle, name, avatar_url),
 					communities:community_id(id, title, slug),
-					post_votes(user_id, vote),
-					post_bookmarks(user_id),
 					post_comments(count)
 				)
 			`,
