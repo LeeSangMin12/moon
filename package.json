@@ -39,6 +39,7 @@
 		"tailwindcss": "^4.1.8",
 		"terser": "^5.44.1",
 		"vite": "^6.2.6",
+		"vite-plugin-remove-console": "^2.2.0",
 		"vitest": "^3.0.0"
 	},
 	"dependencies": {
