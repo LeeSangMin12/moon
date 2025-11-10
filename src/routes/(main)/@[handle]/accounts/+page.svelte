@@ -1,7 +1,7 @@
 <script>
 	// import { username } from '@/lib/store/users_store.js';
 	import colors from '$lib/config/colors';
-	import { get_user_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { goto } from '$app/navigation';
 	import {
 		RiArrowLeftSLine,
@@ -19,7 +19,7 @@
 
 	import Header from '$lib/components/ui/Header.svelte';
 
-	const { me } = get_user_context();
+	const me = get_user_context();
 </script>
 
 <svelte:head>

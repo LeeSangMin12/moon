@@ -1,26 +1,33 @@
 import { create_api } from '$lib/supabase/api';
 
-export async function load({ params, parent, locals: { supabase }, setHeaders }) {
+/**
+ * Server-side load function for service listing page
+ * Implements streaming for optimal performance:
+ * - Critical data (services) loads immediately for SSR
+ * - Optional data (likes) streams after initial render
+ *
+ * @param {Object} params - Route parameters
+ * @param {Function} parent - Parent layout data loader
+ * @param {Object} locals - Server-side locals
+ * @param {Object} locals.supabase - Supabase client instance
+ * @returns {Promise<Object>} Page data with services and streamed likes
+ */
+export async function load({ params, parent, locals: { supabase } }) {
 	const api = create_api(supabase);
-
 	const { user } = await parent();
 
-	// 로그인한 사용자는 private 캐시, 미로그인 사용자는 public 캐시
-	setHeaders({
-		'Cache-Control': user?.id
-			? 'private, max-age=60, must-revalidate'
-			: 'public, max-age=300, stale-while-revalidate=600',
-	});
+	const services = await api.services.select_infinite_scroll('', 10);
 
-	// Parallel queries
-	const [services, service_likes] = await Promise.all([
-		api.services.select_infinite_scroll(''),
-		user?.id ? api.service_likes.select_by_user_id(user.id) : Promise.resolve([])
-	]);
+	const result = { services };
 
-	return {
-		services,
-		service_likes,
-		expert_requests: [], // Load lazily on tab switch
-	};
+	if (user?.id) {
+		result.service_likes = api.service_likes
+			.select_by_user_id(user.id)
+			.catch((error) => {
+				console.error('Failed to load service likes:', error);
+				return [];
+			});
+	}
+
+	return result;
 }

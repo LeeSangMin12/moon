@@ -1,10 +1,10 @@
 <script>
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 	import colors from '$lib/config/colors';
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { goto } from '$app/navigation';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -15,8 +15,8 @@
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
 	import Service from '$lib/components/Service.svelte';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let search_text = $state('');
 	let search_data = $state({
@@ -31,11 +31,43 @@
 	let tabs = ['게시글', '커뮤니티', '서비스', '프로필'];
 	let selected = $state(0);
 
+	/**
+	 * 게시물에 사용자 상호작용 데이터 추가
+	 * @param {Array} post_list - 게시물 배열
+	 * @returns {Promise<Array>} votes/bookmarks가 포함된 게시물 배열
+	 */
+	const attach_user_interactions = async (post_list) => {
+		if (!me?.id || post_list.length === 0) {
+			return post_list;
+		}
+
+		try {
+			const [all_votes, all_bookmarks] = await Promise.all([
+				api.post_votes.select_by_user_id(me.id),
+				api.post_bookmarks.select_by_user_id_lightweight(me.id),
+			]);
+
+			const post_ids = new Set(post_list.map((p) => p.id));
+			const votes = all_votes.filter((v) => post_ids.has(v.post_id));
+			const bookmarks = all_bookmarks.filter((b) => post_ids.has(b.post_id));
+
+			return post_list.map((post) => ({
+				...post,
+				post_votes: votes.filter((v) => v.post_id === post.id),
+				post_bookmarks: bookmarks.filter((b) => b.post_id === post.id),
+			}));
+		} catch (error) {
+			console.error('Failed to attach user interactions:', error);
+			return post_list;
+		}
+	};
+
 	const handle_search = async () => {
 		if (search_text === '') return;
 
 		if (selected === 0) {
-			search_data.posts = await api.posts.select_by_search(search_text);
+			const posts = await api.posts.select_by_search(search_text);
+			search_data.posts = await attach_user_interactions(posts);
 		} else if (selected === 1) {
 			search_data.communities =
 				await api.communities.select_by_search(search_text);
@@ -68,13 +100,23 @@
 	};
 
 	// Post 이벤트 핸들러 (composable 사용)
-	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
 		() => search_data.posts,
 		(updated_posts) => {
 			search_data.posts = updated_posts;
 		},
 		me,
 	);
+
+	/**
+	 * 서비스 좋아요 상태 변경 핸들러
+	 * @param {Object} event - 좋아요 변경 이벤트
+	 * @param {string} event.service_id - 서비스 ID
+	 * @param {Array} event.likes - 업데이트된 좋아요 배열
+	 */
+	const handle_service_like_changed = ({ service_id, likes }) => {
+		search_data.service_likes = likes;
+	};
 </script>
 
 <svelte:head>
@@ -144,7 +186,7 @@
 	{:else if selected === 2 && search_data.services.length > 0}
 		<div class="mt-4 grid grid-cols-2 gap-4 px-4">
 			{#each search_data.services as service}
-				<Service {service} service_likes={search_data.service_likes} />
+				<Service {service} service_likes={search_data.service_likes} onLikeChanged={handle_service_like_changed} />
 			{/each}
 		</div>
 	{:else if selected === 3 && search_data.profiles.length > 0}

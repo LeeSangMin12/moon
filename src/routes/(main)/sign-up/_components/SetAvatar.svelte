@@ -3,11 +3,11 @@
 	import profile_png from '$lib/img/common/user/profile.png';
 
 	import { show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { avatar_url } = $props();
 
@@ -53,9 +53,21 @@
 				<div class="avatar relative">
 					<div class="w-24 rounded-full">
 						{#if avatar_url}
-							<img src={avatar_url} alt="user_profile_png" />
+							<img
+								src={avatar_url}
+								alt="사용자 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
+							/>
 						{:else}
-							<img src={profile_png} alt="user_profile_png" />
+							<img
+								src={profile_png}
+								alt="기본 사용자 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
+							/>
 						{/if}
 					</div>
 

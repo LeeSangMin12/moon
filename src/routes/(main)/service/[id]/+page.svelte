@@ -6,7 +6,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import profile_png from '$lib/img/common/user/profile.png';
 	import {
 		check_login,
@@ -14,6 +14,7 @@
 		copy_to_clipboard,
 		show_toast,
 	} from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -33,8 +34,8 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	// Props & Data
 	let { data } = $props();
@@ -648,9 +649,12 @@
 								<div class="flex items-start justify-between">
 									<div class="flex items-center">
 										<img
-											src={review.reviewer.avatar_url || '/favicon.png'}
+											src={optimize_avatar(review.reviewer.avatar_url)}
 											alt={review.reviewer.name}
 											class="mr-3 aspect-square h-8 w-8 rounded-full object-cover"
+											loading="lazy"
+											width="32"
+											height="32"
 										/>
 										<div>
 											<p class="text-sm font-medium">

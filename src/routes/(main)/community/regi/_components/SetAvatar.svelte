@@ -33,10 +33,19 @@
 						{#if avatar_url}
 							<img
 								src={avatar_url.uri ?? avatar_url}
-								alt="community_profile_png"
+								alt="커뮤니티 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
 							/>
 						{:else}
-							<img src={logo_png} alt="community_profile_png" />
+							<img
+								src={logo_png}
+								alt="기본 커뮤니티 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
+							/>
 						{/if}
 					</div>
 

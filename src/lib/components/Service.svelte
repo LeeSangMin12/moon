@@ -1,70 +1,61 @@
 <script>
+	/**
+	 * Service card component
+	 * @component
+	 * Displays a service with image, title, rating, price, and like functionality
+	 */
 	import { RiHeartFill, RiStarFill } from 'svelte-remixicon';
-
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import StarRating from '$lib/components/ui/StarRating.svelte';
 
 	import colors from '$lib/config/colors';
 	import { check_login, comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
+	/**
+	 * @typedef {Object} Props
+	 * @property {Object} service - Service data
+	 * @property {Array} service_likes - Array of service likes
+	 * @property {Function} [onLikeChanged] - Callback when like status changes
+	 */
 	let { service = [], service_likes = [], onLikeChanged } = $props();
 
-	// 로딩 상태만 state로 관리
 	let is_loading = $state(false);
 
-	// service_likes를 Set으로 변환하여 O(1) 조회
+	/** @type {Set<string>} Liked service IDs for O(1) lookup */
 	let liked_service_ids = $derived(new Set(service_likes.map((s) => s.service_id)));
 
-	// 좋아요 여부는 $derived로 계산 (안티패턴 수정)
+	/** @type {boolean} Current like status */
 	let is_liked = $derived(liked_service_ids.has(service.id));
 
-	const handle_like = async (service_id) => {
+	/**
+	 * Toggles like status for the service
+	 * Implements optimistic UI updates with rollback on error
+	 * @param {string} service_id - Service ID to toggle like
+	 * @param {boolean} current_status - Current like status
+	 */
+	const toggle_like = async (service_id, current_status) => {
 		if (!check_login(me) || is_loading) return;
 
-		// 낙관적 업데이트: UI를 즉시 변경
-		is_liked = true;
 		is_loading = true;
+		const action = current_status ? 'delete' : 'insert';
+		const success_message = current_status
+			? '서비스 좋아요를 취소했어요!'
+			: '서비스 좋아요를 눌렀어요!';
 
 		try {
-			await api.service_likes.insert(service_id, me.id);
-			show_toast('success', '서비스 좋아요를 눌렀어요!');
+			await api.service_likes[action](service_id, me.id);
+			show_toast('success', success_message);
 
-			// 부모 컴포넌트에 알림
-			const updated_likes = [...service_likes, { service_id }];
+			const updated_likes = current_status
+				? service_likes.filter((s) => s.service_id !== service_id)
+				: [...service_likes, { service_id }];
+
 			onLikeChanged?.({ service_id, likes: updated_likes });
 		} catch (error) {
-			// 실패 시 롤백
-			is_liked = false;
-			console.error('Failed to like service:', error);
+			console.error(`Failed to ${action} service like:`, error);
 			show_toast('error', '좋아요 처리에 실패했어요.');
-		} finally {
-			is_loading = false;
-		}
-	};
-
-	const handle_unlike = async (service_id) => {
-		if (!check_login(me) || is_loading) return;
-
-		// 낙관적 업데이트: UI를 즉시 변경
-		is_liked = false;
-		is_loading = true;
-
-		try {
-			await api.service_likes.delete(service_id, me.id);
-			show_toast('success', '서비스 좋아요를 취소했어요!');
-
-			// 부모 컴포넌트에 알림
-			const updated_likes = service_likes.filter((s) => s.service_id !== service_id);
-			onLikeChanged?.({ service_id, likes: updated_likes });
-		} catch (error) {
-			// 실패 시 롤백
-			is_liked = true;
-			console.error('Failed to unlike service:', error);
-			show_toast('error', '좋아요 취소에 실패했어요.');
 		} finally {
 			is_loading = false;
 		}
@@ -77,11 +68,14 @@
 	<a href={`/service/${service.id}`} class="relative block">
 		<div class="relative aspect-[4/3] w-full overflow-hidden">
 			<img
-				src={service.images[0].uri ||
+				src={service.images[0]?.uri ||
 					'https://img.daisyui.com/images/stock/photo-1625726411847-8cbb60cc71e6.webp'}
 				alt={service.title}
 				class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
 				loading="lazy"
+				decoding="async"
+				width="400"
+				height="300"
 			/>
 		</div>
 	</a>
@@ -106,15 +100,16 @@
 				₩{comma(service.price)}
 			</span>
 
-			{#if is_liked}
-				<button onclick={() => handle_unlike(service.id)} disabled={is_loading}>
-					<RiHeartFill size={18} color={colors.warning} />
-				</button>
-			{:else}
-				<button onclick={() => handle_like(service.id)} disabled={is_loading}>
-					<RiHeartFill size={18} color={colors.gray[400]} />
-				</button>
-			{/if}
+			<button
+				onclick={() => toggle_like(service.id, is_liked)}
+				disabled={is_loading}
+				aria-label={is_liked ? '좋아요 취소' : '좋아요'}
+			>
+				<RiHeartFill
+					size={18}
+					color={is_liked ? colors.warning : colors.gray[400]}
+				/>
+			</button>
 		</div>
 	</div>
 </div>

@@ -5,12 +5,12 @@
 
 	import colors from '$lib/config/colors';
 	import { comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
 	let { is_modal_open, receiver_id, receiver_name, post_id, onGiftSuccess } = $props();
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let charge_moon_form_data = $state({
 		point: 10,

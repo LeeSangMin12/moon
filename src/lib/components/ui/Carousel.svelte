@@ -58,7 +58,7 @@
 				>
 					<img
 						src={img}
-						alt=""
+						alt="게시물 이미지 {index + 1}"
 						class="pointer-events-none h-full max-h-80 w-full object-contain"
 						draggable="false"
 						loading={index === 0 ? 'eager' : 'lazy'}
@@ -120,9 +120,10 @@
 		>
 			<img
 				src={modalImage}
-				alt="크게 보기"
+				alt="이미지 확대보기"
 				class="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg"
 				loading="eager"
+				decoding="async"
 			/>
 			<button
 				class="absolute top-2 right-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"

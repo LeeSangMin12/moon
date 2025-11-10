@@ -3,7 +3,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -18,7 +18,7 @@
 	import SetPersonal from './_components/SetPersonal.svelte';
 
 	const { me, update: update_me } = get_user_context();
-	const { api } = get_api_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 	let { session } = $derived(data);
@@ -81,12 +81,10 @@
 	 */
 	const go_next = async () => {
 		if (page_count === 1) {
-			const handle_check_duplicate =
-				await api.users.select_handle_check_duplicate(sign_up_form_data.handle);
+			const handle_exists =
+				await api.users.check_handle_exists(sign_up_form_data.handle);
 
-			console.log('handle_check_duplicate', handle_check_duplicate);
-
-			if (handle_check_duplicate?.handle) {
+			if (handle_exists) {
 				show_toast('error', '중복된 사용자 이름입니다.');
 				return;
 			}

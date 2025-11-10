@@ -1,13 +1,14 @@
 <script>
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { create_home_data } from '$lib/composables/use_home_data.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 	import colors from '$lib/config/colors';
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { check_login } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import {
 		RiAddLine,
 		RiNotificationFill,
@@ -16,220 +17,123 @@
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import PostSkeleton from '$lib/components/ui/PostSkeleton.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 
-	import { update_global_store } from '$lib/store/global_store.js';
-
-	// Dynamic imports for code splitting
-	let Post = $state();
-	let Icon = $state();
-
-	const { me } = get_user_context();
-	const { api } = get_api_context();
-
+	// ===== Constants =====
 	const TITLE = '문';
+	const SKELETON_COUNT = 5;
+	const MAX_NOTIFICATION_BADGE = 99;
 
+	// ===== Context =====
+	const me = get_user_context();
+	const api = get_api_context();
+
+	// ===== Props =====
 	let { data } = $props();
-	// Handle streamed data - convert promises to reactive state
-	let joined_communities = $state([]);
-	let posts = $state([]);
 
-	let tabs = $state(['최신']);
-	let selected = $state(0);
-	let unread_count = $state(0);
+	// ===== Home Data (Composable) =====
+	const home_data = create_home_data(api, me, data.posts || []);
 
-	let last_post_id = $state('');
-
-	let is_infinite_loading = $state(false);
-	let observer = $state(null);
-
+	// ===== Lifecycle =====
 	onMount(async () => {
-		// Dynamic import components
-		const [PostModule, IconModule] = await Promise.all([
-			import('$lib/components/Post.svelte'),
-			import('$lib/components/ui/Icon.svelte'),
-		]);
-		Post = PostModule.default;
-		Icon = IconModule.default;
+		home_data.initialize_posts();
 
-		// Initialize posts immediately
-		posts = data.posts || [];
-		last_post_id = posts[posts.length - 1]?.id || '';
-
-		infinite_scroll();
-
-		// Lazy load secondary data
-		load_secondary_data();
-	});
-
-	const load_secondary_data = async () => {
-		try {
-			// Load communities and notification count in background
-			const [communities] = await Promise.all([
-				me?.id
-					? api.community_members.select_by_user_id(me.id).then(cms => cms.map(cm => cm.communities))
-					: Promise.resolve([]),
-			]);
-
-			joined_communities = communities;
-			tabs = ['최신', ...joined_communities.map((c) => c.title)];
-
-			// Load notification count
-			refresh_unread_count();
-		} catch (error) {
-			console.error('Failed to load secondary data:', error);
-		}
-	};
-
-	// 사용자 변경 시 미읽음 카운트 갱신
-	$effect(() => {
-		const uid = me.id;
-		if (!uid) return;
-		refresh_unread_count();
-	});
-
-	const refresh_unread_count = async () => {
-		try {
-			if (!me?.id) return;
-			unread_count = await api.notifications.select_unread_count(me.id);
-		} catch (e) {
-			console.error('Failed to load unread notifications count:', e);
-		}
-	};
-
-	// Cache posts by community to avoid unnecessary API calls
-	let posts_cache = $state(new Map());
-
-	$effect(() => {
-		// Track dependencies
-		const current_selected = selected;
-		const current_communities = joined_communities;
-
-		// Use untrack to prevent infinite loops
-		const community_id =
-			current_selected === 0
-				? ''
-				: (current_communities[current_selected - 1]?.id ?? '');
-
-		// Check cache first
-		const cache_key = community_id || 'all';
-		if (posts_cache.has(cache_key)) {
-			const cached = posts_cache.get(cache_key);
-			posts = cached.posts;
-			last_post_id = cached.last_post_id;
-			return;
-		}
-
-		// Load from API only if not cached
-		api.posts
-			.select_infinite_scroll('', community_id, 10)
-			.then((initial_posts) => {
-				posts = initial_posts;
-				last_post_id = initial_posts.at(-1)?.id ?? '';
-				// Update cache
-				posts_cache.set(cache_key, {
-					posts: initial_posts,
-					last_post_id: initial_posts.at(-1)?.id ?? '',
-				});
+		// 서버에서 스트리밍된 데이터 처리
+		if (data.communities instanceof Promise) {
+			data.communities.then((communities) => {
+				home_data.joined_communities = communities;
+				home_data.tabs = ['최신', ...communities.map((c) => c.title)];
 			});
-	});
-
-	/**
-	 * 무한스크롤 설정 함수
-	 */
-	const infinite_scroll = () => {
-		// Clean up existing observer
-		if (observer) {
-			observer.disconnect();
+		} else if (data.communities) {
+			home_data.joined_communities = data.communities;
+			home_data.tabs = ['최신', ...data.communities.map((c) => c.title)];
 		}
 
-		const target = document.getElementById('infinite_scroll');
-		if (!target) return;
-
-		observer = new IntersectionObserver(
-			(entries) => {
-				entries.forEach((entry) => {
-					if (
-						entry.isIntersecting &&
-						!is_infinite_loading &&
-						posts.length >= 10
-					) {
-						is_infinite_loading = true;
-						load_more_data().finally(() => {
-							is_infinite_loading = false;
-						});
-					}
-				});
-			},
-			{
-				rootMargin: '200px 0px',
-				threshold: 0.01,
-			},
-		);
-
-		observer.observe(target);
-	};
-
-	// Cleanup observer on component destroy
-	onDestroy(() => {
-		if (observer) {
-			observer.disconnect();
+		if (data.unread_count instanceof Promise) {
+			data.unread_count.then((count) => {
+				home_data.unread_count = count;
+			});
+		} else if (data.unread_count !== undefined) {
+			home_data.unread_count = data.unread_count;
 		}
 	});
 
 	/**
-	 * 무한스크롤 데이터 더 가져오기
+	 * 무한스크롤 설정 (마운트 시 한 번만 실행)
 	 */
-	const load_more_data = async () => {
-		const community_id =
-			selected === 0 ? '' : joined_communities[selected - 1].id;
-		const available_post = await api.posts.select_infinite_scroll(
-			last_post_id,
-			community_id,
-			10,
-		);
-		is_infinite_loading = false;
+	onMount(() => {
+		return home_data.setup_infinite_scroll();
+	});
 
-		//더 불러올 값이 있을때만 조회
-		if (available_post.length !== 0) {
-			posts = [...posts, ...available_post];
-
-			last_post_id = available_post.at(-1)?.id ?? '';
-		}
+	// ===== Event Handlers =====
+	/**
+	 * 탭 변경 핸들러
+	 * @param {number} tab_index - 선택된 탭 인덱스
+	 */
+	const handle_tab_change = (tab_index) => {
+		if (tab_index > 0 && home_data.joined_communities.length === 0) return;
+		home_data.load_posts_by_tab(tab_index);
 	};
 
-	// 메인 페이지에서는 댓글 시스템이 없으므로 gift 댓글 추가 이벤트를 단순히 처리
+	/**
+	 * Gift 댓글 추가 핸들러
+	 * 메인 페이지에서는 댓글 UI가 없지만 DB에는 저장됩니다.
+	 *
+	 * @param {Object} params - Gift 댓글 파라미터
+	 * @param {string} params.gift_content - Gift 메시지 내용
+	 * @param {number} params.gift_moon_point - Gift 포인트
+	 * @param {string|null} params.parent_comment_id - 부모 댓글 ID
+	 * @param {string} params.post_id - 게시물 ID
+	 * @returns {Promise<void>}
+	 */
 	const handle_gift_comment_added = async ({
 		gift_content,
 		gift_moon_point,
 		parent_comment_id,
 		post_id,
 	}) => {
-		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
-		await api.post_comments.insert({
-			post_id,
-			user_id: me.id,
-			content: gift_content,
-			parent_comment_id,
-			gift_moon_point,
-		});
-
-		console.log('Gift comment added successfully');
+		try {
+			await api.post_comments.insert({
+				post_id,
+				user_id: me.id,
+				content: gift_content,
+				parent_comment_id,
+				gift_moon_point,
+			});
+		} catch (error) {
+			console.error('Failed to add gift comment:', error);
+		}
 	};
 
-	// Post 이벤트 핸들러 (composable 사용)
-	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
-		() => posts,
-		(updated_posts) => {
-			posts = updated_posts;
-			// 캐시도 함께 업데이트
-			const cache_key =
-				selected === 0 ? 'all' : joined_communities[selected - 1]?.id || '';
-			if (posts_cache.has(cache_key)) {
-				posts_cache.set(cache_key, { posts: updated_posts, last_post_id });
-			}
-		},
+	/**
+	 * 게시물 작성 버튼 클릭 핸들러
+	 * 로그인 확인 후 작성 페이지로 이동
+	 */
+	const handle_create_post = () => {
+		if (!check_login(me)) return;
+		goto('/regi/post');
+	};
+
+	/**
+	 * 검색 버튼 클릭 핸들러
+	 */
+	const handle_search = () => {
+		goto('/search');
+	};
+
+	/**
+	 * 알림 버튼 클릭 핸들러
+	 */
+	const handle_alarm = () => {
+		goto('/alarm');
+	};
+
+	// ===== Post Interaction Handlers (Composable) =====
+	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
+		() => home_data.posts,
+		(updated_posts) => home_data.update_posts(updated_posts),
 		me,
 	);
 </script>
@@ -246,34 +150,42 @@
 	<h1 slot="left" class="font-semibold">{TITLE}</h1>
 
 	<div slot="right" class="flex items-center gap-4">
-		<button onclick={() => goto('/search')}>
+		<!-- 검색 버튼 -->
+		<button onclick={handle_search} aria-label="검색">
 			<RiSearchLine size={20} color={colors.gray[400]} />
 		</button>
 
-		<button onclick={() => goto('/alarm')} class="relative">
+		<button onclick={handle_alarm} class="relative" aria-label="알림">
 			<RiNotificationFill size={20} color={colors.gray[400]} />
-			{#if unread_count > 0}
+			{#if home_data.unread_count > 0}
 				<span
 					class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
+					aria-label={`읽지 않은 알림 ${home_data.unread_count}개`}
 				>
-					{unread_count > 99 ? '99+' : unread_count}
+					{home_data.unread_count > MAX_NOTIFICATION_BADGE
+						? `${MAX_NOTIFICATION_BADGE}+`
+						: home_data.unread_count}
 				</span>
 			{/if}
 		</button>
 	</div>
 </Header>
-<main>
-	<TabSelector {tabs} bind:selected />
 
-	{#if posts.length === 0}
-		<!-- Loading skeleton -->
-		{#each Array(5) as _, i}
+<main>
+	<TabSelector
+		tabs={home_data.tabs}
+		bind:selected={home_data.selected}
+		on_change={handle_tab_change}
+	/>
+
+	{#if home_data.is_tab_loading || home_data.posts.length === 0}
+		{#each Array(SKELETON_COUNT) as _, i (i)}
 			<div class="mt-4">
 				<PostSkeleton />
 			</div>
 		{/each}
 	{:else}
-		{#each posts as post}
+		{#each home_data.posts as post (post.id)}
 			<div class="mt-4">
 				<Post
 					{post}
@@ -285,27 +197,23 @@
 		{/each}
 	{/if}
 
-	<div id="infinite_scroll"></div>
+	<div id="infinite_scroll" aria-hidden="true"></div>
 
-	<div class="flex justify-center py-4">
-		<div
-			class={`border-primary h-8 w-8 animate-spin rounded-full border-t-2 border-b-2 ${
-				is_infinite_loading === false ? 'hidden' : ''
-			}`}
-		></div>
-	</div>
+	{#if home_data.is_infinite_loading}
+		<div class="flex justify-center py-4" role="status" aria-label="로딩 중">
+			<div
+				class="border-primary h-8 w-8 animate-spin rounded-full border-t-2 border-b-2"
+			></div>
+		</div>
+	{/if}
 
-	<!-- floating right button -->
 	<div
 		class="fixed bottom-18 z-10 mx-auto flex w-full max-w-screen-md justify-end pr-4"
 	>
 		<button
-			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600"
-			onclick={() => {
-				if (!check_login(me)) return;
-
-				goto('/regi/post');
-			}}
+			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+			onclick={handle_create_post}
+			aria-label="게시물 작성"
 		>
 			<RiAddLine size={20} color={colors.white} />
 		</button>

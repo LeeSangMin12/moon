@@ -1,12 +1,15 @@
 <script>
-	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
-	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
-	import { get_api_context } from '$lib/contexts/app-context.svelte.js';
+	/**
+	 * Service listing page
+	 * @component
+	 * Displays services with search, infinite scroll, and promotional banners
+	 */
+	import { create_infinite_scroll } from '$lib/composables/use_infinite_scroll.svelte.js';
+	import { create_service_data } from '$lib/composables/use_service_data.svelte.js';
+	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
 	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
-	import sell_service_png from '$lib/img/common/banner/sell_service.png';
-	import { onMount } from 'svelte';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
@@ -15,12 +18,12 @@
 	import Banner from './Banner.svelte';
 	import SearchInput from './SearchInput.svelte';
 
-	const { api } = get_api_context();
-
+	const api = get_api_context();
 	const TITLE = '서비스';
 
 	let { data } = $props();
 
+	/** @type {Array<{title: string, src: string, url: string}>} Banner images */
 	const images = [
 		{
 			title: '5,000_coupon',
@@ -39,37 +42,21 @@
 		},
 	];
 
-	// Initialize with empty data - will be populated when promises resolve
-	const serviceData = createServiceData(
-		{ services: [], service_likes: [] },
+	const serviceData = create_service_data(
+		{ services: data.services || [], service_likes: [] },
 		api,
 	);
 
-	// Resolve streamed services promise
-	onMount(async () => {
-		if (data.services instanceof Promise) {
-			data.services.then((services) => {
-				serviceData.services = services;
-			});
-		} else {
-			serviceData.services = data.services || [];
-		}
-
-		if (data.service_likes instanceof Promise) {
-			data.service_likes.then((likes) => {
+	$effect(() => {
+		if (data.service_likes) {
+			Promise.resolve(data.service_likes).then((likes) => {
 				serviceData.serviceLikes = likes;
 			});
-		} else {
-			serviceData.serviceLikes = data.service_likes || [];
 		}
 	});
 
-	const serviceInfiniteScroll = createInfiniteScroll({
-		items: {
-			get value() {
-				return serviceData.services;
-			},
-		},
+	const serviceInfiniteScroll = create_infinite_scroll({
+		items: serviceData.services,
 		loadMore: serviceData.loadMoreServices,
 		isLoading: {
 			get value() {
@@ -84,13 +71,17 @@
 
 	let searchText = $state('');
 
+	/**
+	 * Handles search input and updates service list
+	 * Resets infinite scroll lastId after search
+	 */
 	const handleSearch = async () => {
-		if (searchText.trim()) {
-			const results = await api.services.select_by_search(searchText);
-			serviceData.services = results;
-		} else {
-			serviceData.services = data.services;
-		}
+		const trimmed_text = searchText.trim();
+
+		serviceData.services = trimmed_text
+			? await api.services.select_by_search(trimmed_text)
+			: data.services;
+
 		serviceInfiniteScroll.lastId =
 			serviceData.services[serviceData.services.length - 1]?.id || '';
 	};

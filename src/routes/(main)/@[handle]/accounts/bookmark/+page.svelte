@@ -7,11 +7,11 @@
 	import Post from '$lib/components/Post.svelte';
 
 	import colors from '$lib/config/colors';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 	let { bookmarks } = $state(data);
@@ -29,7 +29,7 @@
 	};
 
 	// Post 이벤트 핸들러 (composable 사용 - 북마크 구조에 맞게 변환)
-	const { handle_bookmark_changed: handle_bookmark_changed_base, handle_vote_changed: handle_vote_changed_base } = createPostHandlers(
+	const { handle_bookmark_changed: handle_bookmark_changed_base, handle_vote_changed: handle_vote_changed_base } = create_post_handlers(
 		() => bookmarks.map(b => b.post).filter(Boolean),  // post 배열만 추출
 		(updated_posts) => {
 			// 업데이트된 post들을 bookmarks 구조에 다시 매핑

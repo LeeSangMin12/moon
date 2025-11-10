@@ -1,5 +1,17 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
 	import profile_png from '$lib/img/common/user/profile.png';
+	import {
+		check_login,
+		copy_to_clipboard,
+		format_date,
+		show_toast,
+	} from '$lib/utils/common';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import {
@@ -18,21 +30,13 @@
 	import GiftModal from '$lib/components/ui/GiftModal.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
-	import colors from '$lib/config/colors';
-	import {
-		check_login,
-		copy_to_clipboard,
-		format_date,
-		show_toast,
-	} from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	// ===== Context =====
+	const me = get_user_context();
+	const api = get_api_context();
 
-	// Context
-	const { me } = get_user_context();
-	const { api } = get_api_context();
-
-	// Constants
+	// ===== Constants =====
 	const REPORT_REASONS = [
 		'스팸/광고성 콘텐츠입니다.',
 		'욕설/혐오 발언을 사용했습니다.',
@@ -43,44 +47,94 @@
 
 	const VIDEO_EXTENSIONS = /\.(mp4|mov|webm|ogg)$/i;
 
-	// Props & Callbacks
-	let {
-		post,
-		onBookmarkChanged,
-		onVoteChanged,
-		onGiftCommentAdded
-	} = $props();
+	const VOTE_TYPE = {
+		LIKE: 1,
+		DISLIKE: -1,
+		NEUTRAL: 0,
+	};
 
-	// State: Vote
+	// ===== Props & Callbacks =====
+	/**
+	 * @typedef {Object} Post
+	 * @property {string} id - 게시물 ID
+	 * @property {string} title - 게시물 제목
+	 * @property {string} content - 게시물 내용
+	 * @property {number} like_count - 좋아요 수
+	 * @property {Array} post_votes - 투표 정보
+	 * @property {Array} post_bookmarks - 북마크 정보
+	 * @property {Array} [post_comments] - 댓글 정보
+	 * @property {Array} [images] - 이미지 목록
+	 * @property {Object} users - 작성자 정보
+	 * @property {string} [community_id] - 커뮤니티 ID
+	 * @property {Object} [communities] - 커뮤니티 정보
+	 * @property {string} created_at - 생성 시간
+	 */
+
+	/**
+	 * @typedef {Function} BookmarkCallback
+	 * @param {Object} event - 북마크 이벤트
+	 * @param {string} event.post_id - 게시물 ID
+	 * @param {Array} event.bookmarks - 북마크 배열
+	 */
+
+	/**
+	 * @typedef {Function} VoteCallback
+	 * @param {Object} event - 투표 이벤트
+	 * @param {string} event.post_id - 게시물 ID
+	 * @param {number} event.user_vote - 사용자 투표 값
+	 * @param {number} event.like_count - 좋아요 수
+	 */
+
+	/**
+	 * @typedef {Function} GiftCallback
+	 * @param {Object} event - 선물 이벤트
+	 * @param {string} event.gift_content - 선물 메시지
+	 * @param {number} event.gift_moon_point - 선물 포인트
+	 * @param {string} event.post_id - 게시물 ID
+	 */
+
+	/** @type {{ post: Post, onBookmarkChanged?: BookmarkCallback, onVoteChanged?: VoteCallback, onGiftCommentAdded?: GiftCallback }} */
+	let { post, onBookmarkChanged, onVoteChanged, onGiftCommentAdded } = $props();
+
+	// ===== State: Vote =====
 	let like_count = $state(post.like_count ?? 0);
 	let local_user_vote = $state(null);
 	let is_voting = $state(false);
 
-	// State: Bookmark
+	// ===== State: Bookmark =====
 	let is_bookmarking = $state(false);
 
-	// State: Follow
+	// ===== State: Follow =====
 	let is_following = $state(false);
 
-	// State: Modals
+	// ===== State: Modals =====
 	let modal = $state({
 		post_config: false,
 		gift: false,
 		report: false,
 	});
 
-	// State: Report Form
+	// ===== State: Report Form =====
 	let report_form = $state({
 		reason: '',
 		details: '',
 	});
 
-	// Computed values (일반 변수 - reactive 불필요)
+	// ===== Computed Values =====
 	const author_handle = post.users?.handle || 'unknown';
 	const post_url = `/@${author_handle}/post/${post.id}`;
-	const full_post_url = `${window.location.origin}${post_url}`;
 
-	// Reactive derived (실제로 변하는 값만)
+	/**
+	 * 전체 게시물 URL (클라이언트에서만 계산)
+	 */
+	const full_post_url = $derived(
+		typeof window !== 'undefined' ? `${window.location.origin}${post_url}` : ''
+	);
+
+	/**
+	 * 사용자 투표 상태
+	 * @type {number} - 1: 좋아요, -1: 싫어요, 0: 투표 안 함
+	 */
 	let user_vote = $derived(
 		local_user_vote !== null
 			? local_user_vote
@@ -89,44 +143,50 @@
 				: 0,
 	);
 
+	/**
+	 * 북마크 상태
+	 * @type {boolean}
+	 */
 	let is_bookmarked = $derived(
 		me?.id && post.post_bookmarks
 			? post.post_bookmarks.some((bookmark) => bookmark.user_id === me.id)
 			: false,
 	);
 
+	/**
+	 * 상세 페이지 여부
+	 * @type {boolean}
+	 */
 	let is_detail_page = $derived(
 		$page.url.pathname.match(/^\/@[^/]+\/post\/[^/]+$/),
 	);
 
-	// Lifecycle
-
+	// ===== Lifecycle =====
 	onMount(async () => {
 		await initialize_user_data();
 	});
 
 	/**
 	 * 컴포넌트 마운트 시 사용자 데이터 초기화
+	 * @returns {Promise<void>}
 	 */
 	async function initialize_user_data() {
 		if (!me?.id) return;
 
-		// 팔로우 상태 확인
 		if (post.users?.id) {
 			is_following = await api.user_follows.is_following(me.id, post.users.id);
 		}
 
-		// 투표 상태 동기화
 		await sync_vote_state();
 	}
 
 	/**
 	 * 서버에서 최신 투표 상태를 가져와 동기화
+	 * @returns {Promise<void>}
 	 */
 	async function sync_vote_state() {
 		try {
 			const current_vote = await api.post_votes.get_user_vote(post.id, me.id);
-
 			const existing_vote =
 				post.post_votes?.find((vote) => vote.user_id === me.id)?.vote ?? 0;
 
@@ -138,11 +198,12 @@
 		}
 	}
 
-	// Vote Handlers
+	// ===== Vote Handlers =====
 
 	/**
 	 * 투표 처리 (좋아요/싫어요)
 	 * @param {number} new_vote - 1: 좋아요, -1: 싫어요, 0: 취소
+	 * @returns {Promise<void>}
 	 */
 	async function handle_vote(new_vote) {
 		if (!check_login(me) || is_voting) return;
@@ -151,25 +212,21 @@
 		const old_vote = user_vote;
 		const old_like_count = like_count;
 
-		// Optimistic UI update
 		update_vote_ui(old_vote, new_vote);
 
 		try {
 			await api.post_votes.handle_vote(post.id, me.id, local_user_vote);
 
-			// 좋아요 알림 전송
 			if (should_send_like_notification(old_vote, local_user_vote)) {
 				await send_like_notification();
 			}
 
-			// ⭐ 부모 컴포넌트에 알림 (상태 동기화)
 			onVoteChanged?.({
 				post_id: post.id,
 				user_vote: local_user_vote,
-				like_count: like_count
+				like_count,
 			});
 		} catch (error) {
-			// Rollback on error
 			console.error('Vote failed:', error);
 			local_user_vote = old_vote === 0 ? null : old_vote;
 			like_count = old_like_count;
@@ -180,32 +237,39 @@
 	}
 
 	/**
-	 * 투표 UI 업데이트 (Optimistic)
+	 * 투표 UI 업데이트 (Optimistic Update)
+	 * @param {number} old_vote - 이전 투표 값
+	 * @param {number} new_vote - 새 투표 값
 	 */
 	function update_vote_ui(old_vote, new_vote) {
-		// 같은 버튼 클릭 시 투표 취소
 		if (old_vote === new_vote) {
-			local_user_vote = 0;
-			if (new_vote === 1) like_count--;
+			local_user_vote = VOTE_TYPE.NEUTRAL;
+			if (new_vote === VOTE_TYPE.LIKE) like_count--;
 		} else {
-			// 다른 투표로 변경
 			local_user_vote = new_vote;
-			if (old_vote === 1) like_count--;
-			if (new_vote === 1) like_count++;
+			if (old_vote === VOTE_TYPE.LIKE) like_count--;
+			if (new_vote === VOTE_TYPE.LIKE) like_count++;
 		}
 	}
 
 	/**
 	 * 좋아요 알림 전송 여부 확인
+	 * @param {number} old_vote - 이전 투표 값
+	 * @param {number} new_vote - 새 투표 값
+	 * @returns {boolean}
 	 */
 	function should_send_like_notification(old_vote, new_vote) {
 		return (
-			old_vote !== 1 && new_vote === 1 && post.users?.id && post.users.id !== me.id
+			old_vote !== VOTE_TYPE.LIKE &&
+			new_vote === VOTE_TYPE.LIKE &&
+			post.users?.id &&
+			post.users.id !== me.id
 		);
 	}
 
 	/**
 	 * 좋아요 알림 전송
+	 * @returns {Promise<void>}
 	 */
 	async function send_like_notification() {
 		try {
@@ -223,50 +287,46 @@
 		}
 	}
 
-	// Bookmark Handlers
+	// ===== Bookmark Handlers =====
 
 	/**
 	 * 북마크 토글
-	 * Single Source of Truth: post.post_bookmarks 배열만 관리
+	 * @returns {Promise<void>}
 	 */
 	async function toggle_bookmark() {
 		if (!check_login(me) || is_bookmarking) return;
 
 		is_bookmarking = true;
-		const old_bookmarks = post.post_bookmarks;
 
 		try {
 			if (is_bookmarked) {
-				// 북마크 제거
-				post.post_bookmarks = post.post_bookmarks.filter(
-					(bookmark) => bookmark.user_id !== me.id,
-				);
 				await api.post_bookmarks.delete(post.id, me.id);
+				onBookmarkChanged?.({
+					post_id: post.id,
+					action: 'remove',
+					user_id: me.id,
+				});
 			} else {
-				// 북마크 추가
-				post.post_bookmarks = [...post.post_bookmarks, { user_id: me.id }];
 				await api.post_bookmarks.insert(post.id, me.id);
+				onBookmarkChanged?.({
+					post_id: post.id,
+					action: 'add',
+					user_id: me.id,
+				});
 			}
-
-			// ⭐ 부모 컴포넌트에 알림 (상태 동기화)
-			onBookmarkChanged?.({
-				post_id: post.id,
-				bookmarks: post.post_bookmarks
-			});
 		} catch (error) {
-			// Rollback on error
 			console.error('Bookmark toggle failed:', error);
-			post.post_bookmarks = old_bookmarks;
 			show_toast('error', '북마크 처리 중 오류가 발생했습니다.');
 		} finally {
 			is_bookmarking = false;
 		}
 	}
 
-	// Follow Handlers
+	// ===== Follow Handlers =====
 
 	/**
 	 * 팔로우 토글
+	 * @returns {Promise<void>}
 	 */
 	async function toggle_follow() {
 		if (!check_login(me) || !post.users?.id) return;
@@ -288,10 +348,11 @@
 		}
 	}
 
-	// Report Handlers
+	// ===== Report Handlers =====
 
 	/**
 	 * 신고 제출
+	 * @returns {Promise<void>}
 	 */
 	async function submit_report() {
 		if (!report_form.reason) {
@@ -324,12 +385,16 @@
 		report_form.details = '';
 	}
 
-	// Gift Handlers
+	// ===== Gift Handlers =====
 
 	/**
 	 * 선물 댓글 추가 성공 처리
+	 * @param {Object} params - 선물 파라미터
+	 * @param {string} params.gift_content - 선물 메시지
+	 * @param {number} params.gift_moon_point - 선물 포인트
+	 * @param {string} params.post_id - 게시물 ID
 	 */
-	function handle_gift_success({ gift_content, gift_moon_point, post_id: modal_post_id }) {
+	function handle_gift_success({ gift_content, gift_moon_point, post_id }) {
 		onGiftCommentAdded?.({
 			gift_content,
 			gift_moon_point,
@@ -340,13 +405,28 @@
 		modal.gift = false;
 	}
 
-	// Utility Functions
+	// ===== Utility Functions =====
 
 	/**
 	 * 비디오 파일 여부 확인
+	 * @param {string} uri - 파일 URI
+	 * @returns {boolean}
 	 */
 	function is_video(uri) {
 		return VIDEO_EXTENSIONS.test(uri);
+	}
+
+	/**
+	 * Supabase 이미지 URL 최적화 (width, quality 파라미터 추가)
+	 * @param {string} uri - 이미지 URI
+	 * @returns {string} - 최적화된 URI
+	 */
+	function optimize_image(uri) {
+		if (!uri || is_video(uri)) return uri;
+		if (uri.includes('supabase.co/storage')) {
+			return `${uri}?width=800&quality=75`;
+		}
+		return uri;
 	}
 
 	/**
@@ -357,16 +437,11 @@
 	}
 
 	/**
-	 * 모달 열기
+	 * 설정 모달 열기
 	 */
 	function open_config_modal() {
 		if (!check_login(me)) return;
 		modal.post_config = true;
-	}
-
-	function open_gift_modal() {
-		if (!check_login(me)) return;
-		modal.gift = true;
 	}
 </script>
 
@@ -377,10 +452,13 @@
 	<div class="flex items-center justify-between">
 		<a href={`/@${author_handle}`} class="flex items-center">
 			<img
-				src={post.users?.avatar_url ?? profile_png}
-				alt={post.users?.name || 'Unknown User'}
+				src={optimize_avatar(post.users?.avatar_url) ?? profile_png}
+				alt="{post.users?.name || 'Unknown User'}님의 프로필 사진"
 				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 				loading="lazy"
+				decoding="async"
+				width="32"
+				height="32"
 			/>
 			<p class="pr-3 text-sm font-medium">
 				{post.users?.name || 'Unknown User'}
@@ -400,7 +478,7 @@
 				{/if}
 			{/if}
 		{:else}
-			<button onclick={open_config_modal}>
+			<button onclick={open_config_modal} aria-label="게시물 메뉴 열기">
 				<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
 			</button>
 		{/if}
@@ -421,13 +499,14 @@
 						<video
 							src={post.images[0].uri}
 							controls
+							preload="metadata"
 							class="w-full rounded-lg"
 							style="max-height: 320px;"
 						>
 							<track kind="captions" label="No captions" />
 						</video>
 					{:else}
-						<CustomCarousel images={post.images.map((img) => img.uri)} />
+						<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
 					{/if}
 				</figure>
 			{/if}
@@ -444,18 +523,25 @@
 					<video
 						src={post.images[0].uri}
 						controls
+						preload="metadata"
 						class="w-full rounded-lg"
 						style="max-height: 320px;"
 					>
 						<track kind="captions" label="No captions" />
 					</video>
 				{:else}
-					<CustomCarousel images={post.images.map((img) => img.uri)} />
+					<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
 				{/if}
 			</figure>
 		{:else}
 			<!-- List Page: Preview with Fade -->
-			<a href={post_url}>
+			<div
+				role="button"
+				tabindex="0"
+				onclick={() => goto(post_url)}
+				onkeydown={(e) => e.key === 'Enter' && goto(post_url)}
+				class="cursor-pointer"
+			>
 				<div
 					class="prose prose-sm mt-2 max-w-none text-sm"
 					style="max-height: 10rem; overflow: hidden; position: relative;"
@@ -465,7 +551,7 @@
 						style="position: absolute; bottom: 0; left: 0; right: 0; height: 2rem; background: linear-gradient(transparent, white); pointer-events: none;"
 					></div>
 				</div>
-			</a>
+			</div>
 		{/if}
 
 		<!-- Community Badge -->
@@ -485,9 +571,10 @@
 			<!-- Like Button -->
 			<button
 				class="mr-3 flex items-center gap-1"
-				onclick={() => handle_vote(1)}
+				onclick={() => handle_vote(VOTE_TYPE.LIKE)}
+				aria-label="좋아요"
 			>
-				{#if user_vote === 1}
+				{#if user_vote === VOTE_TYPE.LIKE}
 					<RiThumbUpFill size={16} color={colors.primary} />
 				{:else}
 					<RiThumbUpLine size={16} color={colors.gray[400]} />
@@ -498,9 +585,10 @@
 			<!-- Dislike Button -->
 			<button
 				class="mr-4 flex items-center gap-1"
-				onclick={() => handle_vote(-1)}
+				onclick={() => handle_vote(VOTE_TYPE.DISLIKE)}
+				aria-label="싫어요"
 			>
-				{#if user_vote === -1}
+				{#if user_vote === VOTE_TYPE.DISLIKE}
 					<RiThumbDownFill size={16} color={colors.warning} />
 				{:else}
 					<RiThumbDownLine size={16} color={colors.gray[400]} />
@@ -508,19 +596,30 @@
 			</button>
 
 			<!-- Comment Count -->
-			<a href={post_url} class="mr-4 flex items-center gap-1">
+			<a href={post_url} class="mr-4 flex items-center gap-1" aria-label="댓글">
 				<Icon attribute="chat_bubble" size={16} color={colors.gray[400]} />
 				<p>{post.post_comments?.[0]?.count ?? 0}</p>
 			</a>
 
 			<!-- Gift Button -->
-			<button class="flex items-center gap-1" onclick={open_gift_modal}>
+			<button
+				class="flex items-center gap-1"
+				onclick={() => {
+					if (!check_login(me)) return;
+					modal.gift = true;
+				}}
+				aria-label="선물하기"
+			>
 				<Icon attribute="gift" size={16} color={colors.gray[400]} />
 			</button>
 		</div>
 
 		<!-- Bookmark Button -->
-		<button class="flex items-center gap-1" onclick={toggle_bookmark}>
+		<button
+			class="flex items-center gap-1"
+			onclick={toggle_bookmark}
+			aria-label={is_bookmarked ? '북마크 해제' : '북마크'}
+		>
 			{#if is_bookmarked}
 				<RiBookmarkFill size={16} color={colors.primary} />
 			{:else}

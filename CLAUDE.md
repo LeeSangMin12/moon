@@ -1,105 +1,56 @@
 # CLAUDE.md
 
-이 파일은 Claude Code (claude.ai/code)가 이 저장소에서 작업할 때 참고하는 가이드입니다.
+이 파일은 Claude Code가 이 저장소에서 작업할 때 참고하는 가이드입니다.
 
 ## 프로젝트 개요
 
-SvelteKit 2와 Svelte 5로 구축된 소셜 플랫폼입니다. 게시물, 서비스, 커뮤니티, 전문가 요청, 리치 텍스트 편집 기능을 제공합니다. 인증 및 데이터베이스는 Supabase를 사용하며, Vercel에 배포됩니다.
+SvelteKit 2 + Svelte 5로 구축된 소셜 플랫폼. Supabase(인증/DB), Vercel 배포.
+주요 기능: 게시물, 서비스, 커뮤니티, 전문가 요청, TipTap 리치 텍스트 편집.
 
-## 개발 명령어
-
-```bash
-# 개발 서버 시작
-npm run dev
-
-# 프로덕션 빌드
-npm run build
-
-# 프로덕션 빌드 미리보기
-npm run preview
-
-# 모든 테스트 실행
-npm run test
-
-# 테스트를 watch 모드로 실행
-npm run test:unit
-
-# 코드 린트
-npm run lint
-
-# 코드 포맷팅
-npm run format
-```
-
-## 테스트
-
-Vitest를 별도의 워크스페이스로 사용합니다:
-- **클라이언트 테스트**: `*.svelte.{test,spec}.{js,ts}` - jsdom 환경에서 @testing-library/svelte로 실행
-- **서버 테스트**: `*.{test,spec}.{js,ts}` (.svelte 제외) - Node 환경에서 실행
-
-테스트 파일은 테스트하는 코드와 같은 위치에 배치해야 합니다.
-
-## Svelte 5 Runes (중요)
-
-이 프로젝트는 Svelte 5의 runes를 사용합니다. 항상 새로운 문법을 사용하세요:
+## Svelte 5 Runes (필수)
 
 ```javascript
-// State (상태)
+// State
 let count = $state(0);
 let user = $state({ name: 'John' });
 
-// Derived state (파생 상태)
+// Derived
 let doubled = $derived(count * 2);
 let fullName = $derived.by(() => `${user.firstName} ${user.lastName}`);
 
-// Effects (값이 변경될 때 부수 효과)
+// Effects
 $effect(() => {
   console.log('Count changed:', count);
 });
 
-// Props (export let을 대체)
+// Props (export let 대신)
 let { propName, optional = 'default' } = $props();
 
-// Bindable props (bind:를 대체)
+// Bindable props
 let { bindableProp = $bindable('fallback') } = $props();
-```
 
-**이벤트 핸들러**는 속성입니다 (`on:` 지시자가 아님):
-```javascript
+// 이벤트 핸들러 (on:click 대신)
 <button onclick={() => count++}>클릭</button>
-<button {onclick}>클릭</button>  // 축약형
-```
 
-**Snippets**가 slots를 대체합니다:
-```javascript
+// Snippets (slots 대신)
 {#snippet figure(image)}
-  <figure>
-    <img src={image.src} alt={image.caption} />
-  </figure>
+  <figure><img src={image.src} alt={image.caption} /></figure>
 {/snippet}
-
 {@render figure(myImage)}
 ```
 
-## SvelteKit 2 패턴 (중요)
+## SvelteKit 2 패턴 (필수)
 
-**에러와 리다이렉트**: throw하지 말고 그냥 호출:
 ```javascript
+// error/redirect는 throw 없이 호출
 import { error, redirect } from '@sveltejs/kit';
-
-// SvelteKit 2 - 그냥 호출
-error(500, 'something went wrong');
+error(404, 'Not found');  // throw 하지 않음
 redirect(303, '/login');
-```
 
-**쿠키는 path가 필수**:
-```javascript
+// 쿠키는 path 필수
 cookies.set(name, value, { path: '/' });
-```
 
-**Load 함수는 promise를 await 해야 함**:
-```javascript
-// 좋은 예 - 병렬 로딩
+// Load 함수는 병렬 처리
 export async function load({ fetch }) {
   const [a, b] = await Promise.all([
     fetch('/api/a').then(r => r.json()),
@@ -107,109 +58,98 @@ export async function load({ fetch }) {
   ]);
   return { a, b };
 }
+
+// 외부 URL은 window.location 사용
+window.location.href = 'https://external.com';  // goto() 아님
 ```
 
-**외부 네비게이션**: 외부 URL은 `goto()` 대신 `window.location.href` 사용.
+## ❌ 절대 금지 사항
 
-## 아키텍처 개요
+1. **컴포넌트에서 Supabase 직접 호출 금지** - 항상 `src/lib/supabase/` API 모듈 사용
+2. **Svelte 4 문법 금지** - `export let`, `$:`, `on:click` 사용 안 됨
+3. **쿠키 설정 시 path 생략 금지**
+4. **외부 URL에 `goto()` 사용 금지**
+5. **error/redirect에 `throw` 사용 금지**
+6. **Load 함수에서 순차 await 금지** - `Promise.all()` 사용
 
-### 상태 관리 (하이브리드 방식)
+## 아키텍처 핵심
 
-1. **Svelte Context** (`src/lib/contexts/app-context.svelte.js`): 사용자 및 API 컨텍스트
-   ```javascript
-   import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+### API 레이어 패턴 (중요!)
 
-   const { me } = get_user_context();  // 현재 사용자 (반응형)
-   const { api } = get_api_context();  // Supabase API 인스턴스
-   ```
-
-2. **Svelte Stores** (`src/lib/store/global_store.js`): 전역 UI 상태
-   ```javascript
-   import { is_login_prompt_modal, loading } from '$lib/store/global_store.js';
-   ```
-
-3. **로컬 컴포넌트 상태**: 컴포넌트 범위의 반응형 변수에는 `$state()` 사용
-
-### Supabase API 레이어
-
-모든 데이터베이스 쿼리는 `src/lib/supabase/`의 중앙화된 API 모듈을 통해 실행됩니다:
+**모든 DB 쿼리는 `src/lib/supabase/` 모듈을 통해서만 실행**
 
 ```javascript
-// 컴포넌트나 라우트에서
-const { api } = get_api_context();
+// ✅ 올바른 방법
+import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 
-// 게시물 쿼리
+const api = get_api_context();
 const posts = await api.posts.select_infinite_scroll(last_id, community_id, 10);
-
-// 사용자 쿼리
 const user = await api.users.select_by_id(user_id);
+const url = await api.post_images.upload(file, `${user_id}/${Date.now()}.jpg`);
 
-// 이미지 업로드
-const url = await api.post_images.upload(image_file, `${user_id}/${Date.now()}.jpg`);
+// ❌ 절대 금지
+const { data } = await supabase.from('posts').select('*');  // 컴포넌트에서 직접 호출 금지
 ```
 
-**API 모듈** (`src/lib/supabase/` 내):
-- `posts.js`, `users.js`, `services.js`, `communities.js`, `expert_requests.js` 등
-- Storage: `bucket/users/avatars.js`, `bucket/posts/images.js` 등
-- 모두 팩토리 패턴을 통해 `api.js`에서 결합됨
+**API 모듈 구조**:
+- `src/lib/supabase/posts.js`, `users.js`, `communities.js` 등
+- 각 모듈: `create_[entity]_api(supabase)` 팩토리 패턴
+- Storage: `bucket/users/avatars.js`, `bucket/posts/images.js`
 
-**각 모듈 export**: `create_[entity]_api(supabase)`를 반환하며 쿼리 메서드를 포함한 객체를 반환합니다.
+### 상태 관리
 
-### 인증 플로우
-
-1. **서버 훅** (`src/hooks.server.js`):
-   - 쿠키를 사용하여 Supabase SSR 클라이언트 생성
-   - `event.locals.supabase`와 `event.locals.get_user()` 제공
-
-2. **루트 레이아웃** (`src/routes/+layout.svelte`):
-   - `supabase.auth.onAuthStateChange` 리스닝
-   - 세션 변경 시 `supabase:auth` 무효화
-
-3. **보호된 작업**: 작업 전에 `me.id`를 확인. 인증되지 않은 경우 로그인 모달 표시:
-   ```javascript
-   import { is_login_prompt_modal } from '$lib/store/global_store.js';
-
-   if (!me.id) {
-     $is_login_prompt_modal = true;
-     return;
-   }
-   ```
-
-### 컴포넌트 패턴
-
-**Composables** (`src/lib/composables/`): 재사용 가능한 로직 훅
 ```javascript
-import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+// 1. Context - 사용자 및 API (주요 방법)
+import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
+const me = get_user_context();  // 현재 사용자 (반응형 객체)
+const api = get_api_context();  // Supabase API (반응형 객체)
 
-const { handle_vote_changed, handle_bookmark_changed } = createPostHandlers(
-  () => posts,          // getter
-  (val) => posts = val, // setter
-  me                    // 현재 사용자
-);
+// 사용자 정보 업데이트
+Object.assign(me, { name: '새이름' });
+
+// 2. Global Store - 전역 UI 상태
+import { is_login_prompt_modal, loading } from '$lib/store/global_store.js';
+
+// 3. 로컬 상태 - $state() 사용
+let posts = $state([]);
 ```
 
-**TipTap 에디터** (`src/lib/components/tiptap-templates/simple/simple-editor.svelte`):
+### 인증 체크
+
 ```javascript
-import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
+// 클라이언트: 보호된 작업 전 체크
+import { get_user_context } from '$lib/contexts/app_context.svelte.js';
+import { is_login_prompt_modal } from '$lib/store/global_store.js';
 
-let content = $state('');
+const me = get_user_context();
 
-<SimpleEditor bind:content />
+function handle_protected_action() {
+  if (!me.id) {
+    $is_login_prompt_modal = true;
+    return;
+  }
+  // 작업 수행
+}
+
+// 서버: load 함수에서 체크
+export async function load({ locals }) {
+  const user = await locals.get_user();
+  if (!user) redirect(303, '/login');
+  // ...
+}
 ```
 
-확장 기능: StarterKit, Highlight, TextAlign, ImageResize, Typography, Table, Subscript, Superscript
-
-### 라우트 로딩 패턴
-
-서버 사이드 데이터 로딩은 `+page.server.js` 사용:
+### 서버 로딩 패턴
 
 ```javascript
+// +page.server.js
+import { create_api } from '$lib/supabase/api.js';
+
 export async function load({ locals, params }) {
   const user = await locals.get_user();
-  const supabase = locals.supabase;
-  const api = create_api(supabase);
+  const api = create_api(locals.supabase);
 
-  // 성능을 위한 병렬 쿼리
+  // 병렬 쿼리
   const [posts, communities] = await Promise.all([
     api.posts.select_by_user_id(params.user_id),
     api.communities.select_all()
@@ -219,27 +159,30 @@ export async function load({ locals, params }) {
 }
 ```
 
-**캐시 제어**: 데이터가 사용자별인지에 따라 캐시 헤더 설정:
+### Composables 패턴
+
 ```javascript
-setHeaders({
-  'cache-control': user?.id ? 'private, must-revalidate' : 'public, max-age=60'
-});
+// src/lib/composables/use_post_handlers.svelte.js
+import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
+
+const { handle_vote_changed, handle_bookmark_changed } = create_post_handlers(
+  () => posts,          // getter
+  (val) => posts = val, // setter
+  me                    // 현재 사용자
+);
 ```
 
-### 무한 스크롤 패턴
-
-`useInfiniteScroll` composable 사용:
+### 무한 스크롤
 
 ```javascript
 import { useInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
 
-const { initializeLastId, setupObserver, loadMoreData } = useInfiniteScroll(
+const { initializeLastId, setupObserver } = useInfiniteScroll(
   () => posts,
   (val) => posts = val,
   async (lastId) => await api.posts.select_infinite_scroll(lastId, community_id, 10)
 );
 
-// 컴포넌트 라이프사이클에서
 $effect(() => {
   initializeLastId(data.posts);
   const cleanup = setupObserver(loading_trigger_element);
@@ -247,73 +190,96 @@ $effect(() => {
 });
 ```
 
-### 유틸리티 함수
+## 네이밍 컨벤션
 
-**공통 유틸리티** (`src/lib/utils/common.js`):
+**snake_case 중심** (Supabase DB와 일관성)
+
+```javascript
+// 파일명
+Post.svelte                    // 컴포넌트 (PascalCase)
+app_context.svelte.js          // 유틸/API 모듈 (snake_case)
+sign-up/                       // 라우트 폴더 (kebab-case)
+
+// 변수/함수
+let user_id = $state('');
+function get_user_data() { }
+const handle_click = () => { };
+const MAX_FILE_SIZE = 5000000; // 상수 (UPPER_SNAKE_CASE)
+
+// Props
+let { user_id, is_active = false } = $props();
+
+// API 메서드
+api.posts.select_by_id(id)
+api.posts.select_infinite_scroll(last_id, limit)
+api.posts.insert_new_post(data)
+
+// 이벤트 핸들러
+const handle_vote_changed = () => { };
+const handle_bookmark_changed = () => { };
+
+// Composables (예외: export 함수는 camelCase)
+// use_post_handlers.svelte.js
+export function create_post_handlers(get_posts, set_posts, me) {
+  return { handle_vote_changed, handle_bookmark_changed };
+}
+
+// DB
+posts                          // 테이블 (snake_case 복수형)
+user_id, created_at           // 컬럼 (snake_case)
+
+// CSS
+.user-profile-card            // 커스텀 클래스 (kebab-case)
+```
+
+## 에러 처리
+
+```javascript
+// 서버
+import { error } from '@sveltejs/kit';
+
+export async function load({ locals, params }) {
+  try {
+    const api = create_api(locals.supabase);
+    const post = await api.posts.select_by_id(params.id);
+    if (!post) error(404, '게시물을 찾을 수 없습니다');
+    return { post };
+  } catch (err) {
+    console.error('Load error:', err);
+    error(500, '데이터를 불러오는 중 오류가 발생했습니다');
+  }
+}
+
+// 클라이언트
+import { show_toast } from '$lib/utils/common.js';
+
+async function handle_submit() {
+  try {
+    const result = await api.posts.insert_new_post(post_data);
+    show_toast('게시물이 작성되었습니다', 'success');
+    goto(`/posts/${result.id}`);
+  } catch (err) {
+    console.error('Submit error:', err);
+    show_toast('게시물 작성에 실패했습니다', 'error');
+  }
+}
+```
+
+## 보안 참고
+
+- **RLS 사용 안 함**: 서버 사이드 인증 체크로 처리
+- **인증 체크**: 보호된 라우트/API에서 `locals.get_user()` 또는 `me.id` 확인
+- **파일 업로드**: 타입/크기 검증 필수
+- **환경 변수**: `SUPABASE_SERVICE_ROLE_KEY`는 절대 클라이언트 노출 금지
+
+## 유틸리티
+
 ```javascript
 import {
   comma,              // 숫자 포맷: 1000 → "1,000"
   format_date,        // 날짜 포맷: Date → "25.01.15"
-  show_toast,         // 토스트 알림 표시
-  check_login,        // 사용자 로그인 확인
-  copy_to_clipboard   // 클립보드에 텍스트 복사
+  show_toast,         // 토스트 알림
+  check_login,        // 로그인 확인
+  copy_to_clipboard   // 클립보드 복사
 } from '$lib/utils/common.js';
 ```
-
-## 파일 구조
-
-```
-src/
-├── routes/                    # SvelteKit 파일 기반 라우팅
-│   ├── +layout.svelte        # 루트 레이아웃 (인증 리스너)
-│   ├── (main)/               # 메인 앱 라우트 그룹
-│   │   ├── +layout.svelte    # 메인 레이아웃 (컨텍스트 설정)
-│   │   ├── +page.svelte      # 홈 페이지
-│   │   ├── @[handle]/        # 사용자 프로필
-│   │   ├── service/[id]/     # 서비스 상세
-│   │   └── community/[slug]/ # 커뮤니티
-│   └── api/                  # API 라우트 (+server.js)
-│
-├── lib/
-│   ├── components/           # UI 컴포넌트
-│   │   ├── ui/              # 범용 (Modal, Header 등)
-│   │   ├── tiptap-templates/ # 리치 텍스트 에디터
-│   │   └── [feature].svelte # 기능별 컴포넌트
-│   ├── contexts/            # Svelte 컨텍스트
-│   ├── composables/         # 재사용 가능한 로직
-│   ├── supabase/            # 데이터베이스 API 레이어
-│   │   ├── api.js          # API 팩토리
-│   │   ├── [entity].js     # 엔티티 쿼리
-│   │   └── bucket/         # 스토리지 API
-│   ├── store/              # 전역 스토어
-│   ├── utils/              # 유틸리티
-│   └── types/              # JSDoc 타입
-│
-└── hooks.server.js          # 서버 훅 (인증)
-```
-
-## 주요 컨벤션
-
-1. **모든 DB 작업**은 `src/lib/supabase/` 모듈을 통해 실행 - 컴포넌트에서 Supabase를 직접 호출하지 않음
-2. **반응형 데이터는 컨텍스트 사용** (user, API) - Svelte 5에서는 스토어보다 깔끔함
-3. **데이터 페칭은 서버 로드** - 병렬 쿼리를 위해 `Promise.all()` 사용
-4. **복잡한 로직은 Composables** - 재사용 가능한 상호작용 패턴 추출
-5. **점진적 향상**: 중요한 UI를 먼저 로드하고, `$effect` 또는 `requestIdleCallback`에서 데이터 하이드레이션
-6. **전략적 캐싱**: 게시물/커뮤니티의 클라이언트 측 캐싱에 `Map()` 사용
-7. **모든 곳에 Svelte 5 runes** - 레거시 `$:` 반응형 문 사용 안 함
-
-## 배포
-
-- **플랫폼**: Vercel
-- **어댑터**: `@sveltejs/adapter-vercel`
-- **빌드 출력**: 적용 가능한 경우 사전 렌더링을 포함한 SSR
-- **환경 변수**: Supabase URL 및 키 (Vercel 대시보드에서 설정)
-
-## 주요 의존성
-
-- **Supabase**: `@supabase/supabase-js` (클라이언트), `@supabase/ssr` (SSR 헬퍼)
-- **TipTap**: 확장 기능이 있는 리치 텍스트 에디터
-- **DaisyUI**: Tailwind용 컴포넌트 프리셋
-- **Tailwind CSS 4**: `@tailwindcss/vite`를 통한 유틸리티 우선 스타일링
-- **Svelte 5**: runes가 포함된 최신 버전 (하위 호환 불가)
-- **SvelteKit 2**: 최신 컨벤션 (위의 참고 사항 참조)

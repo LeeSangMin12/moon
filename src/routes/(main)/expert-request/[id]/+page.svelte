@@ -4,7 +4,7 @@
 	import {
 		get_api_context,
 		get_user_context,
-	} from '$lib/contexts/app-context.svelte.js';
+	} from '$lib/contexts/app_context.svelte.js';
 	import { check_login, comma, show_toast } from '$lib/utils/common';
 	import {
 		ERROR_MESSAGES,
@@ -31,9 +31,10 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	const get_price_unit_label = (unit) => {
 		const unit_map = {
@@ -573,7 +574,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button slot="left" onclick={smartGoBack} aria-label="이전 페이지로 돌아가기">
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">전문가 요청</h1>
@@ -702,12 +703,16 @@
 					onclick={() =>
 						expert_request.users?.handle &&
 						goto(`/@${expert_request.users.handle}`)}
+					aria-label="{expert_request.users?.name || expert_request.users?.handle}님의 프로필 보기"
 				>
 					{#if expert_request.users?.avatar_url}
 						<img
-							src={expert_request.users.avatar_url}
-							alt=""
+							src={optimize_avatar(expert_request.users.avatar_url)}
+							alt="{expert_request.users.name || expert_request.users.handle}님의 프로필 사진"
 							class="aspect-square h-6 w-6 rounded-full"
+							loading="lazy"
+							width="24"
+							height="24"
 						/>
 					{:else}
 						<div
@@ -778,6 +783,7 @@
 						<button
 							onclick={() => complete_project()}
 							class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
+							aria-label="프로젝트 완료하기"
 						>
 							완료
 						</button>
@@ -797,6 +803,7 @@
 						<button
 							onclick={open_review_modal}
 							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+							aria-label="전문가 리뷰 작성하기"
 						>
 							리뷰 작성
 						</button>
@@ -822,6 +829,7 @@
 							<button
 								onclick={open_review_modal}
 								class="text-blue-600 hover:text-blue-700"
+								aria-label="리뷰 수정하기"
 							>
 								수정
 							</button>
@@ -853,6 +861,7 @@
 						class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 						onclick={() => (show_proposal_modal = true)}
 						disabled={!can_submit_proposal()}
+						aria-label="전문가 제안서 작성하기"
 					>
 						제안하기
 					</button>
@@ -872,12 +881,16 @@
 									onclick={() =>
 										proposal.users?.handle &&
 										goto(`/@${proposal.users.handle}`)}
+									aria-label="{proposal.users?.name || proposal.users?.handle}님의 프로필 보기"
 								>
 									{#if proposal.users?.avatar_url}
 										<img
-											src={proposal.users.avatar_url}
-											alt=""
+											src={optimize_avatar(proposal.users.avatar_url)}
+											alt="{proposal.users.name || proposal.users.handle}님의 프로필 사진"
 											class="h-full w-full object-cover"
+											loading="lazy"
+											width="32"
+											height="32"
 										/>
 									{:else}
 										<span class="text-xs text-gray-500">
@@ -893,6 +906,7 @@
 											onclick={() =>
 												proposal.users?.handle &&
 												goto(`/@${proposal.users.handle}`)}
+											aria-label="{proposal.users?.name || proposal.users?.handle}님의 프로필 보기"
 										>
 											{proposal.users?.name || proposal.users?.handle}
 										</button>
@@ -930,6 +944,7 @@
 												copyContactInfo(proposal.contact_info);
 											}}
 											class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
+											aria-label="연락처 복사하기"
 										>
 											문의하기
 										</button>
@@ -954,6 +969,7 @@
 										<button
 											onclick={() => accept_proposal(proposal.id)}
 											class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-100"
+											aria-label="{proposal.users?.name || proposal.users?.handle}님의 제안 수락하기"
 										>
 											수락
 										</button>
@@ -1076,6 +1092,7 @@
 				<button
 					onclick={() => (show_proposal_modal = false)}
 					class="text-gray-400 hover:text-gray-600"
+					aria-label="제안서 작성 모달 닫기"
 				>
 					<svg
 						class="h-6 w-6"
@@ -1146,6 +1163,7 @@
 							type="button"
 							onclick={() => file_input?.click()}
 							class="w-full rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-100"
+							aria-label="파일 선택하기"
 						>
 							📎 파일 선택 (최대 5개, 각 10MB 이하)
 						</button>
@@ -1175,6 +1193,7 @@
 											type="button"
 											onclick={() => remove_file(index)}
 											class="ml-2 text-gray-400 hover:text-red-600"
+											aria-label="{file.name} 파일 제거"
 										>
 											<svg
 												class="h-5 w-5"
@@ -1250,6 +1269,7 @@
 				<button
 					onclick={() => (show_review_modal = false)}
 					class="text-gray-400 hover:text-gray-600"
+					aria-label="리뷰 모달 닫기"
 				>
 					<RiCloseLine size={24} />
 				</button>

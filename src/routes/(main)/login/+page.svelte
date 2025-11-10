@@ -2,7 +2,6 @@
 	import { PUBLIC_WEB_CLIENT_URL } from '$env/static/public';
 	import logo from '$lib/img/logo.png';
 	import kakao_login from '$lib/img/partials/login/kakao_login.png';
-	import landing_logo from '$lib/img/partials/login/landing_logo.jpg';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -66,8 +65,8 @@
 	<div class="mt-26 flex flex-col items-center">
 		<h1 class="text-primary text-2xl font-semibold">질문할땐? 문!</h1>
 
-		<img
-			src={landing_logo}
+		<enhanced:img
+			src="$lib/img/partials/login/landing_logo.jpg"
 			alt="landing_logo_png"
 			class="mt-6 h-80 w-full object-cover px-4"
 		/>

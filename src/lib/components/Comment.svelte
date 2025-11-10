@@ -19,12 +19,12 @@
 
 	import colors from '$lib/config/colors';
 	import { check_login, get_time_past, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
 	import Self from './Comment.svelte';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let {
 		post_id,
@@ -258,6 +258,7 @@
 				<button
 					class="flex w-full items-center gap-3 p-3"
 					onclick={handle_edit_comment}
+					aria-label="댓글 수정하기"
 				>
 					<RiPencilLine size={20} color={colors.gray[600]} />
 					<p class="text-gray-600">수정하기</p>
@@ -268,6 +269,7 @@
 				<button
 					class="flex w-full items-center gap-3 p-3"
 					onclick={handle_delete_comment}
+					aria-label="댓글 삭제하기"
 				>
 					<RiDeleteBinLine size={20} color={colors.warning} />
 					<p class="text-red-500">삭제하기</p>
@@ -282,6 +284,7 @@
 						show_toast('info', '신고 기능은 준비 중입니다.');
 						is_more_modal_open = false;
 					}}
+					aria-label="댓글 신고하기"
 				>
 					<Icon attribute="exclamation" size={20} color={colors.warning} />
 					<p class="text-gray-600">신고하기</p>
@@ -359,6 +362,7 @@
 							<button
 								class="flex items-center gap-1"
 								onclick={() => handle_vote(1)}
+								aria-label="좋아요"
 							>
 								{#if (local_votes.user_vote ?? comment.user_vote) === 1}
 									<RiThumbUpFill size={16} color={colors.primary} />
@@ -369,7 +373,7 @@
 									{local_votes.upvotes ?? comment.upvotes}
 								</p>
 							</button>
-							<button class="flex items-center" onclick={() => handle_vote(-1)}>
+							<button class="flex items-center" onclick={() => handle_vote(-1)} aria-label="싫어요">
 								{#if (local_votes.user_vote ?? comment.user_vote) === -1}
 									<RiThumbDownFill size={16} color={colors.warning} />
 								{:else}
@@ -380,6 +384,7 @@
 							<button
 								class="flex items-center gap-1"
 								onclick={() => (is_reply_open = !is_reply_open)}
+								aria-label="답글 작성"
 							>
 								<Icon
 									attribute="chat_bubble"
@@ -392,6 +397,7 @@
 							<button
 								class="flex items-center gap-1"
 								onclick={() => (is_gift_modal_open = true)}
+								aria-label="선물하기"
 							>
 								<Icon attribute="gift" size={16} color={colors.gray[400]} />
 							</button>
@@ -403,7 +409,7 @@
 		</div>
 
 		{#if !is_editing}
-			<button onclick={() => (is_more_modal_open = true)}>
+			<button onclick={() => (is_more_modal_open = true)} aria-label="댓글 메뉴 열기">
 				<RiMore2Fill size={16} color={colors.gray[500]} />
 			</button>
 		{/if}
@@ -434,6 +440,7 @@
 		<button
 			class="mt-4 ml-10 flex items-center text-xs text-blue-500 hover:underline"
 			onclick={() => (are_replies_visible = !are_replies_visible)}
+			aria-label={are_replies_visible ? `답글 ${comment.replies.length}개 숨기기` : `답글 ${comment.replies.length}개 보기`}
 		>
 			{#if are_replies_visible}
 				<RiArrowUpSLine size={16} color={colors.primary} />

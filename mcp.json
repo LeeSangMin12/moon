@@ -1,5 +1,9 @@
 {
 	"mcpServers": {
+		"svelte": {
+			"command": "npx",
+			"args": ["-y", "@sveltejs/mcp"]
+		},
 		"supabase": {
 			"command": "npx",
 			"args": [

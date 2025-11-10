@@ -9,15 +9,6 @@
 	let { supabase, session } = $state(data);
 
 	onMount(async () => {
-		// Register service worker for caching
-		if ('serviceWorker' in navigator) {
-			try {
-				await navigator.serviceWorker.register('/service-worker.js');
-			} catch (error) {
-				console.log('Service worker registration failed:', error);
-			}
-		}
-
 		if (!supabase?.auth) return;
 		const { data: authListener } = supabase.auth.onAuthStateChange(
 			(event, newSession) => {

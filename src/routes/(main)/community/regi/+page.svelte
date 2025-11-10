@@ -9,10 +9,10 @@
 	import colors from '$lib/config/colors';
 	import { show_toast } from '$lib/utils/common';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	import SetAvatar from './_components/SetAvatar.svelte';
 	import SetContent from './_components/SetContent.svelte';

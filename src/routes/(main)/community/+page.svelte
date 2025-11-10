@@ -1,6 +1,5 @@
 <script>
-	import logo from '$lib/img/logo.png';
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiAddLine } from 'svelte-remixicon';
 
@@ -8,115 +7,121 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 
+	import logo from '$lib/img/logo.png';
 	import colors from '$lib/config/colors';
 	import { check_login, show_toast } from '$lib/utils/common';
-	import { update_global_store } from '$lib/store/global_store.js';
-	import { get_user_context, get_api_context } from '$lib/contexts/app-context.svelte.js';
+	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
-	const { me } = get_user_context();
-	const { api } = get_api_context();
+	const me = get_user_context();
+	const api = get_api_context();
 
 	let { data } = $props();
 
-	// 초기 서버 데이터를 state로 복사 (로컬 관리)
 	let communities = $state(data.communities || []);
-
-	// 무한 스크롤로 추가된 커뮤니티들
 	let infinite_scroll_communities = $state([]);
-
-	// 전체 커뮤니티 = 서버 데이터 + 무한스크롤 데이터
 	let all_communities = $derived([...communities, ...infinite_scroll_communities]);
-
 	let is_infinite_loading = $state(false);
 	let last_community_id = $state('');
 
-	onMount(() => {
-		last_community_id =
-			all_communities[all_communities.length - 1]?.id || '';
-		infinite_scroll();
-	});
-
 	/**
-	 * 무한스크롤 함수
+	 * 커뮤니티 멤버십 상태 업데이트 (Optimistic UI)
+	 * @param {string} community_id - 커뮤니티 ID
+	 * @param {boolean} is_member - 멤버 여부
+	 * @param {number} count_delta - 멤버 수 변경량 (+1 또는 -1)
 	 */
-	const infinite_scroll = () => {
-		const observer = new IntersectionObserver((entries) => {
-			entries.forEach((entry) => {
-				if (all_communities.length >= 10 && entry.isIntersecting) {
-					is_infinite_loading = true;
-					setTimeout(() => {
-						load_more_data();
-					}, 1000);
-				}
-			});
-		});
-
-		const target = document.getElementById('infinite_scroll');
-		observer.observe(target);
+	const update_community_membership = (community_id, is_member, count_delta) => {
+		communities = communities.map((c) =>
+			c.id === community_id
+				? { ...c, is_member, member_count: Math.max(0, c.member_count + count_delta) }
+				: c
+		);
 	};
 
 	/**
-	 * 무한스크롤 데이터 더 가져오기
+	 * 커뮤니티 참여 처리
+	 * @param {string} community_id - 커뮤니티 ID
 	 */
-	const load_more_data = async () => {
-		const available_community =
-			await api.communities.select_infinite_scroll(last_community_id, me?.id);
-		is_infinite_loading = false;
-
-		//더 불러올 값이 있을때만 조회
-		if (available_community.length !== 0) {
-			infinite_scroll_communities = [...infinite_scroll_communities, ...available_community];
-
-			last_community_id =
-				available_community[available_community.length - 1]?.id || '';
-		}
-	};
-
 	const handle_join = async (community_id) => {
-		try {
-			// Optimistic update - UI 즉시 업데이트
-			communities = communities.map(c =>
-				c.id === community_id
-					? { ...c, is_member: true, member_count: c.member_count + 1 }
-					: c
-			);
+		update_community_membership(community_id, true, 1);
 
+		try {
 			await api.community_members.insert(community_id, me.id);
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
-			console.error(error);
-			// 실패 시 롤백
-			communities = communities.map(c =>
-				c.id === community_id
-					? { ...c, is_member: false, member_count: Math.max(0, c.member_count - 1) }
-					: c
-			);
+			console.error('Failed to join community:', error);
+			update_community_membership(community_id, false, -1);
 			show_toast('error', '참여 중 오류가 발생했어요.');
 		}
 	};
 
+	/**
+	 * 커뮤니티 탈퇴 처리
+	 * @param {string} community_id - 커뮤니티 ID
+	 */
 	const handle_leave = async (community_id) => {
-		try {
-			// Optimistic update - UI 즉시 업데이트
-			communities = communities.map(c =>
-				c.id === community_id
-					? { ...c, is_member: false, member_count: Math.max(0, c.member_count - 1) }
-					: c
-			);
+		update_community_membership(community_id, false, -1);
 
+		try {
 			await api.community_members.delete(community_id, me.id);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
 		} catch (error) {
-			console.error(error);
-			// 실패 시 롤백
-			communities = communities.map(c =>
-				c.id === community_id
-					? { ...c, is_member: true, member_count: c.member_count + 1 }
-					: c
-			);
+			console.error('Failed to leave community:', error);
+			update_community_membership(community_id, true, 1);
 			show_toast('error', '참여 취소 중 오류가 발생했어요.');
 		}
 	};
+
+	/**
+	 * 무한 스크롤 데이터 로드
+	 */
+	const load_more_data = async () => {
+		if (is_infinite_loading) return;
+
+		is_infinite_loading = true;
+		try {
+			const new_communities = await api.communities.select_infinite_scroll(
+				last_community_id,
+				me?.id
+			);
+
+			if (new_communities.length > 0) {
+				infinite_scroll_communities = [...infinite_scroll_communities, ...new_communities];
+				last_community_id = new_communities[new_communities.length - 1]?.id || '';
+			}
+		} catch (error) {
+			console.error('Failed to load more communities:', error);
+		} finally {
+			is_infinite_loading = false;
+		}
+	};
+
+	/**
+	 * 무한 스크롤 옵저버 설정
+	 * @returns {() => void} cleanup 함수
+	 */
+	const setup_infinite_scroll = () => {
+		const target = document.getElementById('infinite_scroll');
+		if (!target) return () => {};
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting && all_communities.length >= 10 && !is_infinite_loading) {
+						load_more_data();
+					}
+				});
+			},
+			{ rootMargin: '100px' }
+		);
+
+		observer.observe(target);
+		return () => observer.disconnect();
+	};
+
+	onMount(() => {
+		last_community_id = all_communities[all_communities.length - 1]?.id || '';
+		return setup_infinite_scroll();
+	});
 </script>
 
 <svelte:head>
@@ -129,22 +134,19 @@
 
 <Header>
 	<h1 slot="left" class="font-semibold">커뮤니티</h1>
-	<!-- <div slot="right" class="flex items-center gap-3">
-		<button onclick={() => goto('/search')}>
-			<Icon attribute="search" size={24} color={colors.gray[800]} />
-		</button>
-	</div> -->
 </Header>
 
 <main>
-	{#each all_communities as community}
+	{#each all_communities as community (community.id)}
 		<article class="px-4">
 			<div class="flex items-start justify-between">
 				<a href={`/community/${community.slug}`} class="flex">
 					<img
 						src={community.avatar_url || logo}
-						alt="커뮤니티 아바타"
+						alt={`${community.title} 커뮤니티 아바타`}
 						class="mr-2 block aspect-square h-10 w-10 rounded-full object-cover"
+						loading="lazy"
+						decoding="async"
 					/>
 
 					<div class="flex flex-col justify-between">
@@ -162,6 +164,7 @@
 					<button
 						onclick={() => handle_leave(community.id)}
 						class="btn btn-sm btn-soft h-7"
+						aria-label={`${community.title} 커뮤니티 탈퇴`}
 					>
 						참여중
 					</button>
@@ -169,10 +172,10 @@
 					<button
 						onclick={() => {
 							if (!check_login(me)) return;
-
 							handle_join(community.id);
 						}}
 						class="btn btn-primary btn-sm h-7"
+						aria-label={`${community.title} 커뮤니티 참여하기`}
 					>
 						참여하기
 					</button>
@@ -189,24 +192,24 @@
 
 	<div id="infinite_scroll"></div>
 
-	<div class="flex justify-center py-4">
-		<div
-			class={`border-primary h-8 w-8 animate-spin rounded-full border-t-2 border-b-2 ${
-				is_infinite_loading === false ? 'hidden' : ''
-			}`}
-		></div>
-	</div>
+	{#if is_infinite_loading}
+		<div class="flex justify-center py-4">
+			<div
+				class="border-primary h-8 w-8 animate-spin rounded-full border-t-2 border-b-2"
+				role="status"
+				aria-label="커뮤니티 로딩 중"
+			></div>
+		</div>
+	{/if}
 
-	<div
-		class="fixed bottom-18 mx-auto flex w-full max-w-screen-md justify-end pr-4"
-	>
+	<div class="fixed bottom-18 mx-auto flex w-full max-w-screen-md justify-end pr-4">
 		<button
 			class="rounded-full bg-blue-500 p-4 text-white shadow-lg hover:bg-blue-600"
 			onclick={() => {
 				if (!check_login(me)) return;
-
 				goto('/community/regi');
 			}}
+			aria-label="새 커뮤니티 만들기"
 		>
 			<RiAddLine size={20} color={colors.white} />
 		</button>

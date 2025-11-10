@@ -6,8 +6,6 @@
 
 	import Header from '$lib/components/ui/Header.svelte';
 
-	import event from './event.png';
-
 	const COUPON_CODE = 'WELCOME5000';
 
 	// 개발 모드 토글 (URL에 ?dev=true 추가하면 버튼 위치 확인 가능)
@@ -47,7 +45,7 @@
 <div class="relative mx-auto max-w-screen-md bg-white">
 	<!-- 이벤트 이미지 -->
 	<div class="relative">
-		<img src={event} alt="문 서비스 5,000원 쿠폰 이벤트" class="block w-full" />
+		<enhanced:img src="./event.png" alt="문 서비스 5,000원 쿠폰 이벤트" class="block w-full" />
 
 		<!-- 쿠폰 코드 복사 버튼 (투명 오버레이) -->
 		<!-- WELCOME5000 텍스트 영역 위에 배치 -->
