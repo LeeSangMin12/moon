@@ -52,7 +52,7 @@ export default defineConfig({
 				},
 			},
 			treeshake: {
-				moduleSideEffects: false,
+				moduleSideEffects: 'no-external',
 				propertyReadSideEffects: false,
 			},
 		},
