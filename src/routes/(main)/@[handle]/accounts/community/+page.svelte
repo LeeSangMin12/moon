@@ -7,6 +7,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	import colors from '$lib/config/colors';
 	import { check_login, show_toast } from '$lib/utils/common';
@@ -75,9 +76,12 @@
 				<div class="flex items-start justify-between">
 					<a href={`/community/${item.communities.slug}`} class="flex">
 						<img
-							src={item.communities.avatar_url || logo}
+							src={optimize_avatar(item.communities.avatar_url) || logo}
 							alt="커뮤니티 아바타"
 							class="mr-2 h-12 w-12 rounded-full object-cover"
+							loading="lazy"
+							width="48"
+							height="48"
 						/>
 						<div class="flex flex-col justify-between">
 							<p class="line-clamp-2 pr-4 font-medium">

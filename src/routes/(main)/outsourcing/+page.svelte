@@ -14,16 +14,17 @@
 	import Banner from '../service/Banner.svelte';
 	import SearchInput from '../service/SearchInput.svelte';
 
+	/**
+	 * @typedef {Object} ExpertRequestData
+	 * @property {Array} expert_requests - 외주 요청 목록
+	 * @property {boolean} is_infinite_loading - 무한 스크롤 로딩 상태
+	 * @property {Function} load_more_expert_requests - 추가 데이터 로드 함수
+	 */
+
 	const api = get_api_context();
-
 	const TITLE = '외주';
-
-	let { data } = $props();
-
-	const tabs = ['사이드잡', '풀타임잡'];
-	let selected_tab = $state(0);
-
-	const images = [
+	const TABS = ['사이드잡', '풀타임잡'];
+	const BANNER_IMAGES = [
 		{
 			title: '5,000_coupon',
 			src: five_thousand_coupon_png,
@@ -41,44 +42,80 @@
 		},
 	];
 
-	// Initialize with server-loaded data
-	const expertRequestData = create_expert_request_data(
-		{ expert_requests: data.expert_requests || [] },
+	let { data } = $props();
+	let selected_tab = $state(0);
+	let search_text = $state('');
+
+	// job_type별로 데이터와 무한 스크롤 분리 (재생성 방지)
+	const sidejob_data = create_expert_request_data(
+		{ expert_requests: data.sidejob_requests || [] },
 		api,
+		'sidejob'
 	);
 
-	const expertInfiniteScroll = create_infinite_scroll({
+	const fulltime_data = create_expert_request_data(
+		{ expert_requests: data.fulltime_requests || [] },
+		api,
+		'fulltime'
+	);
+
+	const sidejob_infinite_scroll = create_infinite_scroll({
 		items: {
 			get value() {
-				return expertRequestData.expertRequests;
+				return sidejob_data.expert_requests;
 			},
 		},
-		loadMore: expertRequestData.loadMoreExpertRequests,
+		loadMore: sidejob_data.load_more_expert_requests,
 		isLoading: {
 			get value() {
-				return expertRequestData.isInfiniteLoading;
+				return sidejob_data.is_infinite_loading;
 			},
 			set value(val) {
-				expertRequestData.isInfiniteLoading = val;
+				sidejob_data.is_infinite_loading = val;
 			},
 		},
 		targetId: 'expert_infinite_scroll',
 	});
 
-	let searchText = $state('');
+	const fulltime_infinite_scroll = create_infinite_scroll({
+		items: {
+			get value() {
+				return fulltime_data.expert_requests;
+			},
+		},
+		loadMore: fulltime_data.load_more_expert_requests,
+		isLoading: {
+			get value() {
+				return fulltime_data.is_infinite_loading;
+			},
+			set value(val) {
+				fulltime_data.is_infinite_loading = val;
+			},
+		},
+		targetId: 'expert_infinite_scroll',
+	});
 
-	const handleSearch = async () => {
-		if (searchText.trim()) {
-			const results = await api.expert_requests.select_by_search(searchText);
-			expertRequestData.expertRequests = results;
+	// 현재 선택된 탭의 데이터 가져오기
+	const current_data = $derived(selected_tab === 0 ? sidejob_data : fulltime_data);
+	const current_infinite_scroll = $derived(
+		selected_tab === 0 ? sidejob_infinite_scroll : fulltime_infinite_scroll
+	);
+	const current_job_type = $derived(selected_tab === 0 ? 'sidejob' : 'fulltime');
+
+	/**
+	 * 검색 핸들러
+	 */
+	const handle_search = async () => {
+		if (search_text.trim()) {
+			const results = await api.expert_requests.select_by_search(search_text);
+			current_data.expert_requests = results;
 		} else {
-			// 검색어가 없으면 서버에서 로드한 초기 데이터로 복원
-			expertRequestData.expertRequests = data.expert_requests || [];
+			// 검색어가 없으면 초기 데이터로 복원
+			current_data.expert_requests =
+				selected_tab === 0 ? data.sidejob_requests : data.fulltime_requests;
 		}
-		expertInfiniteScroll.lastId =
-			expertRequestData.expertRequests[
-				expertRequestData.expertRequests.length - 1
-			]?.id || '';
+		current_infinite_scroll.lastId =
+			current_data.expert_requests[current_data.expert_requests.length - 1]?.id || '';
 	};
 </script>
 
@@ -95,33 +132,23 @@
 </Header>
 
 <main>
-	<div>
-		<TabSelector {tabs} bind:selected={selected_tab} />
-	</div>
+	<TabSelector tabs={TABS} bind:selected={selected_tab} />
 
 	<SearchInput
 		placeholder="원하는 외주 프로젝트를 검색해보세요"
-		bind:value={searchText}
-		onSearch={handleSearch}
+		bind:value={search_text}
+		onSearch={handle_search}
 	/>
 
 	<section class="flex flex-col items-center">
-		<Banner {images} />
+		<Banner images={BANNER_IMAGES} />
 	</section>
 
-	{#if selected_tab === 0}
-		<ExpertRequestTab
-			{expertRequestData}
-			infiniteScroll={expertInfiniteScroll}
-			jobType="sidejob"
-		/>
-	{:else if selected_tab === 1}
-		<ExpertRequestTab
-			{expertRequestData}
-			infiniteScroll={expertInfiniteScroll}
-			jobType="fulltime"
-		/>
-	{/if}
+	<ExpertRequestTab
+		expert_request_data={current_data}
+		infinite_scroll={current_infinite_scroll}
+		job_type={current_job_type}
+	/>
 </main>
 
 <Bottom_nav />

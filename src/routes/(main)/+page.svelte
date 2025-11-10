@@ -17,6 +17,7 @@
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import PostSkeleton from '$lib/components/ui/PostSkeleton.svelte';
 	import TabSelector from '$lib/components/ui/TabSelector.svelte';
 
@@ -32,59 +33,50 @@
 	// ===== Props =====
 	let { data } = $props();
 
-	// ===== Dynamic Imports (Code Splitting) =====
-	/**
-	 * Post 컴포넌트 (동적 로드)
-	 * @type {import('svelte').Component | undefined}
-	 */
-	let Post = $state();
-
 	// ===== Home Data (Composable) =====
 	const home_data = create_home_data(api, me, data.posts || []);
 
 	// ===== Lifecycle =====
 	onMount(async () => {
-		const PostModule = await import('$lib/components/Post.svelte');
-		Post = PostModule.default;
-
 		home_data.initialize_posts();
-		home_data.load_secondary_data();
-	});
 
-	// ===== Effects =====
-	/**
-	 * 무한스크롤 설정
-	 * Post 컴포넌트 로드 완료 후 IntersectionObserver 초기화
-	 */
-	$effect(() => {
-		if (!Post) return;
+		// 서버에서 스트리밍된 데이터 처리
+		if (data.communities instanceof Promise) {
+			data.communities.then((communities) => {
+				home_data.joined_communities = communities;
+				home_data.tabs = ['최신', ...communities.map((c) => c.title)];
+			});
+		} else if (data.communities) {
+			home_data.joined_communities = data.communities;
+			home_data.tabs = ['최신', ...data.communities.map((c) => c.title)];
+		}
 
-		const cleanup = home_data.setup_infinite_scroll();
-		return cleanup;
-	});
-
-	/**
-	 * 사용자 로그인 시 알림 카운트 갱신
-	 */
-	$effect(() => {
-		if (!me.id) return;
-
-		home_data.refresh_unread_count();
+		if (data.unread_count instanceof Promise) {
+			data.unread_count.then((count) => {
+				home_data.unread_count = count;
+			});
+		} else if (data.unread_count !== undefined) {
+			home_data.unread_count = data.unread_count;
+		}
 	});
 
 	/**
-	 * 탭 변경 시 게시물 로드
+	 * 무한스크롤 설정 (마운트 시 한 번만 실행)
 	 */
-	$effect(() => {
-		const current_selected = home_data.selected;
-		const communities = home_data.joined_communities;
-
-		if (current_selected > 0 && communities.length === 0) return;
-
-		home_data.load_posts_by_tab(current_selected);
+	onMount(() => {
+		return home_data.setup_infinite_scroll();
 	});
 
 	// ===== Event Handlers =====
+	/**
+	 * 탭 변경 핸들러
+	 * @param {number} tab_index - 선택된 탭 인덱스
+	 */
+	const handle_tab_change = (tab_index) => {
+		if (tab_index > 0 && home_data.joined_communities.length === 0) return;
+		home_data.load_posts_by_tab(tab_index);
+	};
+
 	/**
 	 * Gift 댓글 추가 핸들러
 	 * 메인 페이지에서는 댓글 UI가 없지만 DB에는 저장됩니다.
@@ -180,9 +172,13 @@
 </Header>
 
 <main>
-	<TabSelector tabs={home_data.tabs} bind:selected={home_data.selected} />
+	<TabSelector
+		tabs={home_data.tabs}
+		bind:selected={home_data.selected}
+		on_change={handle_tab_change}
+	/>
 
-	{#if home_data.posts.length === 0}
+	{#if home_data.is_tab_loading || home_data.posts.length === 0}
 		{#each Array(SKELETON_COUNT) as _, i (i)}
 			<div class="mt-4">
 				<PostSkeleton />

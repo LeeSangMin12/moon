@@ -234,6 +234,7 @@
 								class="h-full w-full object-cover"
 								src={img.uri}
 								alt={img.name || 'service image'}
+								loading="eager"
 							/>
 						</div>
 						<button onclick={() => delete_img(idx)} aria-label="삭제">

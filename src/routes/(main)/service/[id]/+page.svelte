@@ -14,6 +14,7 @@
 		copy_to_clipboard,
 		show_toast,
 	} from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -648,9 +649,12 @@
 								<div class="flex items-start justify-between">
 									<div class="flex items-center">
 										<img
-											src={review.reviewer.avatar_url || '/favicon.png'}
+											src={optimize_avatar(review.reviewer.avatar_url)}
 											alt={review.reviewer.name}
 											class="mr-3 aspect-square h-8 w-8 rounded-full object-cover"
+											loading="lazy"
+											width="32"
+											height="32"
 										/>
 										<div>
 											<p class="text-sm font-medium">

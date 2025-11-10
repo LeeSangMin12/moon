@@ -26,6 +26,7 @@
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	const TITLE = '문';
 
@@ -52,11 +53,12 @@
 
 	// user.id 변경 시에만 팔로우 카운트 로드 (적절한 $effect 사용)
 	$effect(() => {
-		if (!user?.id) return;
+		if (!user?.id || !api?.user_follows) return;
 		load_follow_counts(user.id);
 	});
 
 	const load_follow_counts = async (userId) => {
+		if (!api?.user_follows) return;
 		try {
 			const [follower, following] = await Promise.all([
 				api.user_follows.get_follower_count(userId),
@@ -191,6 +193,7 @@
 	};
 
 	const load_tab_data = async (tab_index) => {
+		if (!api?.posts) return;
 		if (tab_index === 0) {
 			// 게시글 탭
 			tab_posts = await api.posts.select_by_user_id(user.id);
@@ -214,6 +217,7 @@
 
 	// 탭 변경 시 데이터 로드
 	$effect(() => {
+		if (!api?.posts) return;
 		load_tab_data(selected);
 	});
 
@@ -323,7 +327,11 @@
 <Header>
 	<div slot="left">
 		{#if $page.params.handle !== me?.handle}
-			<button class="flex items-center" onclick={smartGoBack}>
+			<button
+				class="flex items-center"
+				onclick={smartGoBack}
+				aria-label="이전 페이지로 돌아가기"
+			>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 			</button>
 		{/if}
@@ -341,6 +349,7 @@
 					goto(`/@${me?.handle}/accounts`);
 				}
 			}}
+			aria-label={$page.params.handle !== me?.handle ? '사용자 메뉴 열기' : '계정 설정 열기'}
 		>
 			<Icon attribute="menu" size={24} color={colors.gray[600]} />
 		</button>
@@ -354,9 +363,12 @@
 			<!-- 프로필 이미지 -->
 			<div class="mr-4">
 				<img
-					src={user?.avatar_url || profile_png}
-					alt="프로필 이미지"
+					src={optimize_avatar(user?.avatar_url) || profile_png}
+					alt="{user?.name || '사용자'}님의 프로필 사진"
 					class="block aspect-square h-14 w-14 rounded-full object-cover"
+					loading="eager"
+					width="56"
+					height="56"
 				/>
 			</div>
 			<!-- 프로필 정보 -->
@@ -380,15 +392,17 @@
 		<!-- 팔로워/팔로잉 정보 -->
 		<div class="mt-4 flex items-center space-x-4">
 			<button
-				class="cursor-pointer"
+				class="cursor-pointer min-h-[44px] py-2"
 				onclick={() => open_follow_modal('followers')}
+				aria-label="{follower_count}명의 팔로워 보기"
 			>
 				<span class="font-medium">{follower_count}</span>
 				<span class="text-sm text-gray-500"> 팔로워</span>
 			</button>
 			<button
-				class="cursor-pointer"
+				class="cursor-pointer min-h-[44px] py-2"
 				onclick={() => open_follow_modal('followings')}
+				aria-label="{following_count}명의 팔로잉 보기"
 			>
 				<span class="font-medium">{following_count}</span>
 				<span class="text-sm text-gray-500"> 팔로잉</span>
@@ -406,6 +420,7 @@
 				<button
 					onclick={() => user?.handle && goto(`/@${user.handle}/accounts/profile/modify`)}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+					aria-label="프로필 편집 페이지로 이동"
 				>
 					프로필 편집
 				</button>
@@ -417,6 +432,7 @@
 						);
 					}}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+					aria-label="프로필 링크 복사하기"
 				>
 					프로필 공유
 				</button>
@@ -427,6 +443,7 @@
 					<button
 						class="btn flex h-9 flex-1 items-center justify-center"
 						onclick={toggle_follow}
+						aria-label="{user?.name}님 팔로우 취소"
 					>
 						팔로잉
 					</button>
@@ -434,6 +451,7 @@
 					<button
 						class="btn btn-primary flex h-9 flex-1 items-center justify-center"
 						onclick={toggle_follow}
+						aria-label="{user?.name}님 팔로우하기"
 					>
 						팔로우
 					</button>
@@ -444,6 +462,7 @@
 						modal.coffee_chat = true;
 					}}
 					class="btn flex h-9 flex-1 items-center justify-center border-none bg-gray-100"
+					aria-label="{user?.name}님에게 커피챗 신청하기"
 				>
 					커피챗
 				</button>
@@ -454,7 +473,8 @@
 							'링크가 복사되었습니다.',
 						);
 					}}
-					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100"
+					class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 min-w-[44px] min-h-[44px]"
+					aria-label="프로필 링크 공유하기"
 				>
 					<RiShareLine />
 				</button>
@@ -498,6 +518,7 @@
 											`/@${comment.post.users.handle}/post/${comment.post.id}`,
 										)}
 									class="mt-1 text-xs text-blue-600 hover:underline"
+									aria-label="원본 게시글 보기"
 								>
 									게시글 보기 →
 								</button>
@@ -508,9 +529,12 @@
 					<!-- 댓글 내용 -->
 					<div class="flex items-start space-x-3">
 						<img
-							src={user.avatar_url || profile_png}
-							alt={user.name}
+							src={optimize_avatar(user.avatar_url) || profile_png}
+							alt="{user.name}님의 프로필 사진"
 							class="h-8 w-8 rounded-full"
+							loading="lazy"
+							width="32"
+							height="32"
 						/>
 						<div class="flex-1">
 							<div class="flex items-center space-x-2">
@@ -572,6 +596,7 @@
 							<button
 								onclick={() => goto(`/expert-request/${review.request.id}`)}
 								class="mt-1 text-xs text-emerald-600 hover:underline"
+								aria-label="전문가 요청 상세보기"
 							>
 								요청 보기 →
 							</button>
@@ -582,12 +607,22 @@
 					<div class="flex items-start space-x-3">
 						{#if review.reviewer?.avatar_url}
 							<img
-								src={review.reviewer.avatar_url}
-								alt={review.reviewer.name || '익명'}
+								src={optimize_avatar(review.reviewer.avatar_url)}
+								alt="{review.reviewer.name || '익명 사용자'}님의 프로필 사진"
 								class="h-8 w-8 rounded-full"
+								loading="lazy"
+								width="32"
+								height="32"
 							/>
 						{:else}
-							<img src={profile_png} alt="익명" class="h-8 w-8 rounded-full" />
+							<img
+								src={profile_png}
+								alt="익명 사용자의 기본 프로필 사진"
+								class="h-8 w-8 rounded-full"
+								loading="lazy"
+								width="32"
+								height="32"
+							/>
 						{/if}
 						<div class="flex-1">
 							<div class="flex items-center justify-between">
@@ -639,6 +674,7 @@
 							<button
 								onclick={() => goto(`/service/${review.service.id}`)}
 								class="mt-1 text-xs text-blue-600 hover:underline"
+								aria-label="서비스 상세보기"
 							>
 								서비스 보기 →
 							</button>
@@ -649,12 +685,22 @@
 					<div class="flex items-start space-x-3">
 						{#if review.reviewer?.avatar_url}
 							<img
-								src={review.reviewer.avatar_url}
-								alt={review.reviewer.name || '익명'}
+								src={optimize_avatar(review.reviewer.avatar_url)}
+								alt="{review.reviewer.name || '익명 사용자'}님의 프로필 사진"
 								class="h-8 w-8 rounded-full"
+								loading="lazy"
+								width="32"
+								height="32"
 							/>
 						{:else}
-							<img src={profile_png} alt="익명" class="h-8 w-8 rounded-full" />
+							<img
+								src={profile_png}
+								alt="익명 사용자의 기본 프로필 사진"
+								class="h-8 w-8 rounded-full"
+								loading="lazy"
+								width="32"
+								height="32"
+							/>
 						{/if}
 						<div class="flex-1">
 							<div class="flex items-center justify-between">
@@ -718,6 +764,7 @@
 		<button
 			onclick={() => (modal.report = true)}
 			class="flex w-full flex-col items-center rounded-lg bg-white"
+			aria-label="사용자 신고하기"
 		>
 			<div class="flex w-full items-center gap-2 p-3">
 				<Icon attribute="exclamation" size={24} color={colors.warning} />
@@ -760,12 +807,14 @@
 		<button
 			onclick={() => (modal.report = false)}
 			class="btn w-1/3 rounded-none"
+			aria-label="신고 취소"
 		>
 			취소
 		</button>
 		<button
 			onclick={handle_report_submit}
 			class="btn btn-primary w-2/3 rounded-none"
+			aria-label="신고 제출하기"
 		>
 			제출
 		</button>

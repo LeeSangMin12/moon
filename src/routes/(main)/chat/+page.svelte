@@ -4,6 +4,7 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	import colors from '$lib/config/colors';
 
@@ -33,9 +34,12 @@
 		<div class="flex items-start">
 			<div class="mr-3 h-12 w-12 flex-shrink-0 overflow-hidden rounded-full">
 				<img
-					src="https://readdy.ai/api/search-image?query=professional%2520asian%2520female%2520headshot%252C%2520tech%2520professional%252C%2520neutral%2520background%252C%2520high%2520quality%2520portrait&width=100&height=100&seq=202&orientation=squarish"
-					alt="이서연"
+					src={optimize_avatar("https://readdy.ai/api/search-image?query=professional%2520asian%2520female%2520headshot%252C%2520tech%2520professional%252C%2520neutral%2520background%252C%2520high%2520quality%2520portrait&width=100&height=100&seq=202&orientation=squarish")}
+					alt="이서연 프로필 사진"
 					class="h-full w-full object-cover"
+					loading="lazy"
+					width="48"
+					height="48"
 				/>
 			</div>
 			<div class="min-w-0 flex-1">

@@ -11,6 +11,7 @@
 		format_date,
 		show_toast,
 	} from '$lib/utils/common';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import {
@@ -29,6 +30,7 @@
 	import GiftModal from '$lib/components/ui/GiftModal.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	// ===== Context =====
 	const me = get_user_context();
@@ -121,7 +123,13 @@
 	// ===== Computed Values =====
 	const author_handle = post.users?.handle || 'unknown';
 	const post_url = `/@${author_handle}/post/${post.id}`;
-	const full_post_url = `${window.location.origin}${post_url}`;
+
+	/**
+	 * 전체 게시물 URL (클라이언트에서만 계산)
+	 */
+	const full_post_url = $derived(
+		typeof window !== 'undefined' ? `${window.location.origin}${post_url}` : ''
+	);
 
 	/**
 	 * 사용자 투표 상태
@@ -289,26 +297,25 @@
 		if (!check_login(me) || is_bookmarking) return;
 
 		is_bookmarking = true;
-		const old_bookmarks = post.post_bookmarks;
 
 		try {
 			if (is_bookmarked) {
-				post.post_bookmarks = post.post_bookmarks.filter(
-					(bookmark) => bookmark.user_id !== me.id,
-				);
 				await api.post_bookmarks.delete(post.id, me.id);
+				onBookmarkChanged?.({
+					post_id: post.id,
+					action: 'remove',
+					user_id: me.id,
+				});
 			} else {
-				post.post_bookmarks = [...post.post_bookmarks, { user_id: me.id }];
 				await api.post_bookmarks.insert(post.id, me.id);
+				onBookmarkChanged?.({
+					post_id: post.id,
+					action: 'add',
+					user_id: me.id,
+				});
 			}
-
-			onBookmarkChanged?.({
-				post_id: post.id,
-				bookmarks: post.post_bookmarks,
-			});
 		} catch (error) {
 			console.error('Bookmark toggle failed:', error);
-			post.post_bookmarks = old_bookmarks;
 			show_toast('error', '북마크 처리 중 오류가 발생했습니다.');
 		} finally {
 			is_bookmarking = false;
@@ -410,6 +417,19 @@
 	}
 
 	/**
+	 * Supabase 이미지 URL 최적화 (width, quality 파라미터 추가)
+	 * @param {string} uri - 이미지 URI
+	 * @returns {string} - 최적화된 URI
+	 */
+	function optimize_image(uri) {
+		if (!uri || is_video(uri)) return uri;
+		if (uri.includes('supabase.co/storage')) {
+			return `${uri}?width=800&quality=75`;
+		}
+		return uri;
+	}
+
+	/**
 	 * 링크 복사
 	 */
 	function copy_post_link() {
@@ -432,10 +452,13 @@
 	<div class="flex items-center justify-between">
 		<a href={`/@${author_handle}`} class="flex items-center">
 			<img
-				src={post.users?.avatar_url ?? profile_png}
-				alt={post.users?.name || 'Unknown User'}
+				src={optimize_avatar(post.users?.avatar_url) ?? profile_png}
+				alt="{post.users?.name || 'Unknown User'}님의 프로필 사진"
 				class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 				loading="lazy"
+				decoding="async"
+				width="32"
+				height="32"
 			/>
 			<p class="pr-3 text-sm font-medium">
 				{post.users?.name || 'Unknown User'}
@@ -455,7 +478,7 @@
 				{/if}
 			{/if}
 		{:else}
-			<button onclick={open_config_modal}>
+			<button onclick={open_config_modal} aria-label="게시물 메뉴 열기">
 				<Icon attribute="ellipsis" size={20} color={colors.gray[500]} />
 			</button>
 		{/if}
@@ -476,13 +499,14 @@
 						<video
 							src={post.images[0].uri}
 							controls
+							preload="metadata"
 							class="w-full rounded-lg"
 							style="max-height: 320px;"
 						>
 							<track kind="captions" label="No captions" />
 						</video>
 					{:else}
-						<CustomCarousel images={post.images.map((img) => img.uri)} />
+						<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
 					{/if}
 				</figure>
 			{/if}
@@ -499,18 +523,25 @@
 					<video
 						src={post.images[0].uri}
 						controls
+						preload="metadata"
 						class="w-full rounded-lg"
 						style="max-height: 320px;"
 					>
 						<track kind="captions" label="No captions" />
 					</video>
 				{:else}
-					<CustomCarousel images={post.images.map((img) => img.uri)} />
+					<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
 				{/if}
 			</figure>
 		{:else}
 			<!-- List Page: Preview with Fade -->
-			<a href={post_url}>
+			<div
+				role="button"
+				tabindex="0"
+				onclick={() => goto(post_url)}
+				onkeydown={(e) => e.key === 'Enter' && goto(post_url)}
+				class="cursor-pointer"
+			>
 				<div
 					class="prose prose-sm mt-2 max-w-none text-sm"
 					style="max-height: 10rem; overflow: hidden; position: relative;"
@@ -520,7 +551,7 @@
 						style="position: absolute; bottom: 0; left: 0; right: 0; height: 2rem; background: linear-gradient(transparent, white); pointer-events: none;"
 					></div>
 				</div>
-			</a>
+			</div>
 		{/if}
 
 		<!-- Community Badge -->

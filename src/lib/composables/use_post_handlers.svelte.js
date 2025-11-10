@@ -32,15 +32,29 @@ export function create_post_handlers(get_posts, set_posts, me) {
 	/**
 	 * 북마크 변경 콜백 핸들러
 	 * Post 컴포넌트에서 북마크 상태가 변경되면 posts 배열 업데이트
+	 *
+	 * @param {Object} data - 북마크 이벤트 데이터
+	 * @param {string} data.post_id - 게시물 ID
+	 * @param {string} data.action - 'add' 또는 'remove'
+	 * @param {string} data.user_id - 사용자 ID
 	 */
 	const handle_bookmark_changed = (data) => {
-		const { post_id, bookmarks } = data;
+		const { post_id, action, user_id } = data;
 		const posts = get_posts();
 
-		// posts 배열에서 해당 post 찾아서 업데이트
-		const updated_posts = posts.map((p) =>
-			p.id === post_id ? { ...p, post_bookmarks: bookmarks } : p
-		);
+		const updated_posts = posts.map((p) => {
+			if (p.id !== post_id) return p;
+
+			let updated_bookmarks = p.post_bookmarks || [];
+
+			if (action === 'add') {
+				updated_bookmarks = [...updated_bookmarks, { user_id }];
+			} else if (action === 'remove') {
+				updated_bookmarks = updated_bookmarks.filter((b) => b.user_id !== user_id);
+			}
+
+			return { ...p, post_bookmarks: updated_bookmarks };
+		});
 
 		set_posts(updated_posts);
 	};

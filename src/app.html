@@ -5,7 +5,7 @@
 		<meta charset="utf-8" />
 		<meta
 			name="viewport"
-			content="viewport-fit=cover, height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+			content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0"
 		/>
 
 		<!-- DNS prefetch and preconnect for performance -->
@@ -15,18 +15,21 @@
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 		<link rel="preconnect" href="https://www.googletagmanager.com" />
 
-		<!-- Google Tag Manager (should be as early as possible) -->
+		<!-- Google Tag Manager (deferred for performance) -->
 		<script>
-			(function (w, d, s, l, i) {
-				w[l] = w[l] || [];
-				w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-				var f = d.getElementsByTagName(s)[0],
-					j = d.createElement(s),
-					dl = l != 'dataLayer' ? '&l=' + l : '';
-				j.async = true;
-				j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-				f.parentNode.insertBefore(j, f);
-			})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
+			// GTM을 defer로 로드하여 render blocking 방지
+			window.addEventListener('DOMContentLoaded', function () {
+				(function (w, d, s, l, i) {
+					w[l] = w[l] || [];
+					w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+					var f = d.getElementsByTagName(s)[0],
+						j = d.createElement(s),
+						dl = l != 'dataLayer' ? '&l=' + l : '';
+					j.async = true;
+					j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+					f.parentNode.insertBefore(j, f);
+				})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
+			});
 		</script>
 		<!-- End Google Tag Manager -->
 
@@ -80,13 +83,10 @@
 		<!-- Favicon and icons -->
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 
-		<!-- Preload critical resources -->
-		<link rel="preload" href="%sveltekit.assets%/favicon.png" as="image" />
-
 		%sveltekit.head%
 	</head>
 
-	<body data-sveltekit-preload-data="tap">
+	<body data-sveltekit-preload-data="hover" data-sveltekit-preload-code="hover">
 		<!-- Google Tag Manager (noscript) -->
 		<noscript
 			><iframe

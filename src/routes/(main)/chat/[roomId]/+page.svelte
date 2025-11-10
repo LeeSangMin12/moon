@@ -38,8 +38,11 @@
 		<div class="chat-image avatar">
 			<div class="w-10 rounded-full">
 				<img
-					alt="Tailwind CSS chat bubble component"
+					alt="상대방 프로필 사진"
 					src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
+					loading="lazy"
+					width="40"
+					height="40"
 				/>
 			</div>
 		</div>

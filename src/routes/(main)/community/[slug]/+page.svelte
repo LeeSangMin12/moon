@@ -14,6 +14,7 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	import colors from '$lib/config/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
@@ -214,9 +215,12 @@
 			<!-- 프로필 이미지 -->
 			<div>
 				<img
-					src={community.avatar_url || logo}
+					src={optimize_avatar(community.avatar_url) || logo}
 					alt="커뮤니티 아바타"
 					class="mr-2 block aspect-square h-14 w-14 rounded-full object-cover"
+					loading="eager"
+					width="56"
+					height="56"
 				/>
 			</div>
 			<!-- 프로필 정보 -->

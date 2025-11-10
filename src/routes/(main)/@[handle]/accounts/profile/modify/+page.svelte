@@ -5,6 +5,7 @@
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	import colors from '$lib/config/colors';
 	import { show_toast } from '$lib/utils/common';
@@ -103,9 +104,21 @@
 				<div class="avatar relative">
 					<div class="w-24 rounded-full">
 						{#if form.avatar_url}
-							<img src={form.avatar_url} alt="user_profile_png" />
+							<img
+								src={optimize_avatar(form.avatar_url)}
+								alt="사용자 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
+							/>
 						{:else}
-							<img src={profile_png} alt="user_profile_png" />
+							<img
+								src={profile_png}
+								alt="기본 사용자 프로필 사진"
+								loading="eager"
+								width="96"
+								height="96"
+							/>
 						{/if}
 					</div>
 

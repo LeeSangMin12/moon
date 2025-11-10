@@ -1,6 +1,7 @@
 <script>
 	import profile_png from '$lib/img/common/user/profile.png';
 	import { goto } from '$app/navigation';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
@@ -37,10 +38,12 @@
 <article class="my-3 flex items-center justify-between px-4">
 	<a href={`/@${profile.handle}`} class="flex cursor-pointer items-center">
 		<img
-			src={profile.avatar_url || profile_png}
-			alt={profile.handle}
+			src={optimize_avatar(profile.avatar_url) || profile_png}
+			alt="{profile.name || profile.handle}님의 프로필 사진"
 			class="mr-2 block aspect-square h-8 w-8 rounded-full object-cover"
 			loading="lazy"
+			width="32"
+			height="32"
 		/>
 		<div class="flex flex-col">
 			<p class="pr-4 text-sm font-medium">{profile.name}</p>

@@ -6,6 +6,15 @@
  */
 export const create_posts_api = (supabase) => {
 	/**
+	 * 초기 로딩용 최소 필드 (빠른 렌더링)
+	 * vote, bookmark, comment count 제외 → 클라이언트에서 하이드레이션
+	 */
+	const POST_LIST_FIELDS_MINIMAL =
+		'id, title, content, created_at, author_id, community_id, like_count, images, ' +
+		'users:author_id(id, handle, name, avatar_url), ' +
+		'communities(id, title, slug)';
+
+	/**
 	 * 공통 select 필드 (중복 제거)
 	 * 게시물 목록 조회 시 기본으로 사용하는 필드
 	 */
@@ -54,13 +63,21 @@ export const create_posts_api = (supabase) => {
 		 * @param {string|number} last_post_id - 마지막 게시물 ID (페이지네이션 커서)
 		 * @param {string} community_id - 커뮤니티 ID (빈 문자열이면 전체)
 		 * @param {number} limit - 한 번에 가져올 개수 (기본값: 20)
+		 * @param {boolean} minimal - 최소 필드만 가져올지 여부 (기본값: false)
 		 * @returns {Promise<Object[]>} 게시물 배열
 		 * @throws {Error} 쿼리 실패 시
 		 */
-		select_infinite_scroll: async (last_post_id, community_id, limit = 20) => {
+		select_infinite_scroll: async (
+			last_post_id,
+			community_id,
+			limit = 20,
+			minimal = false
+		) => {
+			const fields = minimal ? POST_LIST_FIELDS_MINIMAL : POST_LIST_FIELDS;
+
 			let query = supabase
 				.from('posts')
-				.select(POST_LIST_FIELDS)
+				.select(fields)
 				.order('created_at', { ascending: false })
 				.limit(limit);
 

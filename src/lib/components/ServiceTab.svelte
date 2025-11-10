@@ -1,15 +1,27 @@
 <script>
-	import { onMount } from 'svelte';
-
+	/**
+	 * Service tab component
+	 * @component
+	 * Renders service grid with infinite scroll functionality
+	 */
 	import FloatingActionButton from '$lib/components/FloatingActionButton.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Service from '$lib/components/Service.svelte';
 
+	/**
+	 * @typedef {Object} Props
+	 * @property {Object} serviceData - Service data manager
+	 * @property {Object} infiniteScroll - Infinite scroll controller
+	 */
 	let { serviceData, infiniteScroll } = $props();
 
-	onMount(() => {
+	$effect(() => {
 		infiniteScroll.initializeLastId();
-		infiniteScroll.setupObserver();
+		const observer = infiniteScroll.setupObserver();
+
+		return () => {
+			observer?.disconnect();
+		};
 	});
 </script>
 

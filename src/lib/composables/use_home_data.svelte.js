@@ -38,6 +38,9 @@ export function create_home_data(api, me, initial_posts = []) {
 	/** @type {string} 무한스크롤용 마지막 게시물 ID */
 	let last_post_id = $state('');
 
+	/** @type {boolean} 탭 전환 로딩 중 여부 */
+	let is_tab_loading = $state(false);
+
 	/** @type {boolean} 무한스크롤 로딩 중 여부 */
 	let is_infinite_loading = $state(false);
 
@@ -93,6 +96,10 @@ export function create_home_data(api, me, initial_posts = []) {
 	 * @param {number} tab_index - 탭 인덱스 (0: 최신, 1+: 커뮤니티)
 	 */
 	async function load_posts_by_tab(tab_index) {
+		if (!api?.posts || is_tab_loading) return;
+
+		is_tab_loading = true;
+
 		try {
 			const community_id = tab_index === 0
 				? ''
@@ -103,6 +110,8 @@ export function create_home_data(api, me, initial_posts = []) {
 			last_post_id = loaded_posts.at(-1)?.id ?? '';
 		} catch (error) {
 			console.error('Failed to load posts:', error);
+		} finally {
+			is_tab_loading = false;
 		}
 	}
 
@@ -126,7 +135,6 @@ export function create_home_data(api, me, initial_posts = []) {
 				10
 			);
 
-			// 새로운 게시물이 있을 때만 추가
 			if (new_posts.length > 0) {
 				posts = [...posts, ...new_posts];
 				last_post_id = new_posts.at(-1)?.id ?? '';
@@ -195,13 +203,21 @@ export function create_home_data(api, me, initial_posts = []) {
 
 	// ===== Public API =====
 	return {
-		// State (읽기 전용으로 반환)
+		// State (Svelte 5 $state는 이미 반응형이므로 직접 노출)
 		get posts() { return posts; },
+		set posts(value) { posts = value; },
 		get joined_communities() { return joined_communities; },
+		set joined_communities(value) {
+			joined_communities = value;
+			tabs = ['최신', ...value.map((c) => c.title)];
+		},
 		get tabs() { return tabs; },
+		set tabs(value) { tabs = value; },
 		get selected() { return selected; },
 		set selected(value) { selected = value; },
 		get unread_count() { return unread_count; },
+		set unread_count(value) { unread_count = value; },
+		get is_tab_loading() { return is_tab_loading; },
 		get is_infinite_loading() { return is_infinite_loading; },
 
 		// Methods

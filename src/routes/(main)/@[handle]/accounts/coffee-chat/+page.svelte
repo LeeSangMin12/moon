@@ -10,6 +10,7 @@
 	import colors from '$lib/config/colors';
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { show_toast } from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -125,9 +126,12 @@
 									onclick={() => goToProfile(chat.sender.handle)}
 								>
 									<img
-										src={chat.sender.avatar_url || '/default-avatar.png'}
+										src={optimize_avatar(chat.sender.avatar_url)}
 										alt={chat.sender.name}
 										class="h-10 w-10 rounded-full object-cover"
+										loading="lazy"
+										width="40"
+										height="40"
 									/>
 									<div class="text-left">
 										<p class="font-medium text-gray-900">{chat.sender.name}</p>
@@ -264,9 +268,12 @@
 									onclick={() => goToProfile(chat.recipient.handle)}
 								>
 									<img
-										src={chat.recipient.avatar_url || '/default-avatar.png'}
+										src={optimize_avatar(chat.recipient.avatar_url)}
 										alt={chat.recipient.name}
 										class="h-10 w-10 rounded-full object-cover"
+										loading="lazy"
+										width="40"
+										height="40"
 									/>
 									<div class="text-left">
 										<p class="font-medium text-gray-900">{chat.recipient.name}</p>

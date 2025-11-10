@@ -25,6 +25,7 @@
 		onmouseenter={() => handlePreload('/')}
 		ontouchstart={() => handlePreload('/')}
 		class="flex flex-col items-center gap-0.5"
+		aria-label="홈"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -49,6 +50,7 @@
 		onmouseenter={() => handlePreload('/community')}
 		ontouchstart={() => handlePreload('/community')}
 		class="flex flex-col items-center gap-0.5"
+		aria-label="커뮤니티"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -75,6 +77,7 @@
 		onmouseenter={() => handlePreload('/service')}
 		ontouchstart={() => handlePreload('/service')}
 		class="flex flex-col items-center gap-0.5"
+		aria-label="서비스"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -101,6 +104,7 @@
 		onmouseenter={() => handlePreload('/outsourcing')}
 		ontouchstart={() => handlePreload('/outsourcing')}
 		class="flex flex-col items-center gap-0.5"
+		aria-label="외주"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -131,6 +135,7 @@
 			}
 		}}
 		class="flex flex-col items-center gap-0.5"
+		aria-label="프로필"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"

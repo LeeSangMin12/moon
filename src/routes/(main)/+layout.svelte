@@ -25,8 +25,6 @@
 		Object.assign(api, create_api(supabase));
 	});
 
-	let is_initialized = $state(false);
-
 	/**
 	 * 사용자 팔로우/팔로워 데이터를 비동기로 로드
 	 * Post, UserCard 등 여러 컴포넌트에서 공통으로 사용하므로 layout에서 로드
@@ -83,9 +81,8 @@
 		await load_authenticated_user(user_id);
 	}
 
+	// SSR에서도 기본 상태로 렌더링하고, 클라이언트에서 점진적으로 사용자 데이터 로드
 	onMount(() => {
-		is_initialized = true;
-
 		// 브라우저가 유휴 상태일 때 사용자 데이터 로드 (성능 최적화)
 		requestIdleCallback(() => {
 			initialize_user_data();
@@ -93,11 +90,9 @@
 	});
 </script>
 
-{#if is_initialized}
-	<div class="mx-auto max-w-screen-md">
-		{@render children()}
-	</div>
-{/if}
+<div class="mx-auto max-w-screen-md">
+	{@render children()}
+</div>
 
 {#if $loading}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
