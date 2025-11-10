@@ -3,12 +3,14 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vite';
+import removeConsole from 'vite-plugin-remove-console';
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		enhancedImages(),
 		sveltekit(),
+		removeConsole(),
 		// 추가 압축이 필요하면: npm install -D vite-plugin-compression
 		// Vercel은 자동으로 gzip/brotli 압축을 제공합니다
 	],
@@ -27,18 +29,6 @@ export default defineConfig({
 				warn(warning);
 			},
 			output: {
-				manualChunks(id) {
-					if (id.includes('node_modules')) {
-						// 큰 라이브러리를 세밀하게 분리
-						if (id.includes('@tiptap')) return 'tiptap';
-						if (id.includes('xlsx')) return 'xlsx';
-						if (id.includes('@supabase')) return 'supabase';
-						if (id.includes('svelte-remixicon')) return 'icons';
-						if (id.includes('daisyui')) return 'daisyui';
-						// 나머지 vendor 라이브러리
-						return 'vendor';
-					}
-				},
 				// Asset 파일명 최적화 (캐시 효율성)
 				assetFileNames: (assetInfo) => {
 					const info = assetInfo.name.split('.');
@@ -51,15 +41,13 @@ export default defineConfig({
 					return `assets/[name]-[hash][extname]`;
 				},
 			},
-			treeshake: {
-				moduleSideEffects: true,
-				propertyReadSideEffects: false,
-			},
 		},
 		sourcemap: false,
-		// 기본 esbuild minify (안전하고 빠름)
 		minify: 'esbuild',
 		target: 'es2020',
+		esbuild: {
+			drop: ['console', 'debugger'],
+		},
 	},
 	test: {
 		workspace: [
