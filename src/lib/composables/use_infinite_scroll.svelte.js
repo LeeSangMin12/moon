@@ -1,4 +1,4 @@
-export function createInfiniteScroll(config) {
+export function create_infinite_scroll(config) {
 	const {
 		items,
 		loadMore,
@@ -9,7 +9,7 @@ export function createInfiniteScroll(config) {
 	} = config;
 
 	let lastId = $state('');
-	
+
 	const initializeLastId = () => {
 		lastId = items.value[items.value.length - 1]?.id || '';
 	};

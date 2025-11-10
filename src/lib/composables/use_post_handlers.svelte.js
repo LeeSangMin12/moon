@@ -11,7 +11,7 @@
  *
  * @example
  * // 기본 사용법
- * const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+ * const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
  *   () => posts,           // getter
  *   (val) => posts = val,  // setter
  *   me
@@ -19,7 +19,7 @@
  *
  * @example
  * // 캐시도 함께 업데이트하는 경우
- * const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+ * const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
  *   () => posts,
  *   (val) => {
  *     posts = val;
@@ -28,7 +28,7 @@
  *   me
  * );
  */
-export function createPostHandlers(get_posts, set_posts, me) {
+export function create_post_handlers(get_posts, set_posts, me) {
 	/**
 	 * 북마크 변경 콜백 핸들러
 	 * Post 컴포넌트에서 북마크 상태가 변경되면 posts 배열 업데이트

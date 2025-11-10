@@ -1,6 +1,6 @@
 <script>
-	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
-	import { createServiceData } from '$lib/composables/useServiceData.svelte.js';
+	import { create_infinite_scroll } from '$lib/composables/use_infinite_scroll.svelte.js';
+	import { create_service_data } from '$lib/composables/use_service_data.svelte.js';
 	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
 	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
@@ -40,7 +40,7 @@
 	];
 
 	// Initialize with empty data - will be populated when promises resolve
-	const serviceData = createServiceData(
+	const serviceData = create_service_data(
 		{ services: [], service_likes: [] },
 		api,
 	);
@@ -64,7 +64,7 @@
 		}
 	});
 
-	const serviceInfiniteScroll = createInfiniteScroll({
+	const serviceInfiniteScroll = create_infinite_scroll({
 		items: {
 			get value() {
 				return serviceData.services;

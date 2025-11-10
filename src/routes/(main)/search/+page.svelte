@@ -1,5 +1,5 @@
 <script>
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 	import colors from '$lib/config/colors';
 	import {
 		get_api_context,
@@ -68,7 +68,7 @@
 	};
 
 	// Post 이벤트 핸들러 (composable 사용)
-	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
 		() => search_data.posts,
 		(updated_posts) => {
 			search_data.posts = updated_posts;

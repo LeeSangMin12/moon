@@ -10,7 +10,7 @@
  * @returns {Object} 홈 페이지 데이터 및 메서드
  *
  * @example
- * const home_data = createHomeData(api, me, data.posts);
+ * const home_data = create_home_data(api, me, data.posts);
  *
  * // 무한스크롤 설정
  * $effect(() => {
@@ -18,7 +18,7 @@
  *   return cleanup;
  * });
  */
-export function createHomeData(api, me, initial_posts = []) {
+export function create_home_data(api, me, initial_posts = []) {
 	// ===== State =====
 	/** @type {Array} 표시할 게시물 목록 */
 	let posts = $state(initial_posts);
@@ -42,7 +42,7 @@ export function createHomeData(api, me, initial_posts = []) {
 	let is_infinite_loading = $state(false);
 
 	/** @type {IntersectionObserver|null} 무한스크롤 옵저버 */
-	let observer = $state(null);
+	let observer = null;
 
 	// ===== Initialization =====
 	/**

@@ -1,6 +1,6 @@
 <script>
-	import { createExpertRequestData } from '$lib/composables/useExpertRequestData.svelte.js';
-	import { createInfiniteScroll } from '$lib/composables/useInfiniteScroll.svelte.js';
+	import { create_expert_request_data } from '$lib/composables/use_expert_request_data.svelte.js';
+	import { create_infinite_scroll } from '$lib/composables/use_infinite_scroll.svelte.js';
 	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
 	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
@@ -42,12 +42,12 @@
 	];
 
 	// Initialize with server-loaded data
-	const expertRequestData = createExpertRequestData(
+	const expertRequestData = create_expert_request_data(
 		{ expert_requests: data.expert_requests || [] },
 		api,
 	);
 
-	const expertInfiniteScroll = createInfiniteScroll({
+	const expertInfiniteScroll = create_infinite_scroll({
 		items: {
 			get value() {
 				return expertRequestData.expertRequests;

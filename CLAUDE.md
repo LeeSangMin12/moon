@@ -162,10 +162,10 @@ export async function load({ locals, params }) {
 ### Composables 패턴
 
 ```javascript
-// src/lib/composables/usePostHandlers.svelte.js
-import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+// src/lib/composables/use_post_handlers.svelte.js
+import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
-const { handle_vote_changed, handle_bookmark_changed } = createPostHandlers(
+const { handle_vote_changed, handle_bookmark_changed } = create_post_handlers(
   () => posts,          // getter
   (val) => posts = val, // setter
   me                    // 현재 사용자
@@ -219,8 +219,8 @@ const handle_vote_changed = () => { };
 const handle_bookmark_changed = () => { };
 
 // Composables (예외: export 함수는 camelCase)
-// usePostHandlers.svelte.js
-export function createPostHandlers(get_posts, set_posts, me) {
+// use_post_handlers.svelte.js
+export function create_post_handlers(get_posts, set_posts, me) {
   return { handle_vote_changed, handle_bookmark_changed };
 }
 

@@ -1,4 +1,4 @@
-export function createExpertRequestData(initialData, api) {
+export function create_expert_request_data(initialData, api) {
 	let expertRequests = $state(initialData.expert_requests);
 	let searchText = $state('');
 	let selectedCategory = $state('');

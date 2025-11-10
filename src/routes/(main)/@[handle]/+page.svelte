@@ -25,7 +25,7 @@
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
 	const TITLE = '문';
 
@@ -229,7 +229,7 @@
 	};
 
 	// Post 이벤트 핸들러 (composable 사용)
-	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
 		() => tab_posts,
 		(updated_posts) => {
 			tab_posts = updated_posts;

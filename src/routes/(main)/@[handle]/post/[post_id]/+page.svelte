@@ -27,7 +27,7 @@
 	import colors from '$lib/config/colors';
 	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-	import { createPostHandlers } from '$lib/composables/usePostHandlers.svelte.js';
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -196,7 +196,7 @@
 	};
 
 	// Post 이벤트 핸들러 (단일 post 객체용)
-	const { handle_bookmark_changed, handle_vote_changed } = createPostHandlers(
+	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
 		() => [post],  // 배열로 감싸서 전달
 		(updated_posts) => {
 			post = updated_posts[0];  // 첫 번째(유일한) post 객체 가져오기

@@ -1,4 +1,4 @@
-export function createServiceData(initialData, api) {
+export function create_service_data(initialData, api) {
 	let services = $state(initialData.services);
 	let serviceLikes = $state(initialData.service_likes);
 	let searchText = $state('');
