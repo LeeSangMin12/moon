@@ -230,6 +230,28 @@
 		);
 	};
 
+	const handle_proposal_click = () => {
+		if (!check_login(me)) return;
+
+		// 나머지 조건 체크
+		if (expert_request.status !== 'open') {
+			show_toast('error', '마감된 요청입니다.');
+			return;
+		}
+
+		if (expert_request.requester_id === user.id) {
+			show_toast('error', '자신의 요청에는 제안할 수 없습니다.');
+			return;
+		}
+
+		if (proposals.some((p) => p.expert_id === user.id)) {
+			show_toast('error', '이미 제안하셨습니다.');
+			return;
+		}
+
+		show_proposal_modal = true;
+	};
+
 	// 연락처 링크 생성
 	const getContactLink = (contact_info) => {
 		// 이메일인지 확인
@@ -856,16 +878,13 @@
 					받은 제안 ({proposals.length}개)
 				</h2>
 
-				{#if user}
-					<button
-						class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-						onclick={() => (show_proposal_modal = true)}
-						disabled={!can_submit_proposal()}
-						aria-label="전문가 제안서 작성하기"
-					>
-						제안하기
-					</button>
-				{/if}
+				<button
+					class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+					onclick={handle_proposal_click}
+					aria-label="전문가 제안서 작성하기"
+				>
+					제안하기
+				</button>
 			</div>
 
 			{#if proposals.length > 0}
