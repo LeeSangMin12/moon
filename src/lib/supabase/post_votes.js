@@ -64,4 +64,26 @@ export const create_post_votes_api = (supabase) => ({
 
 		return data || [];
 	},
+
+	/**
+	 * Gets votes for a user for specific posts (성능 최적화)
+	 * @param {string} user_id - User ID
+	 * @param {Array<string|number>} post_ids - Array of post IDs
+	 * @returns {Promise<Array<{post_id: string, user_id: string, vote: number}>>}
+	 */
+	select_by_post_ids: async (user_id, post_ids) => {
+		if (!user_id || !post_ids || post_ids.length === 0) return [];
+
+		const { data, error } = await supabase
+			.from('post_votes')
+			.select('post_id, user_id, vote')
+			.eq('user_id', user_id)
+			.in('post_id', post_ids);
+
+		if (error) {
+			throw new Error(`Failed to select_by_post_ids: ${error.message}`);
+		}
+
+		return data || [];
+	},
 });

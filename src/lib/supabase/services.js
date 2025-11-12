@@ -120,13 +120,14 @@ export const create_services_api = (supabase) => ({
 
 	/**
 	 * 특정 사용자가 작성한 서비스 목록 조회
+	 * 성능 최적화: content 제외 (10MB+ 데이터 전송 방지)
 	 * @param {string} user_id - 사용자 ID
 	 * @returns {Promise<Array>} 서비스 목록 (작성자 정보 포함)
 	 */
 	select_by_user_id: async (user_id) => {
 		const { data, error } = await supabase
 			.from('services')
-			.select('*, users:author_id(id, name, avatar_url, handle)')
+			.select('id, title, author_id, images, created_at, price, rating, rating_count, visibility, contact_info, updated_at, users:author_id(id, name, avatar_url, handle)')
 			.eq('author_id', user_id)
 			.order('created_at', { ascending: false });
 
