@@ -3,7 +3,13 @@
     <color name="ic_launcher_background">#FFFFFF</color>
     <string name="app_name">Moon</string>
     <string name="custom_url_scheme">kr.it.moon</string>
+    <string name="gcm_defaultSenderId" translatable="false">997229744908</string>
+    <string name="google_api_key" translatable="false">AIzaSyAOAY9H29MopIK8oxk0iGajtf6624XMI0o</string>
+    <string name="google_app_id" translatable="false">1:997229744908:android:a1f7160b2ac105bbcaef29</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAOAY9H29MopIK8oxk0iGajtf6624XMI0o</string>
+    <string name="google_storage_bucket" translatable="false">moon-68d95.firebasestorage.app</string>
     <string name="package_name">kr.it.moon</string>
+    <string name="project_id" translatable="false">moon-68d95</string>
     <string name="title_activity_main">Moon</string>
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         

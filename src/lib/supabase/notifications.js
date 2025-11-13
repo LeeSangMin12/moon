@@ -8,6 +8,7 @@ export const create_notifications_api = (supabase) => ({
 		payload = null,
 		link_url = null,
 	}) => {
+		// 1. 알림을 데이터베이스에 저장
 		const { error } = await supabase.from('notifications').insert({
 			recipient_id,
 			actor_id,
@@ -20,6 +21,8 @@ export const create_notifications_api = (supabase) => ({
 
 		if (error)
 			throw new Error(`Failed to insert notification: ${error.message}`);
+
+		// 푸시 알림은 notifications.server.js에서 처리 (서버 전용)
 	},
 	select_list: async (user_id, limit = 50) => {
 		const { data, error } = await supabase

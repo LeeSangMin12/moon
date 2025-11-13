@@ -17,4 +17,16 @@ if [ -f "android/app/capacitor.build.gradle" ]; then
   echo "✅ Fixed app/capacitor.build.gradle"
 fi
 
+# node_modules/@capacitor/android/capacitor/build.gradle (가장 중요!)
+if [ -f "node_modules/@capacitor/android/capacitor/build.gradle" ]; then
+  sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' node_modules/@capacitor/android/capacitor/build.gradle
+  echo "✅ Fixed node_modules/@capacitor/android/capacitor/build.gradle"
+fi
+
+# node_modules/@capacitor/push-notifications/android/build.gradle
+if [ -f "node_modules/@capacitor/push-notifications/android/build.gradle" ]; then
+  sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' node_modules/@capacitor/push-notifications/android/build.gradle
+  echo "✅ Fixed node_modules/@capacitor/push-notifications/android/build.gradle"
+fi
+
 echo "✅ Android Java version fixed to 17"
