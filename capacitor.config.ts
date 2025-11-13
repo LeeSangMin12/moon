@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
 	appName: 'Moon',
 	webDir: 'build',
 	server: {
-		url: 'http://192.168.1.137:5173/',
+		url: 'http://192.168.1.3:5173/',
 		cleartext: true,
 	},
 	plugins: {
