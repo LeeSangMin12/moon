@@ -12,7 +12,10 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"cap:sync": "npx cap sync && ./scripts/fix-android-java.sh",
+		"cap:update": "npx cap update && ./scripts/fix-android-java.sh",
+		"fix-android": "./scripts/fix-android-java.sh"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

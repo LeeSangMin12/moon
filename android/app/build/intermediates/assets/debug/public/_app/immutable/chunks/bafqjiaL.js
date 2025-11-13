@@ -1,1 +1,0 @@
-const I="http://localhost:5173",s="https://xgnnhfmpporixibxpeas.supabase.co",i="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhnbm5oZm1wcG9yaXhpYnhwZWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NTUxNjEsImV4cCI6MjA2MzUzMTE2MX0.LMIsrSeaA7T_k81dqvYSX8jCaStOo4HjOTs8AidSUbk";export{s as P,I as a,i as b};
