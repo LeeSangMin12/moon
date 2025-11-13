@@ -1,0 +1,1 @@
+import"../chunks/CWj6FrbW.js";import"../chunks/69_IOA4Y.js";import{t as a,g as o,v as r}from"../chunks/BxrbYPPH.js";var e=a("<h1>인증 중 오류가 발생했습니다.</h1> <p>다시 시도해 주세요.</p>",1);function s(t){var p=e();r(2),o(t,p)}export{s as component};

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+	<head>
+		<!-- Critical meta tags first -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="viewport-fit=cover, height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+		/>
+
+		<!-- Capacitor runtime detection -->
+		<script>
+			// Capacitor 네이티브 앱 감지
+			window.isNativeApp = window.location.protocol === 'capacitor:';
+		</script>
+
+		<!-- DNS prefetch and preconnect for performance (웹 전용) -->
+		<script>
+			if (!window.isNativeApp) {
+				// DNS prefetch 추가
+				['//cdn.jsdelivr.net', '//fonts.googleapis.com', '//www.googletagmanager.com'].forEach(
+					(url) => {
+						const link = document.createElement('link');
+						link.rel = 'dns-prefetch';
+						link.href = url;
+						document.head.appendChild(link);
+					}
+				);
+
+				// Preconnect 추가
+				const preconnects = [
+					{ href: 'https://cdn.jsdelivr.net', crossorigin: true },
+					{ href: 'https://www.googletagmanager.com', crossorigin: false }
+				];
+				preconnects.forEach((pc) => {
+					const link = document.createElement('link');
+					link.rel = 'preconnect';
+					link.href = pc.href;
+					if (pc.crossorigin) link.setAttribute('crossorigin', '');
+					document.head.appendChild(link);
+				});
+			}
+		</script>
+
+		<!-- Google Tag Manager (웹 전용) -->
+		<script>
+			if (!window.isNativeApp) {
+				// GTM을 defer로 로드하여 render blocking 방지
+				window.addEventListener('DOMContentLoaded', function () {
+					(function (w, d, s, l, i) {
+						w[l] = w[l] || [];
+						w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+						var f = d.getElementsByTagName(s)[0],
+							j = d.createElement(s),
+							dl = l != 'dataLayer' ? '&l=' + l : '';
+						j.async = true;
+						j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+						f.parentNode.insertBefore(j, f);
+					})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
+				});
+			}
+		</script>
+		<!-- End Google Tag Manager -->
+
+		<!-- SEO meta tags -->
+		<title>외주할 땐 문 | 외주·사이드잡·풀타임 전문가 매칭 플랫폼</title>
+		<link rel="canonical" href="https://moon.it.kr" />
+		<meta
+			name="description"
+			content="문에서 외주부터 채용까지. 수수료 5%와 실명 리뷰, 분쟁 없는 계약/결제로 빠르고 안전하게 진행하세요."
+		/>
+		<meta
+			name="keywords"
+			content="문, 외주, 커뮤니티, 외주 커뮤니티, 사이드잡, 풀타임잡, 외주 매칭, 사이드잡 매칭, 풀타임잡 매칭, 외주 견적, 사이드잡 견적, 풀타임잡 견적, 외주 의뢰, 사이드잡 의뢰, 풀타임잡 의뢰, 외주 찾기, 사이드잡 찾기, 풀타임잡 찾기, 외주 추천, 사이드잡 추천, 풀타임잡 추천, 외주 연결, 사이드잡 연결, 풀타임잡 연결, 외주 플랫폼, 사이드잡 플랫폼, 풀타임잡 플랫폼, 외주 서비스, 사이드잡 서비스, 풀타임잡 서비스, 외주 등록, 사이드잡 등록, 풀타임잡 등록, 외주 상담, 사이드잡 상담, 풀타임잡 상담, 외주 포트폴리오, 사이드잡 포트폴리오, 풀타임잡 포트폴리오, 외주 리뷰, 사이드잡 리뷰, 풀타임잡 리뷰, 외주 평가, 사이드잡 평가, 풀타임잡 평가, 외주 비교, 사이드잡 비교, 풀타임잡 비교, 외주 검색, 사이드잡 검색, 풀타임잡 검색, 외주 매칭 플랫폼, 사이드잡 매칭 플랫폼, 풀타임잡 매칭 플랫폼, 외주 중개, 사이드잡 중개, 풀타임잡 중개, 외주 네트워크, 사이드잡 네트워크, 풀타임잡 네트워크, 외주 커뮤니티, 사이드잡 커뮤니티, 풀타임잡 커뮤니티"
+		/>
+		<meta name="author" content="devsangmin32" />
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://moon.it.kr" />
+		<meta
+			property="og:title"
+			content="외주할 땐 문 | 외주·사이드잡·풀타임 전문가 매칭 플랫폼"
+		/>
+		<meta
+			property="og:description"
+			content="문에서 외주부터 채용까지. 수수료 5%와 실명 리뷰, 분쟁 없는 계약/결제로 빠르고 안전하게 진행하세요."
+		/>
+		<meta property="og:image" content="../open_graph_img.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="문 이미지" />
+		<meta property="og:site_name" content="문" />
+		<meta property="og:locale" content="ko_KR" />
+
+		<!-- Twitter -->
+		<meta property="twitter:card" content="summary_large_image" />
+		<meta property="twitter:url" content="https://moon.it.kr" />
+		<meta
+			property="twitter:title"
+			content="외주할 땐 문 | 외주·사이드잡·풀타임 전문가 매칭 플랫폼"
+		/>
+		<meta
+			property="twitter:description"
+			content="문에서 외주부터 채용까지. 수수료 5%와 실명 리뷰, 분쟁 없는 계약/결제로 빠르고 안전하게 진행하세요."
+		/>
+		<meta
+			property="twitter:image"
+			content="../open_graph_img.png"
+		/>
+
+		<!-- Favicon and icons -->
+		<link rel="icon" href="../favicon.png" />
+
+		
+		<link rel="modulepreload" href="../_app/immutable/entry/start.CTWHrN3v.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/CCryTnhq.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/BpDpeONt.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/BxrbYPPH.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/DIeogL5L.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/DKpueC4a.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/D48KCRKo.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/Df0q64fy.js">
+		<link rel="modulepreload" href="../_app/immutable/entry/app.CKrb-7uk.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/Ct5FWWRu.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/CWj6FrbW.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/C_-0o-f2.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/CU6Y2n-Z.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/DUXZVHcJ.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/Cqu1rs7T.js">
+	</head>
+
+	<body data-sveltekit-preload-data="hover" data-sveltekit-preload-code="hover">
+		<!-- Google Tag Manager (noscript) - 웹 전용 -->
+		<script>
+			if (!window.isNativeApp) {
+				document.write(
+					'<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5L62H5DS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>'
+				);
+			}
+		</script>
+		<!-- End Google Tag Manager (noscript) -->
+
+		<div style="display: contents">
+			<script>
+				{
+					__sveltekit_8lfiic = {
+						base: new URL("..", location).pathname.slice(0, -1)
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("../_app/immutable/entry/start.CTWHrN3v.js"),
+						import("../_app/immutable/entry/app.CKrb-7uk.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element);
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
