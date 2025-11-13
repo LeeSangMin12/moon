@@ -7,12 +7,14 @@
 	import { show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
+	import { scale, fade } from 'svelte/transition';
 
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
 	import { update_global_store } from '$lib/store/global_store.js';
 
+	import PhoneVerification from './_components/PhoneVerification.svelte';
 	import SetAvatar from './_components/SetAvatar.svelte';
 	import SetBasic from './_components/SetBasic.svelte';
 	import SetPersonal from './_components/SetPersonal.svelte';
@@ -31,6 +33,8 @@
 
 	let sign_up_form_data = $state({
 		phone: '',
+		phone_verified: false,
+		session: null,
 		gender: '',
 		handle: '',
 		name: '',
@@ -54,22 +58,39 @@
 	};
 
 	/**
+	 * 전화번호 인증 완료 핸들러
+	 */
+	const handle_phone_verified = (session, international_phone) => {
+		sign_up_form_data.phone_verified = true;
+		sign_up_form_data.session = session;
+		sign_up_form_data.phone = international_phone;
+	};
+
+	/**
 	 * 다음 버튼 disabled 검사
 	 */
 	const is_next_btn_disabled = () => {
-		const { phone, name, handle, email, gender, birth_date } = sign_up_form_data;
+		const {
+			phone_verified,
+			name,
+			handle,
+			email,
+			gender,
+			birth_date,
+		} = sign_up_form_data;
 
 		switch (page_count) {
 			case 1:
+				return !phone_verified;
+			case 2:
 				return (
-					phone === '' ||
 					name === '' ||
 					handle === '' ||
 					email === '' ||
 					handle_error === true ||
 					email_error === true
 				);
-			case 2:
+			case 3:
 				return gender === '' || birth_date === '';
 			default:
 				return false;
@@ -81,6 +102,13 @@
 	 */
 	const go_next = async () => {
 		if (page_count === 1) {
+			// 전화번호 인증 완료 확인
+			if (!sign_up_form_data.phone_verified) {
+				show_toast('error', '전화번호 인증을 완료해주세요');
+				return;
+			}
+		} else if (page_count === 2) {
+			// 아이디 중복 확인
 			const handle_exists =
 				await api.users.check_handle_exists(sign_up_form_data.handle);
 
@@ -88,7 +116,8 @@
 				show_toast('error', '중복된 사용자 이름입니다.');
 				return;
 			}
-		} else if (page_count === 3) {
+		} else if (page_count === 4) {
+			// 회원가입 완료
 			await save_users();
 		}
 
@@ -99,7 +128,14 @@
 		update_global_store('loading', true);
 
 		try {
-			await api.users.update(session.user.id, {
+			// 전화번호 인증으로 생성된 세션의 user.id 사용
+			const user_id = sign_up_form_data.session?.user?.id;
+
+			if (!user_id) {
+				throw new Error('세션 정보가 없습니다');
+			}
+
+			await api.users.update(user_id, {
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
@@ -107,7 +143,9 @@
 				gender: sign_up_form_data.gender,
 				birth_date: sign_up_form_data.birth_date,
 			});
+
 			update_me({
+				id: user_id,
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
@@ -119,6 +157,9 @@
 
 			show_toast('success', '가입이 완료되었어요!');
 			goto('/');
+		} catch (err) {
+			console.error('회원가입 저장 실패:', err);
+			show_toast('error', '회원가입에 실패했습니다');
 		} finally {
 			update_global_store('loading', false);
 		}
@@ -145,18 +186,26 @@
 	<div class="h-1 w-full rounded-full bg-gray-200">
 		<div
 			class="h-1 rounded-lg bg-blue-600 transition-all duration-300"
-			style="width: {page_count * (100 / 3)}%"
+			style="width: {page_count * (100 / 4)}%"
 		></div>
 	</div>
 </div>
 
 <main>
 	{#if page_count === 1}
-		<SetBasic bind:data={sign_up_form_data} bind:handle_error bind:email_error />
+		<PhoneVerification
+			bind:phone={sign_up_form_data.phone}
+			on_verified={handle_phone_verified}
+		/>
 	{:else if page_count === 2}
-		<SetPersonal bind:data={sign_up_form_data} />
+		<SetBasic bind:data={sign_up_form_data} bind:handle_error bind:email_error />
 	{:else if page_count === 3}
-		<SetAvatar bind:avatar_url={sign_up_form_data.avatar_url} />
+		<SetPersonal bind:data={sign_up_form_data} />
+	{:else if page_count === 4}
+		<SetAvatar
+			bind:avatar_url={sign_up_form_data.avatar_url}
+			user_id={sign_up_form_data.session?.user?.id}
+		/>
 	{/if}
 
 	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">
@@ -165,7 +214,7 @@
 				onclick={go_next}
 				class="btn btn-primary w-full"
 				disabled={is_next_btn_disabled()}
-				>{page_count === 3 ? '시작하기' : '다음'}
+				>{page_count === 4 ? '시작하기' : '다음'}
 			</button>
 		</div>
 	</div>

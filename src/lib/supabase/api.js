@@ -34,8 +34,10 @@ import { create_coffee_chats_api } from '$lib/supabase/coffee_chats';
 import { create_proposal_attachments_bucket_api } from '$lib/supabase/bucket/proposals/attachments';
 import { create_coupons_api } from '$lib/supabase/coupons';
 import { create_user_coupons_api } from '$lib/supabase/user_coupons';
+import { create_auth_api } from '$lib/supabase/auth';
 
 export const create_api = (supabase) => ({
+	auth: create_auth_api(supabase),
 	communities: create_communities_api(supabase),
 	community_members: create_community_members_api(supabase),
 	community_reports: create_community_reports_api(supabase),
