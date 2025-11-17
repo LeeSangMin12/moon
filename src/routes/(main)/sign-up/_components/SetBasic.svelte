@@ -74,16 +74,3 @@
 		</p>
 	{/if}
 </div>
-
-<div class="mx-4 mt-8">
-	<p class="ml-1 font-semibold">전화번호</p>
-
-	<div class="mt-2">
-		<input
-			type="tel"
-			placeholder="예: 01012345678"
-			bind:value={data.phone}
-			class="input input-bordered focus:border-primary h-[52px] w-full focus:outline-none"
-		/>
-	</div>
-</div>

@@ -34,8 +34,13 @@ import { create_coffee_chats_api } from '$lib/supabase/coffee_chats';
 import { create_proposal_attachments_bucket_api } from '$lib/supabase/bucket/proposals/attachments';
 import { create_coupons_api } from '$lib/supabase/coupons';
 import { create_user_coupons_api } from '$lib/supabase/user_coupons';
+import { create_auth_api } from '$lib/supabase/auth';
+import { create_user_devices_api } from '$lib/supabase/user_devices';
+import { create_notification_settings_api } from '$lib/supabase/notification_settings';
+import { create_payments_api } from '$lib/supabase/payments';
 
 export const create_api = (supabase) => ({
+	auth: create_auth_api(supabase),
 	communities: create_communities_api(supabase),
 	community_members: create_community_members_api(supabase),
 	community_reports: create_community_reports_api(supabase),
@@ -67,6 +72,9 @@ export const create_api = (supabase) => ({
 	coffee_chats: create_coffee_chats_api(supabase),
 	coupons: create_coupons_api(supabase),
 	user_coupons: create_user_coupons_api(supabase),
+	user_devices: create_user_devices_api(supabase),
+	notification_settings: create_notification_settings_api(supabase),
+	payments: create_payments_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

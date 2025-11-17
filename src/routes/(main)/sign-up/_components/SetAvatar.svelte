@@ -3,33 +3,43 @@
 	import profile_png from '$lib/img/common/user/profile.png';
 
 	import { show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
+	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
-	const me = get_user_context();
 	const api = get_api_context();
 
-	let { avatar_url } = $props();
+	let { avatar_url = $bindable(''), user_id } = $props();
 
 	const modify_avatar_url = async (event) => {
+		if (!user_id) {
+			show_toast('error', '사용자 정보를 찾을 수 없습니다');
+			return;
+		}
+
 		update_global_store('loading', true);
 		try {
 			const selected_img = event.target.files[0];
+
+			if (!selected_img) return;
+
 			selected_img.uri = URL.createObjectURL(selected_img);
 
 			const file_ext = selected_img.name.split('.').pop();
-			const file_path = `avatars/${me.id}/${Date.now()}.${file_ext}`;
+			const file_path = `avatars/${user_id}/${Date.now()}.${file_ext}`;
 
 			await api.user_avatars.upload(file_path, selected_img);
 
 			const img_url = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/users/${file_path}`;
-			await api.users.update(me.id, {
+			await api.users.update(user_id, {
 				avatar_url: img_url,
 			});
 
 			avatar_url = img_url;
 
-			show_toast('success', '수정이 완료되었습니다.');
+			show_toast('success', '프로필 사진이 업로드되었습니다');
+		} catch (err) {
+			console.error('프로필 사진 업로드 실패:', err);
+			show_toast('error', '프로필 사진 업로드에 실패했습니다');
 		} finally {
 			update_global_store('loading', false);
 		}

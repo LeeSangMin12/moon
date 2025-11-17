@@ -18,7 +18,7 @@
 </script>
 
 <nav
-	class=" btm-nav fixed bottom-0 z-10 flex h-[calc(53px+env(safe-area-inset-bottom))] w-full max-w-screen-md items-center justify-evenly bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+	class="btm-nav pb-safe fixed bottom-0 z-10 flex h-[calc(53px+env(safe-area-inset-bottom))] w-full max-w-screen-md items-center justify-evenly bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
 >
 	<button
 		onclick={() => goto('/')}

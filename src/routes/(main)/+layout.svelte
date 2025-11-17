@@ -4,6 +4,7 @@
 		create_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
 	import { create_api } from '$lib/supabase/api';
+	import { register_fcm_token } from '$lib/firebase/messaging.js';
 	import { onMount } from 'svelte';
 
 	import CouponPopup from '$lib/components/ui/CouponPopup.svelte';
@@ -57,6 +58,9 @@
 			if (user_data?.handle) {
 				Object.assign(me, user_data);
 				load_follow_data(user_data.id);
+
+				// 로그인 후 FCM 토큰 등록 (네이티브 앱 전용)
+				register_fcm_token(api, user_data.id);
 			}
 		} catch (error) {
 			console.error('Failed to load user data:', error);

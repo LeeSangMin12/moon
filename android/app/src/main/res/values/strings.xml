@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Moon</string>
+    <string name="title_activity_main">Moon</string>
+    <string name="package_name">kr.it.moon</string>
+    <string name="custom_url_scheme">kr.it.moon</string>
+</resources>

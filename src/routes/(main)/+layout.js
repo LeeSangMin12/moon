@@ -9,6 +9,9 @@ import {
 } from '$env/static/public';
 
 export const load = async ({ fetch, data, depends }) => {
+	const start = performance.now();
+	console.log('🔵 [+layout.js] Load started');
+
 	depends('supabase:auth');
 
 	const supabase = isBrowser()
@@ -29,9 +32,14 @@ export const load = async ({ fetch, data, depends }) => {
 			});
 
 	if (isBrowser()) {
+		const sessionStart = performance.now();
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();
+		const sessionEnd = performance.now();
+
+		console.log(`⏱️  [+layout.js] getSession took: ${sessionEnd - sessionStart}ms`);
+		console.log(`⏱️  [+layout.js] Total load took: ${sessionEnd - start}ms`);
 
 		return {
 			supabase,
