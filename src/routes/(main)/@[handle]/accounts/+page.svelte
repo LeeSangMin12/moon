@@ -120,6 +120,26 @@
 
 	<div class="mt-3 h-1 bg-gray-200"></div>
 
+	<p class="flex items-center px-5 pt-6 text-lg font-semibold">
+		상담하기 (24시 연중무휴)
+	</p>
+
+	<a
+		class="flex items-center px-4 pt-4"
+		href="https://open.kakao.com/o/sMTQ2HEh"
+		target="_blank"
+	>
+		<p>실시간 카톡 상담</p>
+	</a>
+
+	<div class="flex items-center justify-between px-4 pt-4">
+		<p>실시간 전화 상담</p>
+
+		<span>070-8018-6194</span>
+	</div>
+
+	<div class="mt-3 h-1 bg-gray-200"></div>
+
 	<p class="flex items-center px-4 pt-6 text-lg font-semibold">지원</p>
 
 	<div class="mt-3 flex flex-col gap-5">
@@ -129,6 +149,13 @@
 
 		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/notice">
 			<p>공지사항</p>
+		</a>
+
+		<a
+			class="flex items-center px-4"
+			href="/@{me?.handle}/accounts/company-introduction"
+		>
+			<p>회사소개</p>
 		</a>
 
 		<div class="flex items-center justify-between px-4">
@@ -149,14 +176,4 @@
 	<a class="flex items-center px-5 py-4" href="see_more/company_introduction">
 		<p>회사소개</p>
 	</a> -->
-
-	<div class="mt-3 h-1 bg-gray-200"></div>
-
-	<a
-		class="flex items-center px-4 pt-4"
-		href="https://open.kakao.com/o/sMTQ2HEh"
-		target="_blank"
-	>
-		<p>카카오톡 문의</p>
-	</a>
 </main>
