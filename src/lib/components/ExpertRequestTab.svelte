@@ -58,4 +58,16 @@
 	<LoadingSpinner isLoading={expert_request_data.is_infinite_loading} />
 </div>
 
-<FloatingActionButton href={`/regi/expert-request?job_type=${job_type}`} />
+<FloatingActionButton
+	actions={[
+		{
+			label: '견적 문의하기',
+			href: 'https://forms.gle/n5CJG3MWsQUUwHMn7',
+			external: true,
+		},
+		{
+			label: '외주 등록하기',
+			href: `/regi/expert-request?job_type=${job_type}`,
+		},
+	]}
+/>
