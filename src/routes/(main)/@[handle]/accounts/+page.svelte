@@ -158,22 +158,18 @@
 			<p>회사소개</p>
 		</a>
 
+		<!-- <a class="flex items-center px-5 py-4" href="see_more/terms_of_use">
+			<p>이용약관</p>
+		</a>
+
+		<a class="flex items-center px-5 py-4" href="see_more/privacy_policy">
+			<p>개인정보 처리방침</p>
+		</a> -->
+
 		<div class="flex items-center justify-between px-4">
 			<p>버전정보</p>
 
 			<span class="text-primary">V.1.4.6</span>
 		</div>
 	</div>
-
-	<!-- <a class="flex items-center px-5 py-4" href="see_more/terms_of_use">
-		<p>이용약관</p>
-	</a>
-
-	<a class="flex items-center px-5 py-4" href="see_more/privacy_policy">
-		<p>개인정보 처리방침</p>
-	</a>
-
-	<a class="flex items-center px-5 py-4" href="see_more/company_introduction">
-		<p>회사소개</p>
-	</a> -->
 </main>

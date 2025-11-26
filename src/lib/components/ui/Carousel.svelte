@@ -49,21 +49,20 @@
 		style="transform: translateX(-{currentIndex * 100}%);"
 	>
 		{#each images as img, index}
-			<div class="flex min-w-full items-center justify-center">
+			<div class="flex min-w-full items-start justify-center">
 				<button
 					type="button"
-					class="block h-full max-h-80 w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-transparent p-0"
+					class="block w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-transparent p-0"
 					onclick={() => openModal(img)}
 					aria-label="이미지 크게 보기"
 				>
 					<img
 						src={img}
 						alt="게시물 이미지 {index + 1}"
-						class="pointer-events-none h-full max-h-80 w-full object-contain"
+						class="pointer-events-none h-auto max-h-80 w-full object-contain"
 						draggable="false"
 						loading={index === 0 ? 'eager' : 'lazy'}
 						decoding="async"
-						style="aspect-ratio: 4/3;"
 					/>
 				</button>
 			</div>
