@@ -1,4 +1,10 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
+	import { comma, format_date, show_toast } from '$lib/utils/common';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -6,21 +12,17 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/config/colors';
-	import { comma, format_date, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-
 	const me = get_user_context();
 	const api = get_api_context();
 
 	const TITLE = '포인트';
 
 	const typeMap = {
-		charge: { label: '문 충전', icon: '💰' },
-		gift: { label: '문 선물', icon: '🎁' },
-		receive: { label: '문 선물 받음', icon: '🎉' },
-		use: { label: '문 사용', icon: '🛒' },
-		withdrawal: { label: '문 출금', icon: '💰' },
+		charge: { label: '문 충전' },
+		gift: { label: '문 선물' },
+		receive: { label: '문 선물 받음' },
+		use: { label: '문 사용' },
+		withdrawal: { label: '문 출금' },
 	};
 
 	let { data } = $props();
@@ -98,7 +100,7 @@
 			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 		</a>
 	</div>
-	<h1 slot="center" class="text-xl font-bold text-gray-800">{TITLE}</h1>
+	<h1 slot="center" class="font-bold text-gray-800">{TITLE}</h1>
 </Header>
 
 <main>
@@ -142,9 +144,8 @@
 		{#each moon_point_transactions as history}
 			<div class="mt-8">
 				<p
-					class="inline-block rounded-[4px] bg-gray-200 px-1 py-0.5 text-[11px]"
+					class="inline-block rounded-[4px] bg-gray-100 px-2 py-0.5 text-[11px]"
 				>
-					{typeMap[history.type].icon}
 					{typeMap[history.type].label}
 				</p>
 

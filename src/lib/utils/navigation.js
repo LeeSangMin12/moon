@@ -7,7 +7,7 @@ import { page } from '$app/stores';
  * 현재 페이지 경로에 따라 적절한 뒤로가기 동작을 수행
  * @param {Object} user - 현재 로그인한 사용자 객체 (optional)
  */
-export function smartGoBack(user = null) {
+export function smart_go_back(user = null) {
 	const currentPage = get(page);
 	const pathname = currentPage.url.pathname;
 	const searchParams = currentPage.url.searchParams;
@@ -25,10 +25,17 @@ export function smartGoBack(user = null) {
 	}
 
 	// 계정 관련 페이지들
-	if (pathname.includes('/accounts/')) {
+	if (pathname.includes('/accounts')) {
 		const handle = pathname.match(/@([^/]+)/)?.[1];
 		if (handle) {
-			goto(`/@${handle}`);
+			// /@handle/accounts 메인 페이지면 /@handle로
+			// /@handle/accounts/xxx 하위 페이지면 /@handle/accounts로
+			const isMainAccountsPage = pathname.match(/^\/@[^/]+\/accounts\/?$/);
+			if (isMainAccountsPage) {
+				goto(`/@${handle}`);
+			} else {
+				goto(`/@${handle}/accounts`);
+			}
 		} else {
 			goto('/');
 		}
@@ -88,7 +95,7 @@ export function smartGoBack(user = null) {
 		if (pathname.startsWith('/regi/service')) {
 			goto('/service');
 		} else if (pathname.startsWith('/regi/post')) {
-			goto('/community');
+			goto('/');
 		} else if (pathname.startsWith('/regi/expert-request')) {
 			goto('/outsourcing');
 		} else {
@@ -193,3 +200,6 @@ export function smartGoBack(user = null) {
 		goto('/');
 	}
 }
+
+// 기존 코드 호환을 위한 별칭 (deprecated)
+export const smartGoBack = smart_go_back;

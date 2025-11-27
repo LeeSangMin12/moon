@@ -16,9 +16,7 @@
 
 <Header>
 	<button slot="left" class="flex items-center" onclick={() => history.back()}>
-		<a class="flex items-center" href={`/@${me?.handle}/accounts`}>
-			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
-		</a>
+		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
 </Header>

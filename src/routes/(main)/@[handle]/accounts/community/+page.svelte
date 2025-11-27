@@ -1,5 +1,12 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
 	import logo from '$lib/img/logo.png';
+	import { check_login, show_toast } from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { RiAddLine, RiArrowLeftSLine } from 'svelte-remixicon';
@@ -7,11 +14,6 @@
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
 	import Header from '$lib/components/ui/Header.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import { optimize_avatar } from '$lib/utils/image';
-
-	import colors from '$lib/config/colors';
-	import { check_login, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -78,7 +80,7 @@
 						<img
 							src={optimize_avatar(item.communities.avatar_url) || logo}
 							alt="커뮤니티 아바타"
-							class="mr-2 h-12 w-12 rounded-full object-cover"
+							class="mr-2 block aspect-square h-12 w-12 rounded-full object-cover"
 							loading="lazy"
 							width="48"
 							height="48"

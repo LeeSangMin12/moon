@@ -1,9 +1,13 @@
 <script>
 	import colors from '$lib/config/colors';
-	import Icon from '$lib/components/ui/Icon.svelte';
-	import { get_api_context, get_user_context } from '$lib/contexts/app_context.svelte.js';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
 	import logo from '$lib/img/logo.png';
 	import { check_login, show_toast } from '$lib/utils/common';
+
+	import Icon from '$lib/components/ui/Icon.svelte';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -44,7 +48,7 @@
 	 * @type {boolean}
 	 */
 	const is_member = $derived(
-		community_members.some((member) => member.community_id === community.id)
+		community_members.some((member) => member.community_id === community.id),
 	);
 
 	/**
@@ -57,7 +61,10 @@
 			await api.community_members.insert(community.id, me.id);
 			community_members.push({ community_id: community.id, user_id: me.id });
 			show_toast('success', '커뮤니티에 참여했어요!');
-			onMembershipChanged?.({ community_id: community.id, members: community_members });
+			onMembershipChanged?.({
+				community_id: community.id,
+				members: community_members,
+			});
 		} catch (error) {
 			console.error('Failed to join community:', error);
 			show_toast('error', '참여에 실패했어요. 다시 시도해주세요.');
@@ -71,10 +78,13 @@
 		try {
 			await api.community_members.delete(community.id, me.id);
 			community_members = community_members.filter(
-				(member) => member.community_id !== community.id
+				(member) => member.community_id !== community.id,
 			);
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
-			onMembershipChanged?.({ community_id: community.id, members: community_members });
+			onMembershipChanged?.({
+				community_id: community.id,
+				members: community_members,
+			});
 		} catch (error) {
 			console.error('Failed to leave community:', error);
 			show_toast('error', '탈퇴에 실패했어요. 다시 시도해주세요.');

@@ -3,6 +3,19 @@
 	 * 커뮤니티 상세 페이지
 	 * @description 커뮤니티 정보와 게시물을 보여주는 페이지
 	 */
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
+	import logo from '$lib/img/logo.png';
+	import {
+		check_login,
+		copy_to_clipboard,
+		show_toast,
+	} from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { smartGoBack } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiPencilLine, RiUserLine } from 'svelte-remixicon';
 
@@ -11,13 +24,6 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Post from '$lib/components/Post.svelte';
 	import UserCard from '$lib/components/Profile/UserCard.svelte';
-	import { optimize_avatar } from '$lib/utils/image';
-
-	import logo from '$lib/img/logo.png';
-	import colors from '$lib/config/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -27,7 +33,7 @@
 		'욕설/혐오 발언을 사용했습니다.',
 		'선정적인 내용을 포함하고 있습니다.',
 		'잘못된 정보를 포함하고 있습니다.',
-		'기타'
+		'기타',
 	];
 
 	let { data } = $props();
@@ -35,7 +41,9 @@
 	let community = $derived(data.community);
 	let community_participants = $derived(data.community_participants);
 	let community_members_state = $derived(data.community_members);
-	let participant_count = $derived(data.community.community_members?.[0]?.count ?? 0);
+	let participant_count = $derived(
+		data.community.community_members?.[0]?.count ?? 0,
+	);
 
 	let posts = $state(data.posts);
 
@@ -52,7 +60,9 @@
 	 * @returns {boolean} 가입 여부
 	 */
 	const is_user_member = (community) => {
-		return community_members_state.some((member) => member.community_id === community.id);
+		return community_members_state.some(
+			(member) => member.community_id === community.id,
+		);
 	};
 
 	/**
@@ -62,7 +72,10 @@
 	const handle_join = async (community_id) => {
 		try {
 			await api.community_members.insert(community_id, me.id);
-			community_members_state = [...community_members_state, { community_id, user_id: me.id }];
+			community_members_state = [
+				...community_members_state,
+				{ community_id, user_id: me.id },
+			];
 			participant_count++;
 			show_toast('success', '커뮤니티에 참여했어요!');
 		} catch (error) {
@@ -79,7 +92,7 @@
 		try {
 			await api.community_members.delete(community_id, me.id);
 			community_members_state = community_members_state.filter(
-				(member) => member.community_id !== community_id
+				(member) => member.community_id !== community_id,
 			);
 			participant_count--;
 			show_toast('error', '커뮤니티 참여가 취소되었어요!');
@@ -103,7 +116,7 @@
 				reporter_id: me.id,
 				community_id: community.id,
 				reason: report_reason,
-				details: report_details
+				details: report_details,
 			});
 
 			show_toast('success', '신고가 정상적으로 접수되었습니다.');
@@ -129,21 +142,21 @@
 		gift_content,
 		gift_moon_point,
 		parent_comment_id,
-		post_id
+		post_id,
 	}) => {
 		await api.post_comments.insert({
 			post_id,
 			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
-			gift_moon_point
+			gift_moon_point,
 		});
 	};
 
 	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
 		() => posts,
 		(updated_posts) => (posts = updated_posts),
-		me
+		me,
 	);
 </script>
 
@@ -194,7 +207,11 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={smartGoBack} aria-label="뒤로 가기">
+		<button
+			class="flex items-center"
+			onclick={smartGoBack}
+			aria-label="뒤로 가기"
+		>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>
@@ -269,7 +286,8 @@
 
 			<button
 				class="btn btn-soft flex flex-1"
-				onclick={() => copy_to_clipboard(window.location.href, 'URL이 복사되었어요!')}
+				onclick={() =>
+					copy_to_clipboard(window.location.href, 'URL이 복사되었어요!')}
 				aria-label="커뮤니티 링크 공유"
 			>
 				공유하기
