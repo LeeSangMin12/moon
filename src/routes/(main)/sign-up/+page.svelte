@@ -19,7 +19,7 @@
 	import SetBasic from './_components/SetBasic.svelte';
 	import SetPersonal from './_components/SetPersonal.svelte';
 
-	const { me, update: update_me } = get_user_context();
+	const me = get_user_context();
 	const api = get_api_context();
 
 	let { data } = $props();
@@ -135,7 +135,7 @@
 				throw new Error('세션 정보가 없습니다');
 			}
 
-			await api.users.update(user_id, {
+			await api.users.upsert(user_id, {
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
@@ -144,7 +144,7 @@
 				birth_date: sign_up_form_data.birth_date,
 			});
 
-			update_me({
+			Object.assign(me, {
 				id: user_id,
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
@@ -221,25 +221,25 @@
 </main>
 
 <Modal bind:is_modal_open={is_back_modal} modal_position="center">
-	<div in:scale={{ duration: 200, start: 0.95 }} out:fade={{ duration: 150 }}>
-		<div class="flex flex-col items-center justify-center py-10 font-semibold">
-			<p>다음에 가입 하시겠어요?</p>
-		</div>
+	<div class="p-5">
+		<p class="text-[16px] font-semibold text-gray-900">
+			가입을 그만두시겠어요?
+		</p>
 
-		<div class="flex">
-			<button
-				onclick={() => (is_back_modal = false)}
-				class="btn w-1/3 rounded-none"
-			>
-				닫기
-			</button>
+		<div class="mt-5 flex gap-2">
 			<button
 				onclick={() => {
 					location.href = '/';
 				}}
-				class="btn btn-error w-2/3 rounded-none text-white"
+				class="flex-1 rounded-lg bg-gray-100 py-3 text-[14px] font-medium text-gray-700 active:bg-gray-200"
 			>
-				다음에 할게요
+				나가기
+			</button>
+			<button
+				onclick={() => (is_back_modal = false)}
+				class="flex-1 rounded-lg bg-blue-500 py-3 text-[14px] font-medium text-white active:bg-blue-600"
+			>
+				계속하기
 			</button>
 		</div>
 	</div>

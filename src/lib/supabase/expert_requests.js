@@ -118,6 +118,8 @@ export const create_expert_requests_api = (supabase) => ({
 			MAX_LIMIT,
 		);
 
+		const now = new Date().toISOString();
+
 		let query = supabase
 			.from('expert_requests')
 			.select(
@@ -129,7 +131,8 @@ export const create_expert_requests_api = (supabase) => ({
 			)
 			.eq('status', 'open')
 			.is('deleted_at', null)
-			.gte('application_deadline', new Date().toISOString())
+			.lte('posting_start_date', now) // 공고 시작일이 지났거나 오늘
+			.gte('application_deadline', now) // 공고 마감일이 아직 안 지남
 			.order('created_at', { ascending: false })
 			.limit(sanitizedLimit);
 
@@ -199,6 +202,7 @@ export const create_expert_requests_api = (supabase) => ({
 			description: request_data.description,
 			reward_amount: request_data.reward_amount,
 			price_unit: request_data.price_unit || 'per_project',
+			posting_start_date: request_data.posting_start_date || null,
 			application_deadline: request_data.application_deadline || null,
 			work_start_date: request_data.work_start_date || null,
 			work_end_date: request_data.work_end_date || null,
@@ -206,9 +210,9 @@ export const create_expert_requests_api = (supabase) => ({
 			work_location: request_data.work_location,
 			job_type: request_data.job_type || 'sidejob',
 			requester_id: user_id,
-			status: 'draft', // 결제 전에는 draft 상태
-			is_paid: false,
-			registration_amount: 4900,
+			status: 'open', // 무료 등록: 바로 공고 게시
+			is_paid: true, // 무료이므로 결제 완료 처리
+			registration_amount: 0, // 등록비 없음
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
 		};
@@ -446,5 +450,92 @@ export const create_expert_requests_api = (supabase) => ({
 		if (error) {
 			throw new Error(`프로젝트 완료 실패: ${error.message}`);
 		}
+	},
+
+	// 프로젝트 완료 및 수수료 계산 (무료 등록 + 매칭 수수료 모델)
+	complete_project_with_commission: async (request_id) => {
+		// 1. 프로젝트 정보 조회
+		const { data: request, error: fetchError } = await supabase
+			.from('expert_requests')
+			.select('id, title, reward_amount, commission_rate, status')
+			.eq('id', request_id)
+			.single();
+
+		if (fetchError || !request) {
+			throw new Error('프로젝트를 찾을 수 없습니다.');
+		}
+
+		if (request.status === 'completed') {
+			throw new Error('이미 완료된 프로젝트입니다.');
+		}
+
+		// 2. 수락된 제안서의 전문가 조회
+		const { data: accepted_proposal, error: proposalError } = await supabase
+			.from('expert_request_proposals')
+			.select('expert_id')
+			.eq('request_id', request_id)
+			.eq('status', 'accepted')
+			.single();
+
+		if (proposalError || !accepted_proposal) {
+			throw new Error('수락된 제안서를 찾을 수 없습니다.');
+		}
+
+		// 3. 수수료 계산
+		const commission_rate = request.commission_rate || 0.05;
+		const commission_amount = Math.floor(request.reward_amount * commission_rate);
+		const expert_payout = request.reward_amount - commission_amount;
+
+		// 4. 상태 업데이트 + 수수료 기록
+		const { data, error: updateError } = await supabase
+			.from('expert_requests')
+			.update({
+				status: 'completed',
+				commission_amount: commission_amount,
+				expert_payout: expert_payout,
+				completed_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', request_id)
+			.select()
+			.single();
+
+		if (updateError) {
+			throw new Error(`프로젝트 완료 처리 실패: ${updateError.message}`);
+		}
+
+		// 5. 전문가에게 캐시 적립
+		const { error: cashError } = await supabase.rpc('add_cash', {
+			p_user_id: accepted_proposal.expert_id,
+			p_amount: expert_payout,
+			p_type: 'expert_payout',
+			p_reference_type: 'expert_request',
+			p_reference_id: request_id,
+			p_description: `외주 완료: ${request.title}`,
+		});
+
+		if (cashError) {
+			throw new Error(`캐시 적립 실패: ${cashError.message}`);
+		}
+
+		// 6. 전문가에게 알림 전송
+		await supabase.from('notifications').insert({
+			recipient_id: accepted_proposal.expert_id,
+			type: 'expert_request_completed',
+			resource_type: 'expert_request',
+			resource_id: request_id,
+			payload: {
+				title: request.title,
+				payout: expert_payout,
+			},
+			link_url: `/expert-request/${request_id}`,
+		});
+
+		return {
+			...data,
+			expert_id: accepted_proposal.expert_id,
+			commission_amount,
+			expert_payout,
+		};
 	},
 });

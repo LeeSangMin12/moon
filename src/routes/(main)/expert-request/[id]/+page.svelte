@@ -15,7 +15,7 @@
 		SUCCESS_MESSAGES,
 		validateProposalData,
 	} from '$lib/utils/expert-request-utils';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import {
@@ -420,7 +420,7 @@
 		}
 
 		try {
-			await api.expert_requests.complete_project(expert_request.id);
+			await api.expert_requests.complete_project_with_commission(expert_request.id);
 			show_toast('success', SUCCESS_MESSAGES.PROJECT_COMPLETED);
 
 			// 데이터 새로고침 - 리뷰 권한 정보도 함께 업데이트
@@ -596,7 +596,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack} aria-label="이전 페이지로 돌아가기">
+	<button slot="left" onclick={smart_go_back} aria-label="이전 페이지로 돌아가기">
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">전문가 요청</h1>
@@ -679,13 +679,19 @@
 
 			<!-- 메타 정보 -->
 			<div class="mb-4 space-y-3">
-				{#if expert_request.application_deadline}
+				{#if expert_request.posting_start_date && expert_request.application_deadline}
 					<div class="flex items-center text-sm">
-						<span class="w-20 text-gray-500">마감일</span>
+						<span class="w-20 text-gray-500">공고 기간</span>
 						<span class="font-medium text-gray-900">
-							{new Date(expert_request.application_deadline).toLocaleDateString(
-								'ko-KR',
-							)}
+							{new Date(expert_request.posting_start_date).toLocaleDateString('ko-KR')} ~
+							{new Date(expert_request.application_deadline).toLocaleDateString('ko-KR')}
+						</span>
+					</div>
+				{:else if expert_request.application_deadline}
+					<div class="flex items-center text-sm">
+						<span class="w-20 text-gray-500">공고 마감</span>
+						<span class="font-medium text-gray-900">
+							{new Date(expert_request.application_deadline).toLocaleDateString('ko-KR')}
 						</span>
 					</div>
 				{/if}
@@ -1106,27 +1112,8 @@
 		onModalClose={() => (show_proposal_modal = false)}
 	>
 		<div class="p-6">
-			<div class="mb-6 flex items-center justify-between">
+			<div class="mb-6">
 				<h3 class="text-lg font-bold text-gray-900">제안서 작성</h3>
-				<button
-					onclick={() => (show_proposal_modal = false)}
-					class="text-gray-400 hover:text-gray-600"
-					aria-label="제안서 작성 모달 닫기"
-				>
-					<svg
-						class="h-6 w-6"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						></path>
-					</svg>
-				</button>
 			</div>
 
 			<form
@@ -1281,17 +1268,10 @@
 		onModalClose={() => (show_review_modal = false)}
 	>
 		<div class="p-6">
-			<div class="mb-6 flex items-center justify-between">
+			<div class="mb-6">
 				<h3 class="text-lg font-bold text-gray-900">
 					{my_review ? '리뷰 수정' : '리뷰 작성'}
 				</h3>
-				<button
-					onclick={() => (show_review_modal = false)}
-					class="text-gray-400 hover:text-gray-600"
-					aria-label="리뷰 모달 닫기"
-				>
-					<RiCloseLine size={24} />
-				</button>
 			</div>
 
 			<form

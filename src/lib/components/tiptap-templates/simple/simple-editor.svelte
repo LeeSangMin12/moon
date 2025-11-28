@@ -3,6 +3,7 @@
 	import { Highlight } from '@tiptap/extension-highlight';
 	import { TextAlign } from '@tiptap/extension-text-align';
 	import { Typography } from '@tiptap/extension-typography';
+	import BulletList from '@tiptap/extension-bullet-list';
 	import StarterKit from '@tiptap/starter-kit';
 	import ImageResize from 'tiptap-extension-resize-image';
 	import { HardBreak } from '@tiptap/extension-hard-break';
@@ -15,12 +16,19 @@
 	export let placeholder = '내용을 입력하세요...';
 
 	onMount(() => {
+		const BulletListNoInputRules = BulletList.extend({
+			// Disable the automatic "- " to bullet list conversion so the dash stays visible
+			addInputRules: () => [],
+		});
+
 		editor = new Editor({
 			element: editorElement,
 			extensions: [
 				StarterKit.configure({
 					hardBreak: true, // HardBreak 활성화
+					bulletList: false, // Replace with custom bullet list to disable input rule
 				}),
+				BulletListNoInputRules,
 				Highlight.configure({
 					multicolor: true,
 				}),
@@ -43,6 +51,8 @@
 						'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4',
 				},
 			},
+			// Disable all on-type input rules so characters like "- " stay literal
+			enableInputRules: false,
 			onTransaction: () => {
 				editor = editor;
 			},

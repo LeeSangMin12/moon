@@ -119,7 +119,7 @@
 		if (retry_count >= MAX_RETRIES) {
 			show_toast(
 				'error',
-				'인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요'
+				'인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요',
 			);
 			return;
 		}
@@ -195,12 +195,6 @@
 	});
 </script>
 
-<div class="mx-4 mt-4 rounded-lg bg-blue-50 p-4">
-	<p class="text-sm text-blue-800">
-		📱 본인 확인을 위해 전화번호 인증이 필요해요
-	</p>
-</div>
-
 <div class="mx-4 mt-8">
 	<p class="ml-1 font-semibold">전화번호</p>
 
@@ -256,7 +250,7 @@
 			<button
 				onclick={verify_otp}
 				disabled={otp.length !== 6 || is_verifying || is_verified}
-				class="btn btn-primary h-[52px] min-w-[100px] whitespace-nowrap px-4"
+				class="btn btn-primary h-[52px] min-w-[100px] px-4 whitespace-nowrap"
 			>
 				{#if is_verifying}
 					<span class="loading loading-spinner loading-sm"></span>

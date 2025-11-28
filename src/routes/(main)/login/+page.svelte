@@ -2,7 +2,7 @@
 	import { PUBLIC_WEB_CLIENT_URL } from '$env/static/public';
 	import logo from '$lib/img/logo.png';
 	import kakao_login from '$lib/img/partials/login/kakao_login.png';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
@@ -56,7 +56,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={28} color={colors.gray[800]} />
 	</button>
 </Header>

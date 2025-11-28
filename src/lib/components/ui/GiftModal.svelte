@@ -1,56 +1,56 @@
 <script>
-	import { RiCloseLine, RiMoonFill } from 'svelte-remixicon';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
+	import { comma, show_toast } from '$lib/utils/common';
 
 	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/config/colors';
-	import { comma, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-
-	let { is_modal_open, receiver_id, receiver_name, post_id, onGiftSuccess } = $props();
+	let {
+		is_modal_open = $bindable(),
+		receiver_id,
+		receiver_name,
+		post_id,
+		onGiftSuccess,
+	} = $props();
 
 	const me = get_user_context();
 	const api = get_api_context();
 
-	let charge_moon_form_data = $state({
-		point: 10,
-		bank: '',
-		account_number: '',
-		account_holder: '',
-	});
-
-	let gift_moon_point = $state(10);
+	let gift_amount = $state(1000);
 	let gift_content = $state('');
-	let is_buy_moon_modal_open = $state(false);
+	let submitting = $state(false);
+
+	const amounts = [1000, 5000, 10000, 50000];
+	const balance = $derived(me?.moon_cash || 0);
+	const is_over = $derived(gift_amount > balance);
+	const can_submit = $derived(
+		gift_amount >= 100 && gift_amount <= balance && !submitting,
+	);
+
+	function set_amount(val) {
+		gift_amount = Math.min(val, balance);
+	}
+
+	function add_amount(val) {
+		gift_amount = Math.min(gift_amount + val, balance);
+	}
 
 	const handle_gift = async () => {
-		if (gift_moon_point > me.moon_point) {
-			show_toast('error', '보유 문이 부족합니다.');
+		if (!can_submit) return;
+
+		// 자기 자신에게 선물 방지
+		if (me.id === receiver_id) {
+			show_toast('error', '자기 자신에게는 선물할 수 없어요');
 			return;
 		}
 
+		submitting = true;
 		try {
-			await api.users.gift_moon(
-				me.id,
-				receiver_id,
-				gift_moon_point,
-			);
+			// gift_moon RPC가 잔액 이동 + 거래 기록 모두 처리
+			await api.users.gift_moon(me.id, receiver_id, gift_amount);
 
-			await api.moon_point_transactions.insert({
-				user_id: me.id,
-				amount: -gift_moon_point,
-				type: 'gift',
-				description: '문 선물',
-			});
-
-			await api.moon_point_transactions.insert({
-				user_id: receiver_id,
-				amount: gift_moon_point,
-				type: 'receive',
-				description: '문 선물 받음',
-			});
-
-			// 앱 레벨 알림: 수신자에게 선물 알림
 			try {
 				await api.notifications.insert({
 					recipient_id: receiver_id,
@@ -58,278 +58,138 @@
 					type: 'gift.received',
 					resource_type: 'user',
 					resource_id: String(receiver_id),
-					payload: { amount: gift_moon_point, post_id },
-					link_url: `/@${me.handle}/accounts/point`,
+					payload: { amount: gift_amount, post_id },
+					link_url: `/@${me.handle}/accounts/cash`,
 				});
 			} catch (e) {
-				console.error('Failed to insert notification (gift.received):', e);
+				console.error('Failed to insert notification:', e);
 			}
 
-			// 상위 컴포넌트에 알림
 			onGiftSuccess?.({
 				gift_content,
-				gift_moon_point,
+				gift_amount,
 				post_id,
 			});
 
-			me.moon_point = me.moon_point - gift_moon_point;
+			me.moon_cash = me.moon_cash - gift_amount;
 
 			is_modal_open = false;
-			gift_moon_point = 10;
+			gift_amount = 1000;
 			gift_content = '';
 
-			show_toast('success', '성공적으로 선물을 보냈습니다.');
+			show_toast('success', '선물을 보냈어요');
 		} catch (e) {
-			show_toast('error', e.message);
-			console.error(e);
+			// 에러 메시지에서 실제 메시지 추출 (예: "Failed to gift_moon: 보유 캐시가 부족합니다.")
+			const msg = e.message?.includes(':')
+				? e.message.split(':').pop().trim()
+				: e.message;
+			show_toast('error', msg || '선물 전송에 실패했어요');
+		} finally {
+			submitting = false;
 		}
 	};
 
-	const handle_charge_moon = async () => {
-		// 입력 값 검증
-		if (!charge_moon_form_data.point || charge_moon_form_data.point <= 0) {
-			show_toast('error', '충전할 문 개수를 입력해주세요.');
-			return;
-		}
-
-		if (!charge_moon_form_data.account_holder.trim()) {
-			show_toast('error', '입금자명을 입력해주세요.');
-			return;
-		}
-
-		if (!charge_moon_form_data.bank.trim()) {
-			show_toast('error', '은행명을 입력해주세요.');
-			return;
-		}
-
-		if (!charge_moon_form_data.account_number.trim()) {
-			show_toast('error', '계좌번호를 입력해주세요.');
-			return;
-		}
-
-		try {
-			const charge_amount = Math.floor(charge_moon_form_data.point * 100 * 1.1);
-
-			await api.moon_charges.create_charge_request({
-				user_id: me.id,
-				point: charge_moon_form_data.point,
-				amount: charge_amount,
-				bank: charge_moon_form_data.bank,
-				account_number: charge_moon_form_data.account_number,
-				account_holder: charge_moon_form_data.account_holder,
-			});
-
-			// 폼 초기화
-			charge_moon_form_data = {
-				point: 10,
-				bank: '',
-				account_number: '',
-				account_holder: '',
-			};
-
-			is_buy_moon_modal_open = false;
-			show_toast(
-				'success',
-				'충전 요청이 완료되었습니다. 관리자 승인 후 문이 충전됩니다.',
-			);
-		} catch (e) {
-			show_toast('error', e.message);
-			console.error(e);
-		}
-	};
+	function close() {
+		is_modal_open = false;
+	}
 </script>
 
 <Modal bind:is_modal_open modal_position="center">
-	<div class="p-4">
-		<div class="flex justify-between">
-			<h3 class="font-semibold">
-				{receiver_name}님께 선물하기
-			</h3>
-			<button onclick={() => (is_modal_open = false)}>
-				<RiCloseLine size={24} color={colors.gray[400]} />
-			</button>
-		</div>
+	<div class="p-5">
+		<!-- 헤더 -->
+		<p class="text-[16px] font-semibold text-gray-900">
+			{receiver_name}님께 선물
+		</p>
 
-		<div class="mt-6">
-			<p class="flex gap-1 font-semibold">
-				선물할 문
-				<RiMoonFill size={16} color={colors.primary} />
-			</p>
-			<input
-				type="number"
-				bind:value={gift_moon_point}
-				min={1}
-				defaultValue={10}
-				class="input mt-4 w-full border-none bg-gray-100 text-sm focus:outline-none"
-			/>
-			<div class="mt-2 flex gap-2">
-				<button
-					onclick={() => (gift_moon_point = gift_moon_point + 1)}
-					class="btn btn-sm rounded-full">+1</button
-				>
-				<button
-					onclick={() => (gift_moon_point = gift_moon_point + 10)}
-					class="btn btn-sm rounded-full">+10</button
-				>
-				<button
-					onclick={() => (gift_moon_point = gift_moon_point + 100)}
-					class="btn btn-sm rounded-full">+100</button
-				>
-				<button
-					onclick={() => (gift_moon_point = gift_moon_point + 1000)}
-					class="btn btn-sm rounded-full">+1,000</button
-				>
-				<button
-					onclick={() => (gift_moon_point = gift_moon_point + 10000)}
-					class="btn btn-sm rounded-full">+10,000</button
-				>
-			</div>
-		</div>
-
-		<textarea
-			bind:value={gift_content}
-			rows="1"
-			placeholder="선물 메시지를 입력하세요"
-			class="mt-6 w-full resize-none rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
-			style="overflow-y: hidden;"
-		></textarea>
-
-		<div class="my-4 flex items-center justify-between text-sm">
-			<p>
-				보유 문
-				<span class="text-primary">{me.moon_point ?? 0}개</span>
-			</p>
-			<button
-				onclick={() => {
-					is_modal_open = false;
-					is_buy_moon_modal_open = true;
-				}}
-				class="btn btn-primary btn-outline-none btn-sm"
-			>
-				충전
-			</button>
-		</div>
-
-		<div class="mt-4 flex justify-center gap-4">
-			<button onclick={() => (is_modal_open = false)} class="btn flex-1"
-				>닫기</button
-			>
-			<button
-				class="btn btn-primary flex-1"
-				disabled={gift_moon_point === 0 || gift_moon_point === null}
-				onclick={handle_gift}>선물하기</button
-			>
-		</div>
-	</div>
-</Modal>
-
-<Modal bind:is_modal_open={is_buy_moon_modal_open} modal_position="center">
-	<div class="p-4">
-		<div class="flex justify-between">
-			<h3 class="font-semibold">문 충전하기</h3>
-			<button onclick={() => (is_buy_moon_modal_open = false)}>
-				<RiCloseLine size={24} color={colors.gray[400]} />
-			</button>
-		</div>
-
-		<div class="mt-6">
-			<p class="flex gap-1 font-semibold">
-				충전할 문
-				<RiMoonFill size={16} color={colors.primary} />
-			</p>
-			<input
-				type="number"
-				bind:value={charge_moon_form_data.point}
-				min={1}
-				defaultValue={10}
-				class="input mt-4 w-full border-none bg-gray-100 text-sm focus:outline-none"
-			/>
-			<div class="mt-2 flex gap-2">
-				<button
-					class="btn btn-sm rounded-full"
-					onclick={() =>
-						(charge_moon_form_data.point = charge_moon_form_data.point + 1)}
-					>+1</button
-				>
-				<button
-					class="btn btn-sm rounded-full"
-					onclick={() =>
-						(charge_moon_form_data.point = charge_moon_form_data.point + 10)}
-					>+10</button
-				>
-				<button
-					class="btn btn-sm rounded-full"
-					onclick={() =>
-						(charge_moon_form_data.point = charge_moon_form_data.point + 100)}
-					>+100</button
-				>
-				<button
-					class="btn btn-sm rounded-full"
-					onclick={() =>
-						(charge_moon_form_data.point = charge_moon_form_data.point + 1000)}
-					>+1,000</button
-				>
-				<button
-					class="btn btn-sm rounded-full"
-					onclick={() =>
-						(charge_moon_form_data.point = charge_moon_form_data.point + 10000)}
-					>+10,000</button
-				>
-			</div>
-		</div>
-
-		<div class="mt-6">
-			<p class="text-sm font-medium">입금자명</p>
-			<input
-				type="text"
-				bind:value={charge_moon_form_data.account_holder}
-				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
-			/>
-		</div>
-
-		<div class="mt-4">
-			<p class="text-sm font-medium">은행</p>
-			<input
-				type="text"
-				bind:value={charge_moon_form_data.bank}
-				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
-			/>
-		</div>
-
-		<div class="mt-4">
-			<p class="text-sm font-medium">계좌번호</p>
-			<input
-				type="text"
-				bind:value={charge_moon_form_data.account_number}
-				class="mt-2 w-full rounded-sm bg-gray-100 p-2 text-sm transition-all focus:outline-none"
-			/>
-		</div>
-
-		<div class="my-4 h-px bg-gray-200"></div>
-
-		<div>
-			<div class="flex justify-between">
-				<p class="font-semibold">총 결제 금액</p>
-				<p class="text-primary text-lg font-bold">
-					{comma(Math.floor(charge_moon_form_data.point * 100 * 1.1))}원
-				</p>
-			</div>
-		</div>
-
+		<!-- 잔액 -->
 		<div
-			class="font-semibod mt-2 flex flex-col justify-center bg-gray-50 px-4 py-2 text-sm text-gray-900"
+			class="mt-4 flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 		>
-			<p>
-				아직은 계좌이체만 지원되고 있어요!<br />
-				더 편리한 결제를 위해 다양한 수단을 준비 중이니 조금만 기다려주세요 😊
-			</p>
+			<span class="text-[13px] text-gray-500">내 캐시</span>
+			<span class="text-[15px] font-semibold text-gray-900"
+				>{comma(balance)}원</span
+			>
 		</div>
 
-		<button
-			class="btn btn-primary mt-4 w-full rounded-lg"
-			onclick={handle_charge_moon}
+		<!-- 금액 입력 -->
+		<div class="mt-5">
+			<p class="text-[13px] text-gray-500">선물 금액</p>
+			<div class="relative mt-2">
+				<input
+					type="text"
+					inputmode="numeric"
+					value={gift_amount ? comma(gift_amount) : ''}
+					oninput={(e) => {
+						const val = e.target.value.replace(/[^0-9]/g, '');
+						gift_amount = Number(val) || 0;
+					}}
+					placeholder="0"
+					class="w-full border-0 border-b-2 bg-transparent pb-2 text-[24px] font-bold placeholder-gray-300 focus:outline-none
+						{is_over
+						? 'border-red-300 text-red-500 focus:border-red-500'
+						: 'border-gray-200 text-gray-900 focus:border-gray-900'}"
+				/>
+				<span
+					class="absolute right-0 bottom-2 text-[16px] font-semibold text-gray-400"
+					>원</span
+				>
+			</div>
+
+			{#if is_over}
+				<p class="mt-2 text-[13px] text-red-500">잔액이 부족해요</p>
+			{/if}
+
+			<div class="mt-3 flex gap-2">
+				{#each amounts as amt}
+					<button
+						onclick={() => add_amount(amt)}
+						disabled={amt > balance}
+						class="flex-1 rounded-lg py-2 text-[13px] font-medium
+							{amt > balance
+							? 'cursor-not-allowed bg-gray-50 text-gray-300'
+							: 'bg-gray-100 text-gray-700 active:bg-gray-200'}"
+					>
+						+{comma(amt)}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<!-- 메시지 -->
+		<div class="mt-5">
+			<p class="text-[13px] text-gray-500">메시지 (선택)</p>
+			<textarea
+				bind:value={gift_content}
+				rows="2"
+				placeholder="따뜻한 메시지를 남겨보세요"
+				class="mt-2 w-full resize-none rounded-lg border border-gray-200 p-3 text-[14px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+			></textarea>
+		</div>
+
+		<!-- 충전 링크 -->
+		<a
+			href={`/@${me?.handle}/accounts/cash/charge`}
+			onclick={close}
+			class="mt-4 block text-center text-[13px] text-blue-500"
 		>
-			문 충전하기
-		</button>
+			캐시가 부족하신가요? 충전하기 →
+		</a>
+
+		<!-- 버튼 -->
+		<div class="mt-5 flex gap-2">
+			<button
+				onclick={close}
+				class="flex-1 rounded-lg bg-gray-100 py-3 text-[14px] font-medium text-gray-700 active:bg-gray-200"
+			>
+				취소
+			</button>
+			<button
+				onclick={handle_gift}
+				disabled={!can_submit}
+				class="flex-1 rounded-lg bg-blue-500 py-3 text-[14px] font-medium text-white active:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500"
+			>
+				{submitting ? '전송 중...' : '선물하기'}
+			</button>
+		</div>
 	</div>
 </Modal>

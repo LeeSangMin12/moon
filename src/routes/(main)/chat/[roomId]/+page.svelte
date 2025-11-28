@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiRemixiconFill } from 'svelte-remixicon';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 
 	import Header from '$lib/components/ui/Header.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -17,7 +17,7 @@
 
 <Header>
 	<div slot="left">
-		<button class="flex items-center" onclick={smartGoBack}>
+		<button class="flex items-center" onclick={smart_go_back}>
 			<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 		</button>
 	</div>
@@ -66,11 +66,20 @@
 </main>
 
 <Modal bind:is_modal_open={is_menu_modal_open} modal_position="bottom">
-	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		<div class=" flex w-full flex-col items-center rounded-lg bg-white">
-			<div class="flex w-full items-center gap-2 p-3">
-				<p class="text-red-500">채팅방 나가기</p>
-			</div>
+	<div class="pb-6">
+		<!-- 드래그 핸들 -->
+		<div class="flex justify-center py-3">
+			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
+		</div>
+
+		<div>
+			<button
+				class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
+				aria-label="채팅방 나가기"
+			>
+				<Icon attribute="exit" size={20} color="#ef4444" />
+				<span class="text-[15px] text-red-500">채팅방 나가기</span>
+			</button>
 		</div>
 	</div>
 </Modal>

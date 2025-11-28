@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -55,7 +55,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">알림</h1>
@@ -220,6 +220,32 @@
 									</p>
 									<p class="mt-1 text-sm text-gray-600 break-words">
 										{n.payload?.subject}
+									</p>
+								{:else if n.type === 'proposal_received'}
+									<p class="text-sm">새로운 제안이 접수되었습니다.</p>
+									<p class="mt-1 text-sm text-gray-600 break-words">
+										{n.payload?.title}
+									</p>
+								{:else if n.type === 'proposal_accepted'}
+									<p class="text-sm">제안이 수락되었습니다!</p>
+									<p class="mt-1 text-sm text-gray-600 break-words">
+										{n.payload?.title}
+									</p>
+								{:else if n.type === 'project_completed'}
+									<p class="text-sm">프로젝트가 완료되었습니다.</p>
+									<p class="mt-1 text-sm text-gray-600 break-words">
+										{n.payload?.title}
+										{#if n.payload?.payout}
+											<span class="text-blue-600">(+{n.payload.payout.toLocaleString()}원)</span>
+										{/if}
+									</p>
+								{:else if n.type === 'service_order_completed'}
+									<p class="text-sm">서비스 판매가 완료되었습니다.</p>
+									<p class="mt-1 text-sm text-gray-600 break-words">
+										{n.payload?.title}
+										{#if n.payload?.payout}
+											<span class="text-blue-600">(+{n.payload.payout.toLocaleString()}원)</span>
+										{/if}
 									</p>
 								{:else}
 									<p class="text-sm font-medium">{n.type}</p>

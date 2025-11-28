@@ -83,14 +83,14 @@
 	 *
 	 * @param {Object} params - Gift 댓글 파라미터
 	 * @param {string} params.gift_content - Gift 메시지 내용
-	 * @param {number} params.gift_moon_point - Gift 포인트
+	 * @param {number} params.gift_amount - Gift 포인트
 	 * @param {string|null} params.parent_comment_id - 부모 댓글 ID
 	 * @param {string} params.post_id - 게시물 ID
 	 * @returns {Promise<void>}
 	 */
 	const handle_gift_comment_added = async ({
 		gift_content,
-		gift_moon_point,
+		gift_amount,
 		parent_comment_id,
 		post_id,
 	}) => {
@@ -100,7 +100,7 @@
 				user_id: me.id,
 				content: gift_content,
 				parent_comment_id,
-				gift_moon_point,
+				gift_amount,
 			});
 		} catch (error) {
 			console.error('Failed to add gift comment:', error);
@@ -159,7 +159,7 @@
 			<RiNotificationFill size={20} color={colors.gray[400]} />
 			{#if home_data.unread_count > 0}
 				<span
-					class="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none text-white"
+					class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] leading-none text-white"
 					aria-label={`읽지 않은 알림 ${home_data.unread_count}개`}
 				>
 					{home_data.unread_count > MAX_NOTIFICATION_BADGE

@@ -11,6 +11,7 @@
 		format_date,
 		show_toast,
 	} from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
@@ -30,7 +31,6 @@
 	import GiftModal from '$lib/components/ui/GiftModal.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import { optimize_avatar } from '$lib/utils/image';
 
 	// ===== Context =====
 	const me = get_user_context();
@@ -89,7 +89,7 @@
 	 * @typedef {Function} GiftCallback
 	 * @param {Object} event - 선물 이벤트
 	 * @param {string} event.gift_content - 선물 메시지
-	 * @param {number} event.gift_moon_point - 선물 포인트
+	 * @param {number} event.gift_amount - 선물 금액
 	 * @param {string} event.post_id - 게시물 ID
 	 */
 
@@ -115,10 +115,8 @@
 	});
 
 	// ===== State: Report Form =====
-	let report_form = $state({
-		reason: '',
-		details: '',
-	});
+	let report_reason = $state('');
+	let report_details = $state('');
 
 	// ===== Computed Values =====
 	const author_handle = post.users?.handle || 'unknown';
@@ -128,7 +126,7 @@
 	 * 전체 게시물 URL (클라이언트에서만 계산)
 	 */
 	const full_post_url = $derived(
-		typeof window !== 'undefined' ? `${window.location.origin}${post_url}` : ''
+		typeof window !== 'undefined' ? `${window.location.origin}${post_url}` : '',
 	);
 
 	/**
@@ -355,7 +353,7 @@
 	 * @returns {Promise<void>}
 	 */
 	async function submit_report() {
-		if (!report_form.reason) {
+		if (!report_reason) {
 			show_toast('error', '신고 사유를 선택해주세요.');
 			return;
 		}
@@ -364,8 +362,8 @@
 			await api.post_reports.insert({
 				reporter_id: me.id,
 				post_id: post.id,
-				reason: report_form.reason,
-				details: report_form.details,
+				reason: report_reason,
+				details: report_details,
 			});
 
 			show_toast('success', '신고가 정상적으로 접수되었습니다.');
@@ -381,8 +379,8 @@
 	 */
 	function reset_report_form() {
 		modal.report = false;
-		report_form.reason = '';
-		report_form.details = '';
+		report_reason = '';
+		report_details = '';
 	}
 
 	// ===== Gift Handlers =====
@@ -391,13 +389,13 @@
 	 * 선물 댓글 추가 성공 처리
 	 * @param {Object} params - 선물 파라미터
 	 * @param {string} params.gift_content - 선물 메시지
-	 * @param {number} params.gift_moon_point - 선물 포인트
+	 * @param {number} params.gift_amount - 선물 금액
 	 * @param {string} params.post_id - 게시물 ID
 	 */
-	function handle_gift_success({ gift_content, gift_moon_point, post_id }) {
+	function handle_gift_success({ gift_content, gift_amount, post_id }) {
 		onGiftCommentAdded?.({
 			gift_content,
-			gift_moon_point,
+			gift_amount,
 			parent_comment_id: null,
 			post_id: post.id,
 		});
@@ -506,7 +504,9 @@
 							<track kind="captions" label="No captions" />
 						</video>
 					{:else}
-						<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
+						<CustomCarousel
+							images={post.images.map((img) => optimize_image(img.uri))}
+						/>
 					{/if}
 				</figure>
 			{/if}
@@ -530,7 +530,9 @@
 						<track kind="captions" label="No captions" />
 					</video>
 				{:else}
-					<CustomCarousel images={post.images.map((img) => optimize_image(img.uri))} />
+					<CustomCarousel
+						images={post.images.map((img) => optimize_image(img.uri))}
+					/>
 				{/if}
 			</figure>
 		{:else}
@@ -634,135 +636,148 @@
 <!-- Config Modal -->
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
-	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if post.users?.id === me.id}
-			<!-- Own Post Options -->
-			<div class="flex w-full flex-col items-center rounded-lg bg-white">
+	<div class="pb-6">
+		<!-- 드래그 핸들 -->
+		<div class="flex justify-center py-3">
+			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
+		</div>
+
+		<div>
+			{#if post.users?.id === me.id}
+				<!-- Own Post Options -->
 				<a
 					href={`/regi/post/${post.id}`}
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 				>
-					<RiPencilLine size={20} color={colors.gray[400]} />
-					<p class="text-gray-600">수정하기</p>
+					<RiPencilLine size={20} class="text-gray-500" />
+					<span class="text-[15px] text-gray-900">수정하기</span>
 				</a>
 
-				<hr class="w-full border-gray-100" />
+				<hr class="border-gray-100" />
 
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={toggle_bookmark}
 				>
 					{#if is_bookmarked}
-						<RiBookmarkFill size={20} color={colors.primary} />
-						<p class="text-gray-600">저장됨</p>
+						<RiBookmarkFill size={20} class="text-primary" />
+						<span class="text-[15px] text-gray-900">저장됨</span>
 					{:else}
-						<RiBookmarkLine size={20} color={colors.gray[400]} />
-						<p class="text-gray-600">저장하기</p>
+						<RiBookmarkLine size={20} class="text-gray-500" />
+						<span class="text-[15px] text-gray-900">저장하기</span>
 					{/if}
 				</button>
-			</div>
 
-			<button
-				onclick={copy_post_link}
-				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
-			>
-				<div class="flex w-full items-center gap-3 p-3">
-					<Icon attribute="link" size={20} color={colors.gray[600]} />
-					<p class="text-gray-600">링크복사</p>
-				</div>
-			</button>
-		{:else}
-			<!-- Other's Post Options -->
-			<div class="flex w-full flex-col items-center rounded-lg bg-white">
+				<hr class="border-gray-100" />
+
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					onclick={copy_post_link}
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
+				>
+					<Icon attribute="link" size={20} color={colors.gray[500]} />
+					<span class="text-[15px] text-gray-900">링크복사</span>
+				</button>
+			{:else}
+				<!-- Other's Post Options -->
+				<button
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={toggle_bookmark}
 				>
 					{#if is_bookmarked}
-						<RiBookmarkFill size={20} color={colors.primary} />
-						<p class="text-gray-600">저장됨</p>
+						<RiBookmarkFill size={20} class="text-primary" />
+						<span class="text-[15px] text-gray-900">저장됨</span>
 					{:else}
-						<RiBookmarkLine size={20} color={colors.gray[600]} />
-						<p class="text-gray-600">저장하기</p>
+						<RiBookmarkLine size={20} class="text-gray-500" />
+						<span class="text-[15px] text-gray-900">저장하기</span>
 					{/if}
 				</button>
 
-				<hr class="w-full border-gray-100" />
+				<hr class="border-gray-100" />
 
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={toggle_follow}
 				>
 					{#if is_following}
-						<RiUserUnfollowLine size={20} color={colors.gray[600]} />
-						<p class="text-gray-600">팔로우 취소</p>
+						<RiUserUnfollowLine size={20} class="text-gray-500" />
+						<span class="text-[15px] text-gray-900">팔로우 취소</span>
 					{:else}
-						<RiUserFollowLine size={20} color={colors.gray[600]} />
-						<p class="text-gray-600">팔로우</p>
+						<RiUserFollowLine size={20} class="text-gray-500" />
+						<span class="text-[15px] text-gray-900">팔로우</span>
 					{/if}
 				</button>
-			</div>
 
-			<button
-				onclick={copy_post_link}
-				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
-			>
-				<div class="flex w-full items-center gap-3 p-3">
-					<Icon attribute="link" size={20} color={colors.gray[600]} />
-					<p class="text-gray-600">링크복사</p>
-				</div>
-			</button>
+				<hr class="border-gray-100" />
 
-			<button
-				onclick={() => (modal.report = true)}
-				class="mt-4 flex w-full flex-col items-center rounded-lg bg-white"
-			>
-				<div class="flex w-full items-center gap-2 p-3">
-					<Icon attribute="exclamation" size={24} color={colors.warning} />
-					<p class="text-red-500">신고하기</p>
-				</div>
-			</button>
-		{/if}
+				<button
+					onclick={copy_post_link}
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
+				>
+					<Icon attribute="link" size={20} color={colors.gray[500]} />
+					<span class="text-[15px] text-gray-900">링크복사</span>
+				</button>
+
+				<hr class="border-gray-100" />
+
+				<button
+					onclick={() => (modal.report = true)}
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
+				>
+					<Icon attribute="exclamation" size={20} color="#ef4444" />
+					<span class="text-[15px] text-red-500">신고하기</span>
+				</button>
+			{/if}
+		</div>
 	</div>
 </Modal>
 
 <!-- Report Modal -->
 <Modal bind:is_modal_open={modal.report} modal_position="center">
-	<div class="p-4">
-		<h2 class="text-lg font-bold">무엇을 신고하시나요?</h2>
-		<p class="mt-1 text-sm text-gray-500">
+	<div class="p-5">
+		<p class="text-[16px] font-semibold text-gray-900">무엇을 신고하시나요?</p>
+		<p class="mt-1 text-[13px] text-gray-500">
 			커뮤니티 가이드라인에 어긋나는 내용을 알려주세요.
 		</p>
+		ㅁㄴㅇㄹㅁ
 
 		<div class="mt-4 space-y-2">
 			{#each REPORT_REASONS as reason}
-				<label class="flex items-center">
+				<label
+					class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50"
+				>
 					<input
 						type="radio"
 						name="report_reason"
 						value={reason}
-						bind:group={report_form.reason}
-						class="radio radio-primary radio-xs"
+						bind:group={report_reason}
+						class="h-4 w-4 accent-blue-500"
 					/>
-					<span class="ml-2">{reason}</span>
+					<span class="ml-3 text-[14px] text-gray-900">{reason}</span>
 				</label>
 			{/each}
 		</div>
 
 		<textarea
-			bind:value={report_form.details}
-			class="textarea textarea-bordered focus:border-primary mt-4 w-full focus:outline-none"
-			placeholder="상세 내용을 입력해주세요. (선택 사항)"
+			bind:value={report_details}
+			class="mt-4 w-full rounded-lg border border-gray-200 px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+			placeholder="상세 내용을 입력해주세요 (선택)"
 			rows="3"
 		></textarea>
-	</div>
-	<div class="flex">
-		<button onclick={reset_report_form} class="btn w-1/3 rounded-none"
-			>취소</button
-		>
-		<button onclick={submit_report} class="btn btn-primary w-2/3 rounded-none"
-			>제출</button
-		>
+
+		<div class="mt-5 flex gap-2">
+			<button
+				onclick={reset_report_form}
+				class="flex-1 rounded-lg bg-gray-100 py-3 text-[14px] font-medium text-gray-700 active:bg-gray-200"
+			>
+				취소
+			</button>
+			<button
+				onclick={submit_report}
+				class="flex-1 rounded-lg bg-red-500 py-3 text-[14px] font-medium text-white active:bg-red-600"
+			>
+				신고하기
+			</button>
+		</div>
 	</div>
 </Modal>
 

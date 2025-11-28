@@ -5,6 +5,7 @@
 		get_api_context,
 		get_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
+	import { smart_go_back } from '$lib/utils/navigation.js';
 	import { goto } from '$app/navigation';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -85,7 +86,7 @@
 
 	const handle_gift_comment_added = async ({
 		gift_content,
-		gift_moon_point,
+		gift_amount,
 		parent_comment_id,
 		post_id,
 	}) => {
@@ -95,7 +96,7 @@
 			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
-			gift_moon_point,
+			gift_amount,
 		});
 	};
 
@@ -130,7 +131,7 @@
 <header class="sticky top-0 z-50 bg-white whitespace-nowrap">
 	<nav class="pt-safe">
 		<div class="z-10 flex h-[56px] w-full items-center gap-2 px-2">
-			<button onclick={() => window.history.back()}>
+			<button onclick={smart_go_back}>
 				<Icon attribute="arrow_left" size={28} color={colors.gray[600]} />
 			</button>
 

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiHeartFill,
@@ -261,14 +261,14 @@
 		load_tab_data(selected);
 	});
 
-	const handle_gift_comment_added = async ({ gift_content, gift_moon_point, parent_comment_id, post_id }) => {
+	const handle_gift_comment_added = async ({ gift_content, gift_amount, parent_comment_id, post_id }) => {
 		// 실제 댓글 추가 (메인 페이지에서는 UI에 표시되지 않지만 DB에는 저장됨)
 		await api.post_comments.insert({
 			post_id,
 			user_id: me.id,
 			content: gift_content,
 			parent_comment_id,
-			gift_moon_point,
+			gift_amount,
 		});
 	};
 
@@ -369,7 +369,7 @@
 		{#if $page.params.handle !== me?.handle}
 			<button
 				class="flex items-center"
-				onclick={smartGoBack}
+				onclick={smart_go_back}
 				aria-label="이전 페이지로 돌아가기"
 			>
 				<RiArrowLeftSLine size={28} color={colors.gray[600]} />
@@ -602,14 +602,14 @@
 
 							<p class="mt-2 text-sm whitespace-pre-wrap">{comment.content}</p>
 
-							<!-- 선물 포인트가 있는 경우 -->
-							{#if comment.gift_moon_point > 0}
+							<!-- 선물 금액이 있는 경우 -->
+							{#if comment.gift_amount > 0}
 								<div
-									class="mt-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-1"
+									class="mt-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-1"
 								>
-									<Icon attribute="gift" size={14} color={colors.warning} />
-									<span class="ml-1 text-xs font-medium text-yellow-800">
-										{comment.gift_moon_point} 문 선물
+									<Icon attribute="gift" size={14} color={colors.primary} />
+									<span class="ml-1 text-xs font-medium text-blue-800">
+										{comment.gift_amount}원 선물
 									</span>
 								</div>
 							{/if}
@@ -805,64 +805,70 @@
 {/if}
 
 <Modal bind:is_modal_open={modal.user_config} modal_position="bottom">
-	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		<button
-			onclick={() => (modal.report = true)}
-			class="flex w-full flex-col items-center rounded-lg bg-white"
-			aria-label="사용자 신고하기"
-		>
-			<div class="flex w-full items-center gap-2 p-3">
-				<Icon attribute="exclamation" size={24} color={colors.warning} />
-				<p class="text-red-500">신고하기</p>
-			</div>
-		</button>
+	<div class="pb-6">
+		<!-- 드래그 핸들 -->
+		<div class="flex justify-center py-3">
+			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
+		</div>
+
+		<div>
+			<button
+				onclick={() => (modal.report = true)}
+				class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
+				aria-label="사용자 신고하기"
+			>
+				<Icon attribute="exclamation" size={20} color="#ef4444" />
+				<span class="text-[15px] text-red-500">신고하기</span>
+			</button>
+		</div>
 	</div>
 </Modal>
 
 <Modal bind:is_modal_open={modal.report} modal_position="center">
-	<div class="p-4">
-		<h2 class="text-lg font-bold">무엇을 신고하시나요?</h2>
-		<p class="mt-1 text-sm text-gray-500">
+	<div class="p-5">
+		<p class="text-[16px] font-semibold text-gray-900">무엇을 신고하시나요?</p>
+		<p class="mt-1 text-[13px] text-gray-500">
 			커뮤니티 가이드라인에 어긋나는 내용을 알려주세요.
 		</p>
 
 		<div class="mt-4 space-y-2">
 			{#each REPORT_REASONS as reason}
-				<label class="flex items-center">
+				<label class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50">
 					<input
 						type="radio"
 						name="report_reason"
 						value={reason}
 						bind:group={user_report_form_data.reason}
-						class="radio radio-primary radio-xs"
+						class="h-4 w-4 accent-blue-500"
 					/>
-					<span class="ml-2">{reason}</span>
+					<span class="ml-3 text-[14px] text-gray-900">{reason}</span>
 				</label>
 			{/each}
 		</div>
 
 		<textarea
 			bind:value={user_report_form_data.details}
-			class="textarea textarea-bordered focus:border-primary mt-4 w-full focus:outline-none"
-			placeholder="상세 내용을 입력해주세요. (선택 사항)"
+			class="mt-4 w-full rounded-lg border border-gray-200 px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+			placeholder="상세 내용을 입력해주세요 (선택)"
 			rows="3"
 		></textarea>
-	</div>
-	<div class="flex">
-		<button
-			onclick={() => (modal.report = false)}
-			class="btn w-1/3 rounded-none"
-			aria-label="신고 취소"
-		>
-			취소
-		</button>
-		<button
-			onclick={handle_report_submit}
-			class="btn btn-primary w-2/3 rounded-none"
-			aria-label="신고 제출하기"
-		>
-			제출
-		</button>
+
+		<div class="mt-5 flex gap-2">
+			<button
+				onclick={() => (modal.report = false)}
+				class="flex-1 rounded-lg bg-gray-100 py-3 text-[14px] font-medium text-gray-700 active:bg-gray-200"
+				aria-label="신고 취소"
+			>
+				취소
+			</button>
+			<button
+				onclick={handle_report_submit}
+				class="flex-1 rounded-lg bg-red-500 py-3 text-[14px] font-medium text-white active:bg-red-600"
+				aria-label="신고 제출하기"
+			>
+				신고하기
+			</button>
+		</div>
 	</div>
 </Modal>
 

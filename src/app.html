@@ -33,21 +33,23 @@
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 		<link rel="preconnect" href="https://www.googletagmanager.com" />
 
-		<!-- Google Tag Manager (deferred for performance) -->
+		<!-- Google Tag Manager (deferred for performance, disabled on localhost) -->
 		<script>
-			// GTM을 defer로 로드하여 render blocking 방지
-			window.addEventListener('DOMContentLoaded', function () {
-				(function (w, d, s, l, i) {
-					w[l] = w[l] || [];
-					w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-					var f = d.getElementsByTagName(s)[0],
-						j = d.createElement(s),
-						dl = l != 'dataLayer' ? '&l=' + l : '';
-					j.async = true;
-					j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-					f.parentNode.insertBefore(j, f);
-				})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
-			});
+			// 로컬에서는 GTM 비활성화
+			if (window.location.hostname !== 'localhost') {
+				window.addEventListener('DOMContentLoaded', function () {
+					(function (w, d, s, l, i) {
+						w[l] = w[l] || [];
+						w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+						var f = d.getElementsByTagName(s)[0],
+							j = d.createElement(s),
+							dl = l != 'dataLayer' ? '&l=' + l : '';
+						j.async = true;
+						j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+						f.parentNode.insertBefore(j, f);
+					})(window, document, 'script', 'dataLayer', 'GTM-5L62H5DS');
+				});
+			}
 		</script>
 		<!-- End Google Tag Manager -->
 

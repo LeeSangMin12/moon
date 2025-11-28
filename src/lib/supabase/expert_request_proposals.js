@@ -67,7 +67,7 @@ export const create_expert_request_proposals_api = (supabase) => ({
 		// 요청이 존재하고 열린 상태인지 확인
 		const { data: request_info, error: request_error } = await supabase
 			.from('expert_requests')
-			.select('id, status, requester_id')
+			.select('id, title, status, requester_id')
 			.eq('id', proposal_data.request_id)
 			.single();
 
@@ -121,6 +121,17 @@ export const create_expert_request_proposals_api = (supabase) => ({
 			throw new Error(`제안서 생성 실패: ${error.message}`);
 		}
 
+		// 의뢰인에게 알림 전송
+		await supabase.from('notifications').insert({
+			recipient_id: request_info.requester_id,
+			actor_id: user_id,
+			type: 'proposal_received',
+			resource_type: 'expert_request',
+			resource_id: proposal_data.request_id,
+			payload: { title: request_info.title },
+			link_url: `/expert-request/${proposal_data.request_id}`,
+		});
+
 		return data;
 	},
 
@@ -167,6 +178,13 @@ export const create_expert_request_proposals_api = (supabase) => ({
 
 	// 제안 수락 (다른 모든 제안은 자동으로 거절됨, 단순화)
 	accept_proposal: async (proposal_id, request_id) => {
+		// 제안서 및 요청 정보 조회 (알림용)
+		const { data: proposal_info } = await supabase
+			.from('expert_request_proposals')
+			.select('expert_id, expert_requests:request_id(title)')
+			.eq('id', proposal_id)
+			.single();
+
 		// RPC 호출 (입금 정보 제거, 전문가 선택만)
 		const { data, error } = await supabase.rpc('accept_proposal', {
 			proposal_id_param: proposal_id,
@@ -175,6 +193,18 @@ export const create_expert_request_proposals_api = (supabase) => ({
 
 		if (error) {
 			throw new Error(`제안 수락 실패: ${error.message}`);
+		}
+
+		// 전문가에게 알림 전송
+		if (proposal_info) {
+			await supabase.from('notifications').insert({
+				recipient_id: proposal_info.expert_id,
+				type: 'proposal_accepted',
+				resource_type: 'expert_request',
+				resource_id: request_id,
+				payload: { title: proposal_info.expert_requests?.title },
+				link_url: `/expert-request/${request_id}`,
+			});
 		}
 
 		return data;

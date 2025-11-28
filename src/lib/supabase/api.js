@@ -2,6 +2,9 @@ import { create_community_avatars_api } from '$lib/supabase/bucket/communities/a
 import { create_post_images_api } from '$lib/supabase/bucket/posts/images';
 import { create_service_images_api } from '$lib/supabase/bucket/services/images';
 import { create_user_avatars_api } from '$lib/supabase/bucket/users/avatars';
+import { create_cash_charges_api } from '$lib/supabase/cash_charges';
+import { create_cash_transactions_api } from '$lib/supabase/cash_transactions';
+import { create_cash_withdrawals_api } from '$lib/supabase/cash_withdrawals';
 import { create_communities_api } from '$lib/supabase/communities';
 import { create_community_members_api } from '$lib/supabase/community_members';
 import { create_community_reports_api } from '$lib/supabase/community_reports';
@@ -9,6 +12,7 @@ import { create_community_topics_api } from '$lib/supabase/community_topics';
 import { create_moon_charges_api } from '$lib/supabase/moon_charges';
 import { create_moon_point_transactions_api } from '$lib/supabase/moon_point_transactions';
 import { create_moon_withdrawals_api } from '$lib/supabase/moon_withdrawals';
+import { create_user_bank_accounts_api } from '$lib/supabase/user_bank_accounts';
 import { create_notifications_api } from '$lib/supabase/notifications';
 import { create_post_bookmarks_api } from '$lib/supabase/post_bookmarks';
 import { create_post_comment_votes_api } from '$lib/supabase/post_comment_votes';
@@ -38,9 +42,13 @@ import { create_auth_api } from '$lib/supabase/auth';
 import { create_user_devices_api } from '$lib/supabase/user_devices';
 import { create_notification_settings_api } from '$lib/supabase/notification_settings';
 import { create_payments_api } from '$lib/supabase/payments';
+import { create_seller_settlements_api } from '$lib/supabase/seller_settlements';
 
 export const create_api = (supabase) => ({
 	auth: create_auth_api(supabase),
+	cash_charges: create_cash_charges_api(supabase),
+	cash_transactions: create_cash_transactions_api(supabase),
+	cash_withdrawals: create_cash_withdrawals_api(supabase),
 	communities: create_communities_api(supabase),
 	community_members: create_community_members_api(supabase),
 	community_reports: create_community_reports_api(supabase),
@@ -59,6 +67,7 @@ export const create_api = (supabase) => ({
 	service_options: create_service_options_api(supabase),
 	order_options: create_order_options_api(supabase),
 	topics: create_topics_api(supabase),
+	user_bank_accounts: create_user_bank_accounts_api(supabase),
 	user_follows: create_user_follows_api(supabase),
 	users: create_users_api(supabase),
 	user_reports: create_user_reports_api(supabase),
@@ -75,6 +84,7 @@ export const create_api = (supabase) => ({
 	user_devices: create_user_devices_api(supabase),
 	notification_settings: create_notification_settings_api(supabase),
 	payments: create_payments_api(supabase),
+	seller_settlements: create_seller_settlements_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

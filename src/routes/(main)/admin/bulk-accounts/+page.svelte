@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { RiArrowLeftSLine, RiAddLine, RiDeleteBinLine, RiFileExcel2Line, RiDownload2Line } from 'svelte-remixicon';
 	import * as XLSX from 'xlsx';
 
@@ -132,7 +132,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 </Header>

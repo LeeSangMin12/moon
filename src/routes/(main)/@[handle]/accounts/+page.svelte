@@ -1,20 +1,22 @@
 <script>
-	// import { username } from '@/lib/store/users_store.js';
 	import colors from '$lib/config/colors';
 	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
-	import { goto } from '$app/navigation';
+	import { comma } from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiArrowRightSLine,
-		RiArrowRightWideLine,
 		RiBookmarkLine,
-		RiCommunityLine,
+		RiBriefcaseLine,
 		RiCupLine,
-		RiGraduationCapLine,
+		RiCustomerService2Line,
+		RiGiftLine,
 		RiHeartLine,
+		RiSettings4Line,
+		RiShoppingBag3Line,
 		RiTeamLine,
-		RiUserLine,
-		RiUserStarLine,
+		RiWallet3Line,
 	} from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
@@ -26,137 +28,173 @@
 	<title>더보기 | 문</title>
 	<meta
 		name="description"
-		content="내 프로필, 주문 내역, 좋아요한 서비스, 북마크, 참여 커뮤니티, 이벤트, 공지사항을 확인할 수 있는 문의 더보기 페이지입니다."
+		content="내 프로필, 문캐시, 구매 내역, 북마크 등을 관리할 수 있는 문의 더보기 페이지입니다."
 	/>
 </svelte:head>
 
 <Header>
-	<div slot="left">
-		<a class="flex items-center" href={`/@${me?.handle}`}>
-			<RiArrowLeftSLine size={24} color={colors.gray[600]} />
-		</a>
-	</div>
+	<button slot="left" class="flex items-center" onclick={smart_go_back}>
+		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
+	</button>
+	<h1 slot="center" class="font-semibold">더보기</h1>
 </Header>
 
-<main>
-	<div class="mx-4 mt-2 flex items-center justify-center">
-		<a
-			href={`/@${me?.handle}/accounts/point`}
-			class="flex h-16 w-full items-center justify-between rounded-[14px] bg-gradient-to-r from-blue-500 to-sky-500 px-7"
-		>
-			<p class="font-bold text-white">문 포인트</p>
-			<p class="flex items-center text-xl font-bold text-white">
-				<span>{me?.moon_point} P</span>
-
-				<svg
-					class="ml-2 inline-block"
-					width="9"
-					height="16"
-					viewBox="0 0 9 16"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<path
-						d="M1 15L8 8L1 1"
-						stroke="white"
-						stroke-opacity="0.54"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			</p>
+<main class="min-h-screen pb-20">
+	<!-- 프로필 영역 -->
+	<div class="px-4 py-5">
+		<a href={`/@${me?.handle}/accounts/profile`} class="flex items-center">
+			<img
+				src={optimize_avatar(me?.avatar_url)}
+				alt="프로필"
+				class="h-14 w-14 rounded-full object-cover"
+				width="56"
+				height="56"
+			/>
+			<div class="ml-3 flex-1">
+				<p class="text-lg font-semibold text-gray-900">
+					{me?.name || '사용자'}
+				</p>
+				<p class="text-sm text-gray-500">@{me?.handle}</p>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
 		</a>
 	</div>
 
-	<p class="flex items-center px-5 pt-6 text-lg font-semibold">나의 활동</p>
-
-	<div class="mt-3 flex flex-col gap-5">
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/profile">
-			<RiUserLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>프로필</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/orders">
-			<RiGraduationCapLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>서비스 구매/판매</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/expert/accounts">
-			<RiUserStarLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>사이드·풀타임 잡 관리</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/like">
-			<RiHeartLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>좋아요한 서비스</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/bookmark">
-			<RiBookmarkLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>북마크</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/community">
-			<RiTeamLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>참여 커뮤니티</p>
-		</a>
-
-		<a
-			class="flex items-center px-4"
-			href="/@{me?.handle}/accounts/coffee-chat"
-		>
-			<RiCupLine size={20} color={colors.gray[600]} class="mr-3" />
-
-			<p>커피챗</p>
-		</a>
-	</div>
-
-	<div class="mt-3 h-1 bg-gray-200"></div>
-
-	<p class="flex items-center px-4 pt-6 text-lg font-semibold">지원</p>
-
-	<div class="mt-3 flex flex-col gap-5">
-		<a class="flex items-center px-4" href="/event">
-			<p>이벤트</p>
-		</a>
-
-		<a class="flex items-center px-4" href="/@{me?.handle}/accounts/notice">
-			<p>공지사항</p>
-		</a>
-
-		<div class="flex items-center justify-between px-4">
-			<p>버전정보</p>
-
-			<span class="text-primary">V.1.4.6</span>
-		</div>
-	</div>
-
-	<!-- <a class="flex items-center px-5 py-4" href="see_more/terms_of_use">
-		<p>이용약관</p>
-	</a>
-
-	<a class="flex items-center px-5 py-4" href="see_more/privacy_policy">
-		<p>개인정보 처리방침</p>
-	</a>
-
-	<a class="flex items-center px-5 py-4" href="see_more/company_introduction">
-		<p>회사소개</p>
-	</a> -->
-
-	<div class="mt-3 h-1 bg-gray-200"></div>
-
+	<!-- 문캐시 -->
 	<a
-		class="flex items-center px-4 pt-4"
-		href="https://open.kakao.com/o/sMTQ2HEh"
-		target="_blank"
+		href={`/@${me?.handle}/accounts/cash`}
+		class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
 	>
-		<p>카카오톡 문의</p>
+		<div class="flex items-center">
+			<RiWallet3Line size={22} color={colors.primary} class="mr-3" />
+			<span class="font-medium text-gray-900">문캐시</span>
+		</div>
+		<div class="flex items-center">
+			<span class="mr-1 font-semibold text-blue-600"
+				>{comma(me?.moon_cash || 0)}원</span
+			>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</div>
 	</a>
+
+	<!-- 활동 관리 -->
+	<div class="bg-gray-50 px-4 py-2">
+		<span class="text-sm text-gray-500">활동 관리</span>
+	</div>
+	<div>
+		<a
+			href={`/@${me?.handle}/accounts/orders`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiShoppingBag3Line size={22} color={colors.gray[600]} class="mr-3" />
+				<span>서비스 관리</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href="/expert/accounts"
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiBriefcaseLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>사이드·풀타임 잡</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href={`/@${me?.handle}/accounts/coffee-chat`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiCupLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>커피챗</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+	</div>
+
+	<!-- 저장한 콘텐츠 -->
+	<div class="bg-gray-50 px-4 py-2">
+		<span class="text-sm text-gray-500">저장한 콘텐츠</span>
+	</div>
+	<div>
+		<a
+			href={`/@${me?.handle}/accounts/bookmark`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiBookmarkLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>북마크</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href={`/@${me?.handle}/accounts/like`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiHeartLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>좋아요한 서비스</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href={`/@${me?.handle}/accounts/community`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiTeamLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>참여 커뮤니티</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+	</div>
+
+	<!-- 기타 -->
+	<div class="bg-gray-50 px-4 py-2">
+		<span class="text-sm text-gray-500">기타</span>
+	</div>
+	<div>
+		<a
+			href="/event"
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiGiftLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>이벤트</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href={`/@${me?.handle}/accounts/support`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiCustomerService2Line
+					size={22}
+					color={colors.gray[600]}
+					class="mr-3"
+				/>
+				<span>고객센터</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
+		<a
+			href={`/@${me?.handle}/accounts/settings`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiSettings4Line size={22} color={colors.gray[600]} class="mr-3" />
+				<span>설정</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+	</div>
 </main>

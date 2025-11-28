@@ -136,7 +136,7 @@
 					});
 				}
 				show_toast('success', '커뮤니티 수정이 완료되었어요!');
-				goto(`/community/${form_data.slug}`);
+				goto(`/community/${form_data.slug}`, { replaceState: true });
 			} else {
 				const new_community = await api.communities.insert({
 					creator_id: me.id,
@@ -260,7 +260,7 @@
 			</button>
 			<button
 				onclick={() => {
-					goto(is_edit_mode ? `/community/${form_data.slug}` : '/community');
+					goto(is_edit_mode ? `/community/${form_data.slug}` : '/community', { replaceState: true });
 				}}
 				class="btn btn-error w-2/3 rounded-none text-white"
 			>
