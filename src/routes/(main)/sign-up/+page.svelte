@@ -19,7 +19,7 @@
 	import SetBasic from './_components/SetBasic.svelte';
 	import SetPersonal from './_components/SetPersonal.svelte';
 
-	const { me, update: update_me } = get_user_context();
+	const me = get_user_context();
 	const api = get_api_context();
 
 	let { data } = $props();
@@ -135,7 +135,7 @@
 				throw new Error('세션 정보가 없습니다');
 			}
 
-			await api.users.update(user_id, {
+			await api.users.upsert(user_id, {
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,
 				handle: sign_up_form_data.handle,
@@ -144,7 +144,7 @@
 				birth_date: sign_up_form_data.birth_date,
 			});
 
-			update_me({
+			Object.assign(me, {
 				id: user_id,
 				phone: sign_up_form_data.phone,
 				name: sign_up_form_data.name,

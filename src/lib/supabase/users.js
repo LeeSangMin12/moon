@@ -89,6 +89,22 @@ export const create_users_api = (supabase) => ({
 	},
 
 	/**
+	 * 사용자 정보 upsert (없으면 insert, 있으면 update)
+	 *
+	 * @param {string} user_id - 사용자 ID (UUID)
+	 * @param {Object} user_data - 저장할 데이터
+	 * @returns {Promise<void>}
+	 * @throws {Error} upsert 실패 시
+	 */
+	upsert: async (user_id, user_data) => {
+		const { error } = await supabase
+			.from('users')
+			.upsert({ id: user_id, ...user_data }, { onConflict: 'id' });
+
+		if (error) throw new Error(`Failed to upsert: ${error.message}`);
+	},
+
+	/**
 	 * 문 포인트 선물하기 (RPC 함수 호출)
 	 *
 	 * @param {string} sender_id - 보내는 사람 ID
