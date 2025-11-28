@@ -3,19 +3,20 @@
 	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { comma } from '$lib/utils/common';
 	import { optimize_avatar } from '$lib/utils/image';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import {
 		RiArrowLeftSLine,
 		RiArrowRightSLine,
 		RiBookmarkLine,
+		RiBriefcaseLine,
 		RiCupLine,
 		RiCustomerService2Line,
 		RiGiftLine,
 		RiHeartLine,
 		RiSettings4Line,
 		RiShoppingBag3Line,
-		RiStoreLine,
 		RiTeamLine,
+		RiWallet3Line,
 	} from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
@@ -27,12 +28,12 @@
 	<title>더보기 | 문</title>
 	<meta
 		name="description"
-		content="내 프로필, 포인트, 구매 내역, 북마크 등을 관리할 수 있는 문의 더보기 페이지입니다."
+		content="내 프로필, 문캐시, 구매 내역, 북마크 등을 관리할 수 있는 문의 더보기 페이지입니다."
 	/>
 </svelte:head>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={smartGoBack}>
+	<button slot="left" class="flex items-center" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">더보기</h1>
@@ -46,6 +47,8 @@
 				src={optimize_avatar(me?.avatar_url)}
 				alt="프로필"
 				class="h-14 w-14 rounded-full object-cover"
+				width="56"
+				height="56"
 			/>
 			<div class="ml-3 flex-1">
 				<p class="text-lg font-semibold text-gray-900">
@@ -57,15 +60,18 @@
 		</a>
 	</div>
 
-	<!-- 포인트 -->
+	<!-- 문캐시 -->
 	<a
-		href={`/@${me?.handle}/accounts/point`}
+		href={`/@${me?.handle}/accounts/cash`}
 		class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
 	>
-		<span class="font-medium text-gray-900">포인트</span>
+		<div class="flex items-center">
+			<RiWallet3Line size={22} color={colors.primary} class="mr-3" />
+			<span class="font-medium text-gray-900">문캐시</span>
+		</div>
 		<div class="flex items-center">
 			<span class="mr-1 font-semibold text-blue-600"
-				>{comma(me?.moon_point || 0)} P</span
+				>{comma(me?.moon_cash || 0)}원</span
 			>
 			<RiArrowRightSLine size={20} color={colors.gray[400]} />
 		</div>
@@ -82,18 +88,18 @@
 		>
 			<div class="flex items-center">
 				<RiShoppingBag3Line size={22} color={colors.gray[600]} class="mr-3" />
-				<span>구매 내역</span>
+				<span>서비스 관리</span>
 			</div>
 			<RiArrowRightSLine size={20} color={colors.gray[400]} />
 		</a>
 
 		<a
-			href="/seller"
+			href="/expert/accounts"
 			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
 		>
 			<div class="flex items-center">
-				<RiStoreLine size={22} color={colors.gray[600]} class="mr-3" />
-				<span>판매자 센터</span>
+				<RiBriefcaseLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>사이드·풀타임 잡</span>
 			</div>
 			<RiArrowRightSLine size={20} color={colors.gray[400]} />
 		</a>
@@ -104,7 +110,7 @@
 		>
 			<div class="flex items-center">
 				<RiCupLine size={22} color={colors.gray[600]} class="mr-3" />
-				<span>커피챗 관리</span>
+				<span>커피챗</span>
 			</div>
 			<RiArrowRightSLine size={20} color={colors.gray[400]} />
 		</a>

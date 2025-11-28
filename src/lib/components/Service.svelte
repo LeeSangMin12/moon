@@ -80,7 +80,7 @@
 		</div>
 	</a>
 	<div class="px-2 py-2">
-		<h3 class="line-clamp-2 text-sm/5 font-medium tracking-tight">
+		<h3 class="line-clamp-2 min-h-[40px] text-sm/5 font-medium tracking-tight">
 			{service.title}
 		</h3>
 

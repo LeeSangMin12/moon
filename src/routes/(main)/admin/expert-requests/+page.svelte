@@ -5,6 +5,7 @@
 		get_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
 	import { comma, show_toast } from '$lib/utils/common';
+	import { smart_go_back } from '$lib/utils/navigation.js';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine, RiCheckLine, RiCloseLine } from 'svelte-remixicon';
 
@@ -94,7 +95,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => history.back()}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>

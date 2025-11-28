@@ -172,12 +172,57 @@ export const create_service_orders_api = (supabase) => ({
 
 	// 주문 완료 (판매자용)
 	complete: async (order_id) => {
+		// 1. 주문 정보 조회
+		const { data: order, error: orderError } = await supabase
+			.from('service_orders')
+			.select('id, seller_id, unit_price, quantity, service_title')
+			.eq('id', order_id)
+			.single();
+
+		if (orderError || !order) {
+			throw new Error('주문을 찾을 수 없습니다.');
+		}
+
+		// 2. RPC 호출
 		const { error } = await supabase.rpc('complete_service_order', {
 			order_id_in: order_id,
 		});
 
 		if (error)
 			throw new Error(`Failed to complete service order: ${error.message}`);
+
+		// 3. 수수료 계산 (5%)
+		const total_amount = order.unit_price * order.quantity;
+		const commission_rate = 0.05;
+		const commission_amount = Math.floor(total_amount * commission_rate);
+		const seller_payout = total_amount - commission_amount;
+
+		// 4. 판매자에게 캐시 적립
+		const { error: cashError } = await supabase.rpc('add_cash', {
+			p_user_id: order.seller_id,
+			p_amount: seller_payout,
+			p_type: 'service_payout',
+			p_reference_type: 'service_order',
+			p_reference_id: order_id,
+			p_description: `서비스 판매: ${order.service_title || ''}`,
+		});
+
+		if (cashError) {
+			console.error('캐시 적립 실패:', cashError);
+		}
+
+		// 5. 판매자에게 알림 전송
+		await supabase.from('notifications').insert({
+			recipient_id: order.seller_id,
+			type: 'service_order_completed',
+			resource_type: 'service_order',
+			resource_id: order_id,
+			payload: {
+				title: order.service_title,
+				payout: seller_payout,
+			},
+			link_url: `/@me/accounts/orders`,
+		});
 	},
 
 	// 주문 취소

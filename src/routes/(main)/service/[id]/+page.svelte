@@ -15,7 +15,7 @@
 		show_toast,
 	} from '$lib/utils/common';
 	import { optimize_avatar } from '$lib/utils/image';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import {
@@ -447,6 +447,12 @@
 	// 나머지 데이터를 클라이언트에서 lazy load
 	onMount(async () => {
 		try {
+			if (!api?.service_reviews || !api?.service_likes) {
+				console.warn('API context not ready');
+				is_loading_secondary_data = false;
+				return;
+			}
+
 			const [likes, reviews, permission, user_review] = await Promise.all([
 				me?.id ? api.service_likes.select_by_user_id(me.id) : Promise.resolve([]),
 				api.service_reviews.select_by_service_id(service.id),
@@ -523,7 +529,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smartGoBack}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">서비스</h1>
@@ -546,9 +552,12 @@
 		<!-- Service Provider Info -->
 		<a href={`/@${service.users.handle}`} class="flex items-center">
 			<img
-				src={service.users.avatar_url || profile_png}
+				src={optimize_avatar(service.users.avatar_url) || profile_png}
 				alt={service.users.name}
 				class="mr-2 aspect-square h-8 w-8 flex-shrink-0 rounded-full object-cover"
+				loading="lazy"
+				width="32"
+				height="32"
 			/>
 			<p class="pr-4 text-sm font-medium">@{service.users.handle}</p>
 		</a>
@@ -840,24 +849,14 @@
 
 <!-- Review Modal -->
 <Modal bind:is_modal_open={is_review_modal_open} modal_position="center">
-	<div class="p-4">
-		<div class="flex items-center justify-between">
-			<h3 class="font-semibold">
-				{editing_review ? '리뷰 수정' : '리뷰 작성'}
-			</h3>
-			<button
-				onclick={() => {
-					is_review_modal_open = false;
-					editing_review = null;
-				}}
-			>
-				<RiCloseLine size={24} color={colors.gray[400]} />
-			</button>
-		</div>
+	<div class="p-5">
+		<p class="text-[16px] font-semibold text-gray-900">
+			{editing_review ? '리뷰 수정' : '리뷰 작성'}
+		</p>
 
-		<div class="mt-6 space-y-4">
+		<div class="mt-5 space-y-4">
 			<div>
-				<p class="mb-2 text-sm font-medium">별점</p>
+				<p class="mb-2 text-[14px] font-medium text-gray-700">별점</p>
 				<StarRating
 					bind:rating={review_form_data.rating}
 					size={24}
@@ -866,56 +865,65 @@
 			</div>
 
 			<div>
-				<p class="text-sm font-medium">리뷰 제목</p>
+				<p class="mb-2 text-[14px] font-medium text-gray-700">리뷰 제목</p>
 				<input
 					bind:value={review_form_data.title}
 					type="text"
 					placeholder="리뷰 제목을 입력해주세요"
-					class={INPUT_CLASS}
+					class="w-full rounded-lg border border-gray-200 px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
 				/>
 			</div>
 
 			<div>
-				<p class="text-sm font-medium">리뷰 내용</p>
+				<p class="mb-2 text-[14px] font-medium text-gray-700">리뷰 내용</p>
 				<textarea
 					bind:value={review_form_data.content}
 					placeholder="서비스에 대한 자세한 리뷰를 작성해주세요"
-					class="{INPUT_CLASS} resize-none"
-					rows="5"
+					class="w-full resize-none rounded-lg border border-gray-200 px-4 py-3 text-[15px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+					rows="4"
 				></textarea>
 			</div>
 		</div>
 
-		<div class="my-4 h-px bg-gray-200"></div>
-
-		<button
-			onclick={handle_review_submit}
-			disabled={is_submitting_review || !is_review_form_valid}
-			class={BUTTON_CLASS}
-		>
-			{#if is_submitting_review}
-				<span class="flex items-center">
-					<svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
-						<circle
-							class="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							stroke-width="4"
-						></circle>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						></path>
-					</svg>
-					{editing_review ? '수정 중...' : '작성 중...'}
-				</span>
-			{:else}
-				{editing_review ? '리뷰 수정하기' : '리뷰 작성하기'}
-			{/if}
-		</button>
+		<div class="mt-5 flex gap-2">
+			<button
+				onclick={() => {
+					is_review_modal_open = false;
+					editing_review = null;
+				}}
+				class="flex-1 rounded-lg bg-gray-100 py-3 text-[14px] font-medium text-gray-700 active:bg-gray-200"
+			>
+				취소
+			</button>
+			<button
+				onclick={handle_review_submit}
+				disabled={is_submitting_review || !is_review_form_valid}
+				class="flex-1 rounded-lg bg-blue-500 py-3 text-[14px] font-medium text-white active:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500"
+			>
+				{#if is_submitting_review}
+					<span class="flex items-center justify-center">
+						<svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						{editing_review ? '수정 중...' : '작성 중...'}
+					</span>
+				{:else}
+					{editing_review ? '수정하기' : '작성하기'}
+				{/if}
+			</button>
+		</div>
 	</div>
 </Modal>
 
@@ -924,14 +932,19 @@
 	bind:is_modal_open={is_service_config_modal_open}
 	modal_position="bottom"
 >
-	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		<div class="flex w-full flex-col items-center rounded-lg bg-white">
+	<div class="pb-6">
+		<!-- 드래그 핸들 -->
+		<div class="flex justify-center py-3">
+			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
+		</div>
+
+		<div>
 			<a
 				href={`/regi/service/${service.id}`}
-				class="flex w-full items-center gap-3 p-3"
+				class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 			>
-				<RiPencilLine size={20} color={colors.gray[400]} />
-				<p class="text-gray-600">수정하기</p>
+				<RiPencilLine size={20} class="text-gray-500" />
+				<span class="text-[15px] text-gray-900">수정하기</span>
 			</a>
 		</div>
 	</div>

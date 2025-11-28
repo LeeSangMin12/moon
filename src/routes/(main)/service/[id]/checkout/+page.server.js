@@ -5,22 +5,25 @@ export async function load({ params, url, parent, locals: { supabase } }) {
 
 	const { user } = await parent();
 
-	// 서비스 정보
-	const service = await api.services.select_by_id(params.id);
-
 	// 쿼리 파라미터에서 선택 정보 가져오기
 	const quantity = parseInt(url.searchParams.get('quantity') || '1');
 	const selected_option_ids = url.searchParams.get('options')
 		? url.searchParams.get('options').split(',').map(id => parseInt(id))
 		: [];
 
-	// 선택된 옵션 정보 가져오기
-	const service_options = await api.service_options.select_by_service_id(params.id);
+	// 병렬로 데이터 가져오기
+	const [service, service_options, bank_accounts] = await Promise.all([
+		api.services.select_by_id(params.id),
+		api.service_options.select_by_service_id(params.id),
+		user ? api.user_bank_accounts.select_by_user_id(user.id) : [],
+	]);
+
 	const selected_options = service_options.filter(opt => selected_option_ids.includes(opt.id));
 
 	return {
 		service,
 		quantity,
 		selected_options,
+		bank_accounts,
 	};
 }

@@ -29,12 +29,22 @@ export function smart_go_back(user = null) {
 		const handle = pathname.match(/@([^/]+)/)?.[1];
 		if (handle) {
 			// /@handle/accounts 메인 페이지면 /@handle로
-			// /@handle/accounts/xxx 하위 페이지면 /@handle/accounts로
 			const isMainAccountsPage = pathname.match(/^\/@[^/]+\/accounts\/?$/);
 			if (isMainAccountsPage) {
 				goto(`/@${handle}`);
+			} else if (pathname.includes('/accounts/cash')) {
+				// cash 관련 페이지: 브라우저 히스토리 사용 (여러 곳에서 접근 가능)
+				if (window.history.length > 1) {
+					window.history.back();
+				} else {
+					goto(`/@${handle}/accounts/cash`);
+				}
 			} else {
-				goto(`/@${handle}/accounts`);
+				// 기타 하위 페이지: 한 단계 위로 이동
+				const pathParts = pathname.split('/');
+				pathParts.pop();
+				const parentPath = pathParts.join('/');
+				goto(parentPath || `/@${handle}/accounts`);
 			}
 		} else {
 			goto('/');
@@ -200,6 +210,3 @@ export function smart_go_back(user = null) {
 		goto('/');
 	}
 }
-
-// 기존 코드 호환을 위한 별칭 (deprecated)
-export const smartGoBack = smart_go_back;

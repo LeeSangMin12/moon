@@ -1,6 +1,6 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import { smartGoBack } from '$lib/utils/navigation';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -127,7 +127,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={smartGoBack}>
+	<button slot="left" class="flex items-center" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={26} color={colors.gray[600]} />
 	</button>
 

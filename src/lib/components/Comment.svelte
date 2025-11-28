@@ -1,5 +1,16 @@
 <script>
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
 	import profile_png from '$lib/img/common/user/profile.png';
+	import {
+		check_login,
+		comma,
+		get_time_past,
+		show_toast,
+	} from '$lib/utils/common';
 	import {
 		RiArrowDownSLine,
 		RiArrowUpSLine,
@@ -17,10 +28,6 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 
-	import colors from '$lib/config/colors';
-	import { check_login, get_time_past, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-
 	import Self from './Comment.svelte';
 
 	const me = get_user_context();
@@ -32,7 +39,7 @@
 		onReplyAdded,
 		onGiftCommentAdded,
 		onCommentDeleted,
-		onVoteChanged
+		onVoteChanged,
 	} = $props();
 
 	let reply_content = $state('');
@@ -44,13 +51,13 @@
 	let local_votes = $state({
 		user_vote: null,
 		upvotes: null,
-		downvotes: null
+		downvotes: null,
 	});
 
 	// 로컬 수정 상태
 	let local_edit = $state({
 		content: null,
-		updated_at: null
+		updated_at: null,
 	});
 
 	// 수정 관련 상태
@@ -97,7 +104,7 @@
 			comment_id: comment.id,
 			user_vote: local_votes.user_vote,
 			upvotes: local_votes.upvotes,
-			downvotes: local_votes.downvotes
+			downvotes: local_votes.downvotes,
 		});
 	};
 
@@ -193,11 +200,15 @@
 		}
 	};
 
-	async function handle_gift_success({ gift_content, gift_moon_point, post_id: modal_post_id }) {
+	async function handle_gift_success({
+		gift_content,
+		gift_amount,
+		post_id: modal_post_id,
+	}) {
 		// 상위 컴포넌트에 gift 댓글 추가 알림
 		onGiftCommentAdded?.({
 			gift_content,
-			gift_moon_point,
+			gift_amount,
 			parent_comment_id: comment.id,
 			post_id,
 		});
@@ -252,52 +263,57 @@
 
 <!-- 더보기 모달 -->
 <Modal bind:is_modal_open={is_more_modal_open} modal_position="bottom">
-	<div class="flex flex-col items-center bg-gray-100 p-4 text-sm font-medium">
-		{#if is_author}
-			<div class="flex w-full flex-col items-center rounded-lg bg-white">
+	<div class="pb-6">
+		<!-- 드래그 핸들 -->
+		<div class="flex justify-center py-3">
+			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
+		</div>
+
+		<div>
+			{#if is_author}
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={handle_edit_comment}
 					aria-label="댓글 수정하기"
 				>
-					<RiPencilLine size={20} color={colors.gray[600]} />
-					<p class="text-gray-600">수정하기</p>
+					<RiPencilLine size={20} class="text-gray-500" />
+					<span class="text-[15px] text-gray-900">수정하기</span>
 				</button>
 
-				<hr class="w-full border-gray-100" />
+				<hr class="border-gray-100" />
 
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={handle_delete_comment}
 					aria-label="댓글 삭제하기"
 				>
-					<RiDeleteBinLine size={20} color={colors.warning} />
-					<p class="text-red-500">삭제하기</p>
+					<RiDeleteBinLine size={20} class="text-red-500" />
+					<span class="text-[15px] text-red-500">삭제하기</span>
 				</button>
-			</div>
-		{:else}
-			<div class="flex w-full flex-col items-center rounded-lg bg-white">
+			{:else}
 				<button
-					class="flex w-full items-center gap-3 p-3"
+					class="flex w-full items-center gap-3 px-4 py-4 active:bg-gray-50"
 					onclick={() => {
-						// 신고 기능은 나중에 구현
 						show_toast('info', '신고 기능은 준비 중입니다.');
 						is_more_modal_open = false;
 					}}
 					aria-label="댓글 신고하기"
 				>
-					<Icon attribute="exclamation" size={20} color={colors.warning} />
-					<p class="text-gray-600">신고하기</p>
+					<Icon attribute="exclamation" size={20} color="#ef4444" />
+					<span class="text-[15px] text-red-500">신고하기</span>
 				</button>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 </Modal>
 
 <div class="flex flex-col">
 	<div class="flex w-full items-start justify-between">
 		<div class="flex gap-3">
-			<a class="h-8 w-8 flex-shrink-0" href={comment.users?.handle ? `/@${comment.users.handle}` : '#'}>
+			<a
+				class="h-8 w-8 flex-shrink-0"
+				href={comment.users?.handle ? `/@${comment.users.handle}` : '#'}
+			>
 				<img
 					src={comment.users?.avatar_url ?? profile_png}
 					alt="프로필"
@@ -321,12 +337,12 @@
 				</div>
 
 				<div class="text-sm text-gray-800">
-					{#if comment.gift_moon_point}
+					{#if comment.gift_amount}
 						<div
 							class="bg-primary mr-2 inline-block flex-col rounded px-2 py-0.5 text-xs text-white"
 						>
-							<span class="mr-1"> 🌙 </span>
-							{comment.gift_moon_point}
+							<span class="mr-0.2">￦</span>
+							{comma(comment.gift_amount)}원
 						</div>
 					{/if}
 
@@ -350,7 +366,9 @@
 							>
 						</div>
 					{:else}
-						<p class="mt-1 whitespace-pre-wrap">{local_edit.content ?? comment.content}</p>
+						<p class="mt-1 whitespace-pre-wrap">
+							{local_edit.content ?? comment.content}
+						</p>
 					{/if}
 				</div>
 
@@ -369,11 +387,18 @@
 								{:else}
 									<RiThumbUpLine size={16} color={colors.gray[400]} />
 								{/if}
-								<p class:text-primary={(local_votes.user_vote ?? comment.user_vote) === 1}>
+								<p
+									class:text-primary={(local_votes.user_vote ??
+										comment.user_vote) === 1}
+								>
 									{local_votes.upvotes ?? comment.upvotes}
 								</p>
 							</button>
-							<button class="flex items-center" onclick={() => handle_vote(-1)} aria-label="싫어요">
+							<button
+								class="flex items-center"
+								onclick={() => handle_vote(-1)}
+								aria-label="싫어요"
+							>
 								{#if (local_votes.user_vote ?? comment.user_vote) === -1}
 									<RiThumbDownFill size={16} color={colors.warning} />
 								{:else}
@@ -409,7 +434,10 @@
 		</div>
 
 		{#if !is_editing}
-			<button onclick={() => (is_more_modal_open = true)} aria-label="댓글 메뉴 열기">
+			<button
+				onclick={() => (is_more_modal_open = true)}
+				aria-label="댓글 메뉴 열기"
+			>
 				<RiMore2Fill size={16} color={colors.gray[500]} />
 			</button>
 		{/if}
@@ -440,7 +468,9 @@
 		<button
 			class="mt-4 ml-10 flex items-center text-xs text-blue-500 hover:underline"
 			onclick={() => (are_replies_visible = !are_replies_visible)}
-			aria-label={are_replies_visible ? `답글 ${comment.replies.length}개 숨기기` : `답글 ${comment.replies.length}개 보기`}
+			aria-label={are_replies_visible
+				? `답글 ${comment.replies.length}개 숨기기`
+				: `답글 ${comment.replies.length}개 보기`}
 		>
 			{#if are_replies_visible}
 				<RiArrowUpSLine size={16} color={colors.primary} />

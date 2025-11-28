@@ -10,6 +10,7 @@
 	import logo from '$lib/img/logo.png';
 	import colors from '$lib/config/colors';
 	import { check_login, show_toast } from '$lib/utils/common';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 
 	const me = get_user_context();
@@ -142,11 +143,13 @@
 			<div class="flex items-start justify-between">
 				<a href={`/community/${community.slug}`} class="flex">
 					<img
-						src={community.avatar_url || logo}
+						src={optimize_avatar(community.avatar_url) || logo}
 						alt={`${community.title} 커뮤니티 아바타`}
 						class="mr-2 block aspect-square h-10 w-10 rounded-full object-cover"
 						loading="lazy"
 						decoding="async"
+						width="40"
+						height="40"
 					/>
 
 					<div class="flex flex-col justify-between">

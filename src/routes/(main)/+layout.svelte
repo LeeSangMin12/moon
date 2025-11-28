@@ -18,12 +18,14 @@
 	let session = $derived(data.session);
 
 	const me = create_user_context();
-	// API context 초기화 (빈 객체로 시작)
-	const api = create_api_context({});
+	// API context 초기화 (supabase로 즉시 생성)
+	const api = create_api_context(create_api(data.supabase));
 
 	// supabase가 변경될 때마다 API 재생성 및 업데이트
 	$effect(() => {
-		Object.assign(api, create_api(supabase));
+		if (supabase) {
+			Object.assign(api, create_api(supabase));
+		}
 	});
 
 	/**

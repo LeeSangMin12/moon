@@ -1,5 +1,6 @@
 <script>
 	import colors from '$lib/config/colors';
+	import { smart_go_back } from '$lib/utils/navigation.js';
 	import {
 		RiArrowLeftSLine,
 		RiArrowRightSLine,
@@ -26,7 +27,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" class="flex items-center" onclick={() => history.back()}>
+	<button slot="left" class="flex items-center" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="text-lg font-semibold">고객센터</h1>

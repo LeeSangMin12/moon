@@ -2,14 +2,15 @@
 	import colors from '$lib/config/colors';
 	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { comma, format_date, show_toast } from '$lib/utils/common';
+	import { smart_go_back } from '$lib/utils/navigation.js';
 	import { enhance } from '$app/forms';
 	import {
 		RiArrowLeftSLine,
-		RiCheckboxCircleLine,
 		RiCheckboxBlankCircleLine,
-		RiTimeLine,
+		RiCheckboxCircleLine,
 		RiCheckLine,
 		RiCloseLine,
+		RiTimeLine,
 	} from 'svelte-remixicon';
 
 	import Header from '$lib/components/ui/Header.svelte';
@@ -17,7 +18,12 @@
 	const me = get_user_context();
 
 	let { data, form } = $props();
-	const { settleable_orders, settleable_amount, settlements, has_pending_settlement } = data;
+	const {
+		settleable_orders,
+		settleable_amount,
+		settlements,
+		has_pending_settlement,
+	} = data;
 
 	// 선택된 주문 ID 목록
 	let selected_order_ids = $state([]);
@@ -36,14 +42,17 @@
 			.filter((order) => selected_order_ids.includes(order.id))
 			.reduce((total, order) => {
 				const settlement_amount =
-					order.total_with_commission + (order.coupon_discount || 0) - order.commission_amount;
+					order.total_with_commission +
+					(order.coupon_discount || 0) -
+					order.commission_amount;
 				return total + settlement_amount;
 			}, 0);
 	});
 
 	// 전체 선택 여부
 	let is_all_selected = $derived(
-		settleable_orders.length > 0 && selected_order_ids.length === settleable_orders.length,
+		settleable_orders.length > 0 &&
+			selected_order_ids.length === settleable_orders.length,
 	);
 
 	const toggle_order = (order_id) => {
@@ -63,27 +72,27 @@
 	};
 
 	const BANKS = [
-		'KB국민은행',
+		'카카오뱅크',
+		'농협은행',
+		'국민은행',
+		'토스뱅크',
 		'신한은행',
 		'우리은행',
+		'기업은행',
 		'하나은행',
-		'SC제일은행',
-		'씨티은행',
-		'케이뱅크',
-		'카카오뱅크',
-		'토스뱅크',
-		'NH농협은행',
-		'IBK기업은행',
-		'수협은행',
-		'대구은행',
-		'부산은행',
-		'광주은행',
-		'전북은행',
-		'경남은행',
-		'제주은행',
 		'새마을금고',
-		'신협',
+		'부산은행',
+		'케이뱅크',
+		'신협은행',
 		'우체국',
+		'SC제일',
+		'광주은행',
+		'경남은행',
+		'수협은행',
+		'전북은행',
+		'제주은행',
+		'씨티은행',
+		'산업은행',
 	];
 
 	const get_status_badge = (status) => {
@@ -108,7 +117,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => history.back()}>
+	<button slot="left" onclick={smart_go_back}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
@@ -117,11 +126,15 @@
 <main class="min-h-screen bg-gray-50 pb-20">
 	<!-- 정산 가능 금액 -->
 	<div class="bg-white px-4 py-6">
-		<div class="rounded-2xl bg-gradient-to-r from-blue-500 to-sky-500 p-5 text-white shadow-lg">
+		<div
+			class="rounded-2xl bg-gradient-to-r from-blue-500 to-sky-500 p-5 text-white shadow-lg"
+		>
 			<p class="text-sm opacity-90">정산 가능 금액</p>
 			<p class="mt-1 text-3xl font-bold">₩{comma(settleable_amount)}</p>
 			{#if has_pending_settlement}
-				<div class="mt-3 flex items-center gap-2 rounded-lg bg-white/20 px-3 py-2 text-sm">
+				<div
+					class="mt-3 flex items-center gap-2 rounded-lg bg-white/20 px-3 py-2 text-sm"
+				>
 					<RiTimeLine size={16} />
 					<span>정산 신청이 처리 중입니다</span>
 				</div>
@@ -151,7 +164,11 @@
 				};
 			}}
 		>
-			<input type="hidden" name="order_ids" value={selected_order_ids.join(',')} />
+			<input
+				type="hidden"
+				name="order_ids"
+				value={selected_order_ids.join(',')}
+			/>
 
 			<!-- 정산할 주문 선택 -->
 			<div class="mt-2 bg-white px-4 py-4">
@@ -169,7 +186,9 @@
 				<div class="space-y-3">
 					{#each settleable_orders as order (order.id)}
 						{@const settlement_amount =
-							order.total_with_commission + (order.coupon_discount || 0) - order.commission_amount}
+							order.total_with_commission +
+							(order.coupon_discount || 0) -
+							order.commission_amount}
 						<button
 							type="button"
 							onclick={() => toggle_order(order.id)}
@@ -185,12 +204,18 @@
 								<RiCheckboxBlankCircleLine size={24} color={colors.gray[400]} />
 							{/if}
 							<div class="min-w-0 flex-1">
-								<p class="truncate font-medium text-gray-900">{order.service_title}</p>
+								<p class="truncate font-medium text-gray-900">
+									{order.service_title}
+								</p>
 								<p class="mt-0.5 text-sm text-gray-500">
-									{order.buyer?.name || '구매자'} · {format_date(order.completed_at)}
+									{order.buyer?.name || '구매자'} · {format_date(
+										order.completed_at,
+									)}
 								</p>
 							</div>
-							<p class="font-semibold text-gray-900">₩{comma(settlement_amount)}</p>
+							<p class="font-semibold text-gray-900">
+								₩{comma(settlement_amount)}
+							</p>
 						</button>
 					{/each}
 				</div>
@@ -199,7 +224,9 @@
 					<div class="mt-4 rounded-lg bg-blue-50 p-3">
 						<div class="flex items-center justify-between">
 							<span class="text-sm text-blue-700">선택된 정산 금액</span>
-							<span class="font-bold text-blue-700">₩{comma(selected_amount)}</span>
+							<span class="font-bold text-blue-700"
+								>₩{comma(selected_amount)}</span
+							>
 						</div>
 					</div>
 				{/if}
@@ -211,7 +238,10 @@
 
 				<div class="space-y-4">
 					<div>
-						<label for="bank" class="mb-1.5 block text-sm font-medium text-gray-700">은행</label>
+						<label
+							for="bank"
+							class="mb-1.5 block text-sm font-medium text-gray-700">은행</label
+						>
 						<select
 							id="bank"
 							name="bank"
@@ -227,7 +257,10 @@
 					</div>
 
 					<div>
-						<label for="account_number" class="mb-1.5 block text-sm font-medium text-gray-700">
+						<label
+							for="account_number"
+							class="mb-1.5 block text-sm font-medium text-gray-700"
+						>
 							계좌번호
 						</label>
 						<input
@@ -242,7 +275,10 @@
 					</div>
 
 					<div>
-						<label for="account_holder" class="mb-1.5 block text-sm font-medium text-gray-700">
+						<label
+							for="account_holder"
+							class="mb-1.5 block text-sm font-medium text-gray-700"
+						>
 							예금주
 						</label>
 						<input
@@ -280,7 +316,9 @@
 	{:else if !has_pending_settlement && settleable_orders.length === 0}
 		<div class="mt-2 bg-white px-4 py-12 text-center">
 			<p class="text-gray-500">정산 가능한 주문이 없습니다</p>
-			<p class="mt-1 text-sm text-gray-400">완료된 주문이 있으면 정산할 수 있습니다</p>
+			<p class="mt-1 text-sm text-gray-400">
+				완료된 주문이 있으면 정산할 수 있습니다
+			</p>
 		</div>
 	{/if}
 
@@ -295,12 +333,16 @@
 					<div class="rounded-lg border border-gray-200 p-4">
 						<div class="flex items-start justify-between">
 							<div>
-								<p class="font-semibold text-gray-900">₩{comma(settlement.amount)}</p>
+								<p class="font-semibold text-gray-900">
+									₩{comma(settlement.amount)}
+								</p>
 								<p class="mt-0.5 text-sm text-gray-500">
 									{format_date(settlement.created_at)}
 								</p>
 							</div>
-							<span class="rounded-full px-2.5 py-1 text-xs font-medium {status_badge.class}">
+							<span
+								class="rounded-full px-2.5 py-1 text-xs font-medium {status_badge.class}"
+							>
 								{status_badge.text}
 							</span>
 						</div>
