@@ -636,7 +636,7 @@
 <!-- Config Modal -->
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
-	<div class="pb-6">
+	<div>
 		<!-- 드래그 핸들 -->
 		<div class="flex justify-center py-3">
 			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
@@ -738,7 +738,6 @@
 		<p class="mt-1 text-[13px] text-gray-500">
 			커뮤니티 가이드라인에 어긋나는 내용을 알려주세요.
 		</p>
-		ㅁㄴㅇㄹㅁ
 
 		<div class="mt-4 space-y-2">
 			{#each REPORT_REASONS as reason}

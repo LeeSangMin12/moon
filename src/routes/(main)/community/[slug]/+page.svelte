@@ -310,7 +310,7 @@
 </main>
 
 <Modal bind:is_modal_open={is_menu_modal_open} modal_position="bottom">
-	<div class="pb-6">
+	<div>
 		<!-- 드래그 핸들 -->
 		<div class="flex justify-center py-3">
 			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
@@ -349,7 +349,9 @@
 
 		<div class="mt-4 space-y-2">
 			{#each REPORT_REASONS as reason, index (index)}
-				<label class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50">
+				<label
+					class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50"
+				>
 					<input
 						type="radio"
 						name="report_reason"

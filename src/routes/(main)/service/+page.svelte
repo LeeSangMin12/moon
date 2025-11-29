@@ -8,7 +8,6 @@
 	import { create_service_data } from '$lib/composables/use_service_data.svelte.js';
 	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
-	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -34,11 +33,6 @@
 			title: 'leave_opinion',
 			src: leave_opinion_png,
 			url: 'https://forms.gle/ZjxT8S4BmsBHsfv87',
-		},
-		{
-			title: 'free_outsourcing',
-			src: free_outsourcing_png,
-			url: '/event/free_outsourcing',
 		},
 	];
 

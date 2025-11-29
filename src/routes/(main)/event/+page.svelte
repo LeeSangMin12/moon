@@ -42,13 +42,6 @@
 					src="$lib/img/common/banner/5,000_coupon.png"
 				/>
 			</a>
-
-			<a href="/event/free_outsourcing" aria-label="무료 외주 이벤트">
-				<enhanced:img
-					class="h-[101px] w-full rounded-xl object-cover drop-shadow-sm"
-					src="$lib/img/common/banner/free_outsourcing.png"
-				/>
-			</a>
 		</div>
 	{:else}
 		<div class="grid grid-cols-2 gap-6 px-4 pt-4">
@@ -56,13 +49,6 @@
 				<enhanced:img
 					class="h-[101px] w-full rounded-xl object-cover drop-shadow-sm"
 					src="$lib/img/common/banner/5,000_coupon.png"
-				/>
-			</a>
-
-			<a href="/event/free_outsourcing" aria-label="무료 외주 이벤트">
-				<enhanced:img
-					class="h-[101px] w-full rounded-xl object-contain drop-shadow-sm"
-					src="$lib/img/common/banner/free_outsourcing.png"
 				/>
 			</a>
 		</div>
