@@ -67,7 +67,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smart_go_back}>
+	<button slot="left" onclick={() => smart_go_back(me)}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
@@ -88,7 +88,11 @@
 				</div>
 			{:else}
 				{#each my_requests as request}
-					<ExpertRequestCard {request}>
+					{@const has_transaction = request.project_amount || request.status === 'pending_payment' || request.status === 'in_progress' || request.status === 'completed'}
+					<ExpertRequestCard
+						{request}
+						href={has_transaction ? `/expert/accounts/${request.id}` : `/expert-request/${request.id}`}
+					>
 						{#snippet status()}
 							{@const statusDisplay = getRequestStatusDisplay(request.status)}
 							<span
@@ -113,8 +117,13 @@
 			{:else}
 				{#each my_proposals as proposal}
 					{@const request = proposal.expert_requests}
+					{@const has_transaction = proposal.status === 'accepted' && (request?.project_amount || request?.status === 'pending_payment' || request?.status === 'in_progress' || request?.status === 'completed')}
 					<div class="mb-4">
-						<ExpertRequestCard {request} class="mb-0">
+						<ExpertRequestCard
+							{request}
+							href={has_transaction ? `/expert/accounts/${request?.id}` : `/expert-request/${request?.id}`}
+							class="mb-0"
+						>
 							{#snippet status()}
 								{@const proposalStatus = getProposalStatusDisplay(
 									proposal.status,
@@ -122,14 +131,14 @@
 								{@const requestStatus = getRequestStatusDisplay(
 									request?.status || 'open',
 								)}
-								<div class="flex flex-col gap-1">
+								<div class="flex items-center gap-1.5">
 									<span
-										class={`rounded-md px-2.5 py-1 text-xs font-medium ${proposalStatus.bgColor} ${proposalStatus.textColor}`}
+										class={`rounded-md px-2 py-0.5 text-xs font-medium ${proposalStatus.bgColor} ${proposalStatus.textColor}`}
 									>
 										{proposalStatus.text}
 									</span>
 									<span
-										class={`rounded-md px-2.5 py-1 text-xs font-medium ${requestStatus.bgColor} ${requestStatus.textColor}`}
+										class={`rounded-md px-2 py-0.5 text-xs font-medium ${requestStatus.bgColor} ${requestStatus.textColor}`}
 									>
 										{requestStatus.text}
 									</span>

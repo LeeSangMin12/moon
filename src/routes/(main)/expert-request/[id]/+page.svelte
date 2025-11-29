@@ -15,6 +15,7 @@
 		SUCCESS_MESSAGES,
 		validateProposalData,
 	} from '$lib/utils/expert-request-utils';
+	import { optimize_avatar } from '$lib/utils/image';
 	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -31,7 +32,6 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import StarRating from '$lib/components/ui/StarRating.svelte';
-	import { optimize_avatar } from '$lib/utils/image';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -67,6 +67,7 @@
 		message: '',
 		contact_info: '',
 		is_secret: false,
+		proposed_amount: '',
 	});
 	let attached_files = $state([]);
 	let file_input;
@@ -145,6 +146,7 @@
 					message: proposal_form.message,
 					contact_info: proposal_form.contact_info || null,
 					is_secret: proposal_form.is_secret,
+					proposed_amount: parseInt(proposal_form.proposed_amount) || 0,
 				},
 				user.id,
 			);
@@ -198,6 +200,7 @@
 				message: '',
 				contact_info: '',
 				is_secret: false,
+				proposed_amount: '',
 			};
 			attached_files = [];
 		} catch (error) {
@@ -325,74 +328,27 @@
 		return result;
 	};
 
-	// 제안 수락 (단순화 - 입금 모달 제거)
+	// 제안 수락 - 결제 페이지로 이동
 	const accept_proposal = async (proposal_id) => {
+		const selected_proposal = proposals.find((p) => p.id === proposal_id);
+
+		if (!selected_proposal?.proposed_amount) {
+			show_toast('error', '제안 금액이 설정되지 않았습니다.');
+			return;
+		}
+
 		if (
-			!confirm('이 제안을 수락하시겠습니까? 수락 후 프로젝트가 진행됩니다.')
+			!confirm(
+				`이 제안을 수락하시겠습니까?\n\n제안 금액: ₩${comma(selected_proposal.proposed_amount)}\n\n수락 시 결제 페이지로 이동합니다.`,
+			)
 		) {
 			return;
 		}
 
-		try {
-			const selected_proposal = proposals.find((p) => p.id === proposal_id);
-
-			// 제안 수락
-			await api.expert_request_proposals.accept_proposal(
-				proposal_id,
-				expert_request.id,
-			);
-
-			// 전문가에게 알림 전송
-			try {
-				if (
-					selected_proposal?.expert_id &&
-					selected_proposal.expert_id !== user.id
-				) {
-					await api.notifications.insert({
-						recipient_id: selected_proposal.expert_id,
-						actor_id: user.id,
-						type: 'proposal.accepted',
-						resource_type: 'expert_request',
-						resource_id: String(expert_request.id),
-						payload: {
-							request_id: expert_request.id,
-							request_title: expert_request.title,
-							proposal_id: proposal_id,
-						},
-						link_url: `/expert-request/${expert_request.id}`,
-					});
-				}
-			} catch (e) {
-				console.error('Failed to insert notification (proposal.accepted):', e);
-			}
-
-			show_toast(
-				'success',
-				'제안이 수락되었습니다! 전문가와 프로젝트를 진행해주세요.',
-			);
-
-			// 데이터 새로고침
-			proposals = await api.expert_request_proposals.select_by_request_id(
-				expert_request.id,
-			);
-			expert_request = await api.expert_requests.select_by_id(
-				expert_request.id,
-			);
-		} catch (error) {
-			console.error('Proposal acceptance error:', error);
-
-			let errorMessage = ERROR_MESSAGES.SERVER_ERROR;
-
-			if (error.message.includes('Only the requester')) {
-				errorMessage = ERROR_MESSAGES.UNAUTHORIZED;
-			} else if (error.message.includes('not open')) {
-				errorMessage = ERROR_MESSAGES.REQUEST_NOT_OPEN;
-			} else if (error.message.includes('does not exist')) {
-				errorMessage = ERROR_MESSAGES.NOT_FOUND;
-			}
-
-			show_toast('error', errorMessage);
-		}
+		// 결제 페이지로 이동
+		goto(
+			`/expert-request/${expert_request.id}/checkout?proposal_id=${proposal_id}`,
+		);
 	};
 
 	const reject_proposal = async (proposal_id) => {
@@ -420,7 +376,9 @@
 		}
 
 		try {
-			await api.expert_requests.complete_project_with_commission(expert_request.id);
+			await api.expert_requests.complete_project_with_commission(
+				expert_request.id,
+			);
 			show_toast('success', SUCCESS_MESSAGES.PROJECT_COMPLETED);
 
 			// 데이터 새로고침 - 리뷰 권한 정보도 함께 업데이트
@@ -596,7 +554,11 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={smart_go_back} aria-label="이전 페이지로 돌아가기">
+	<button
+		slot="left"
+		onclick={smart_go_back}
+		aria-label="이전 페이지로 돌아가기"
+	>
 		<RiArrowLeftSLine size={28} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">전문가 요청</h1>
@@ -683,15 +645,21 @@
 					<div class="flex items-center text-sm">
 						<span class="w-20 text-gray-500">공고 기간</span>
 						<span class="font-medium text-gray-900">
-							{new Date(expert_request.posting_start_date).toLocaleDateString('ko-KR')} ~
-							{new Date(expert_request.application_deadline).toLocaleDateString('ko-KR')}
+							{new Date(expert_request.posting_start_date).toLocaleDateString(
+								'ko-KR',
+							)} ~
+							{new Date(expert_request.application_deadline).toLocaleDateString(
+								'ko-KR',
+							)}
 						</span>
 					</div>
 				{:else if expert_request.application_deadline}
 					<div class="flex items-center text-sm">
 						<span class="w-20 text-gray-500">공고 마감</span>
 						<span class="font-medium text-gray-900">
-							{new Date(expert_request.application_deadline).toLocaleDateString('ko-KR')}
+							{new Date(expert_request.application_deadline).toLocaleDateString(
+								'ko-KR',
+							)}
 						</span>
 					</div>
 				{/if}
@@ -731,12 +699,14 @@
 					onclick={() =>
 						expert_request.users?.handle &&
 						goto(`/@${expert_request.users.handle}`)}
-					aria-label="{expert_request.users?.name || expert_request.users?.handle}님의 프로필 보기"
+					aria-label="{expert_request.users?.name ||
+						expert_request.users?.handle}님의 프로필 보기"
 				>
 					{#if expert_request.users?.avatar_url}
 						<img
 							src={optimize_avatar(expert_request.users.avatar_url)}
-							alt="{expert_request.users.name || expert_request.users.handle}님의 프로필 사진"
+							alt="{expert_request.users.name ||
+								expert_request.users.handle}님의 프로필 사진"
 							class="aspect-square h-6 w-6 rounded-full"
 							loading="lazy"
 							width="24"
@@ -778,44 +748,75 @@
 		</div>
 	</div>
 
-	<!-- 수락된 제안 알림 (요청자에게만 표시) -->
-	{#if user && is_requester() && proposals.some((p) => p.status === 'accepted')}
+	<!-- 결제 대기 중 알림 (요청자에게만 표시) -->
+	{#if user && is_requester() && expert_request.status === 'pending_payment'}
 		<div class="mb-4 px-4">
-			<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+			<div class="rounded-xl border border-gray-200 bg-white p-4">
 				<div class="flex items-center gap-3">
 					<div
-						class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100"
+						class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100"
 					>
 						<svg
-							class="h-4 w-4 text-emerald-600"
+							class="h-4 w-4 text-gray-500"
 							fill="currentColor"
 							viewBox="0 0 20 20"
 						>
 							<path
 								fill-rule="evenodd"
-								d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+								d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
 								clip-rule="evenodd"
 							/>
 						</svg>
 					</div>
 					<div class="flex-1">
-						<p class="text-sm font-semibold text-emerald-800">
-							제안이 수락되었습니다!
+						<p class="text-sm font-medium text-gray-900">
+							입금 확인 대기 중
 						</p>
-						<p class="text-xs text-emerald-700">
+						<p class="text-xs text-gray-500">
+							입금 확인 후 프로젝트가 시작됩니다.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 프로젝트 진행 중 알림 (요청자에게만 표시) -->
+	{#if user && is_requester() && expert_request.status === 'in_progress' && proposals.some((p) => p.status === 'accepted')}
+		<div class="mb-4 px-4">
+			<div class="rounded-xl border border-gray-200 bg-white p-4">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
+					>
+						<svg
+							class="h-4 w-4 text-blue-500"
+							fill="currentColor"
+							viewBox="0 0 20 20"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<p class="text-sm font-medium text-gray-900">
+							프로젝트 진행 중
+						</p>
+						<p class="text-xs text-gray-500">
 							선택된 전문가와 프로젝트를 진행해보세요.
 						</p>
 					</div>
 
-					{#if expert_request.status === 'in_progress'}
-						<button
-							onclick={() => complete_project()}
-							class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
-							aria-label="프로젝트 완료하기"
-						>
-							완료
-						</button>
-					{/if}
+					<button
+						onclick={() => complete_project()}
+						class="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-800"
+						aria-label="프로젝트 완료하기"
+					>
+						완료
+					</button>
 				</div>
 			</div>
 		</div>
@@ -884,13 +885,15 @@
 					받은 제안 ({proposals.length}개)
 				</h2>
 
-				<button
-					class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-					onclick={handle_proposal_click}
-					aria-label="전문가 제안서 작성하기"
-				>
-					제안하기
-				</button>
+				{#if !is_requester() && expert_request.status === 'open'}
+					<button
+						class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						onclick={handle_proposal_click}
+						aria-label="전문가 제안서 작성하기"
+					>
+						제안하기
+					</button>
+				{/if}
 			</div>
 
 			{#if proposals.length > 0}
@@ -906,12 +909,14 @@
 									onclick={() =>
 										proposal.users?.handle &&
 										goto(`/@${proposal.users.handle}`)}
-									aria-label="{proposal.users?.name || proposal.users?.handle}님의 프로필 보기"
+									aria-label="{proposal.users?.name ||
+										proposal.users?.handle}님의 프로필 보기"
 								>
 									{#if proposal.users?.avatar_url}
 										<img
 											src={optimize_avatar(proposal.users.avatar_url)}
-											alt="{proposal.users.name || proposal.users.handle}님의 프로필 사진"
+											alt="{proposal.users.name ||
+												proposal.users.handle}님의 프로필 사진"
 											class="h-full w-full object-cover"
 											loading="lazy"
 											width="32"
@@ -931,7 +936,8 @@
 											onclick={() =>
 												proposal.users?.handle &&
 												goto(`/@${proposal.users.handle}`)}
-											aria-label="{proposal.users?.name || proposal.users?.handle}님의 프로필 보기"
+											aria-label="{proposal.users?.name ||
+												proposal.users?.handle}님의 프로필 보기"
 										>
 											{proposal.users?.name || proposal.users?.handle}
 										</button>
@@ -954,12 +960,22 @@
 											</span>
 										{/if}
 									</div>
-									<p class="text-xs text-gray-500">
-										{new Date(proposal.created_at).toLocaleDateString('ko-KR', {
-											month: 'short',
-											day: 'numeric',
-										})}
-									</p>
+									<div class="flex items-center gap-2">
+										<p class="text-xs text-gray-500">
+											{new Date(proposal.created_at).toLocaleDateString(
+												'ko-KR',
+												{
+													month: 'short',
+													day: 'numeric',
+												},
+											)}
+										</p>
+										{#if proposal.proposed_amount}
+											<span class="text-xs font-semibold text-blue-600">
+												₩{comma(proposal.proposed_amount)}
+											</span>
+										{/if}
+									</div>
 								</div>
 								<div class="flex items-center gap-2">
 									<!-- 의뢰인에게는 항상 문의하기 버튼 표시 (연락처가 있는 경우) -->
@@ -994,7 +1010,8 @@
 										<button
 											onclick={() => accept_proposal(proposal.id)}
 											class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-100"
-											aria-label="{proposal.users?.name || proposal.users?.handle}님의 제안 수락하기"
+											aria-label="{proposal.users?.name ||
+												proposal.users?.handle}님의 제안 수락하기"
 										>
 											수락
 										</button>
@@ -1150,6 +1167,31 @@
 						<p class="mt-1 text-xs text-gray-500">
 							제안이 수락되면 의뢰인이 이 연락처로 연락을 드릴 예정입니다.
 						</p>
+					</div>
+
+					<!-- 제안 금액 -->
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">
+							제안 금액 <span class="text-red-500">*</span>
+						</label>
+						<div class="relative">
+							<span
+								class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-500"
+								>₩</span
+							>
+							<input
+								type="text"
+								bind:value={proposal_form.proposed_amount}
+								placeholder="0"
+								class="w-full rounded-lg border border-gray-200 p-3 pl-8 text-sm focus:outline-none"
+								required
+								oninput={(e) => {
+									// 숫자만 입력 가능하도록
+									e.target.value = e.target.value.replace(/[^0-9]/g, '');
+									proposal_form.proposed_amount = e.target.value;
+								}}
+							/>
+						</div>
 					</div>
 
 					<!-- 파일 첨부 -->
