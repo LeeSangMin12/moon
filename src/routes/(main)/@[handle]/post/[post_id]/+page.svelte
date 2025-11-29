@@ -1,7 +1,18 @@
 <script>
+	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
+	import {
+		check_login,
+		copy_to_clipboard,
+		show_toast,
+	} from '$lib/utils/common';
+	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { smart_go_back } from '$lib/utils/navigation';
 	import {
 		RiArrowDownSLine,
 		RiArrowLeftSLine,
@@ -23,11 +34,6 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Comment from '$lib/components/Comment.svelte';
 	import Post from '$lib/components/Post.svelte';
-
-	import colors from '$lib/config/colors';
-	import { check_login, copy_to_clipboard, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
-	import { create_post_handlers } from '$lib/composables/use_post_handlers.svelte.js';
 
 	const me = get_user_context();
 	const api = get_api_context();
@@ -68,10 +74,7 @@
 
 	onMount(async () => {
 		if (me?.id) {
-			is_following = await api.user_follows.is_following(
-				me.id,
-				post.users.id,
-			);
+			is_following = await api.user_follows.is_following(me.id, post.users.id);
 		}
 	});
 
@@ -163,7 +166,12 @@
 		}
 	};
 
-	const handle_gift_comment_added = async ({ gift_content, gift_amount, parent_comment_id, post_id: event_post_id }) => {
+	const handle_gift_comment_added = async ({
+		gift_content,
+		gift_amount,
+		parent_comment_id,
+		post_id: event_post_id,
+	}) => {
 		const new_comment = await api.post_comments.insert({
 			post_id: post.id,
 			user_id: me.id,
@@ -197,11 +205,11 @@
 
 	// Post 이벤트 핸들러 (단일 post 객체용)
 	const { handle_bookmark_changed, handle_vote_changed } = create_post_handlers(
-		() => [post],  // 배열로 감싸서 전달
+		() => [post], // 배열로 감싸서 전달
 		(updated_posts) => {
-			post = updated_posts[0];  // 첫 번째(유일한) post 객체 가져오기
+			post = updated_posts[0]; // 첫 번째(유일한) post 객체 가져오기
 		},
-		me
+		me,
 	);
 
 	const handle_comment_deleted = ({ comment_id, parent_comment_id }) => {
@@ -346,10 +354,12 @@
 		headline: post.title,
 		description: (post.content ?? '').slice(0, 200),
 		image: post?.images?.[0]?.uri ? [post.images[0].uri] : undefined,
-		author: post?.users?.name ? { '@type': 'Person', name: post.users.name } : undefined,
+		author: post?.users?.name
+			? { '@type': 'Person', name: post.users.name }
+			: undefined,
 		datePublished: post?.created_at,
 		dateModified: post?.updated_at ?? post?.created_at,
-		mainEntityOfPage: page_url
+		mainEntityOfPage: page_url,
 	})}<\/script>`}
 </svelte:head>
 
@@ -395,7 +405,7 @@
 <CommentInput onLeaveComment={leave_post_comment} />
 
 <Modal bind:is_modal_open={modal.post_config} modal_position="bottom">
-	<div class="pb-6">
+	<div>
 		<!-- 드래그 핸들 -->
 		<div class="flex justify-center py-3">
 			<div class="h-1 w-10 rounded-full bg-gray-300"></div>
@@ -511,7 +521,9 @@
 
 		<div class="mt-4 space-y-2">
 			{#each REPORT_REASONS as reason}
-				<label class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50">
+				<label
+					class="flex cursor-pointer items-center rounded-lg px-3 py-2.5 active:bg-gray-50"
+				>
 					<input
 						type="radio"
 						name="report_reason"

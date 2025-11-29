@@ -3,7 +3,6 @@
 	import { create_infinite_scroll } from '$lib/composables/use_infinite_scroll.svelte.js';
 	import { get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import five_thousand_coupon_png from '$lib/img/common/banner/5,000_coupon.png';
-	import free_outsourcing_png from '$lib/img/common/banner/free_outsourcing.png';
 	import leave_opinion_png from '$lib/img/common/banner/leave_opinion.png';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -28,11 +27,6 @@
 			title: 'leave_opinion',
 			src: leave_opinion_png,
 			url: 'https://forms.gle/ZjxT8S4BmsBHsfv87',
-		},
-		{
-			title: 'free_outsourcing',
-			src: free_outsourcing_png,
-			url: '/event/free_outsourcing',
 		},
 	];
 
@@ -76,31 +70,37 @@
 	const sidejob_data = create_expert_request_data(
 		{ expert_requests: data.sidejob_requests || [] },
 		api,
-		JOB_TYPES[0]
+		JOB_TYPES[0],
 	);
 
 	const fulltime_data = create_expert_request_data(
 		{ expert_requests: data.fulltime_requests || [] },
 		api,
-		JOB_TYPES[1]
+		JOB_TYPES[1],
 	);
 
-	const sidejob_infinite_scroll = create_infinite_scroll(create_infinite_scroll_config(sidejob_data));
-	const fulltime_infinite_scroll = create_infinite_scroll(create_infinite_scroll_config(fulltime_data));
+	const sidejob_infinite_scroll = create_infinite_scroll(
+		create_infinite_scroll_config(sidejob_data),
+	);
+	const fulltime_infinite_scroll = create_infinite_scroll(
+		create_infinite_scroll_config(fulltime_data),
+	);
 
 	// ===== Derived State =====
 	/**
 	 * 현재 선택된 탭의 데이터
 	 * @type {Object}
 	 */
-	const current_data = $derived(selected_tab === 0 ? sidejob_data : fulltime_data);
+	const current_data = $derived(
+		selected_tab === 0 ? sidejob_data : fulltime_data,
+	);
 
 	/**
 	 * 현재 선택된 탭의 무한 스크롤 설정
 	 * @type {Object}
 	 */
 	const current_infinite_scroll = $derived(
-		selected_tab === 0 ? sidejob_infinite_scroll : fulltime_infinite_scroll
+		selected_tab === 0 ? sidejob_infinite_scroll : fulltime_infinite_scroll,
 	);
 
 	/**
@@ -114,7 +114,7 @@
 	 * @type {Array}
 	 */
 	const initial_requests = $derived(
-		selected_tab === 0 ? data.sidejob_requests : data.fulltime_requests
+		selected_tab === 0 ? data.sidejob_requests : data.fulltime_requests,
 	);
 
 	// ===== Event Handlers =====
@@ -134,7 +134,8 @@
 		}
 
 		// 무한 스크롤 lastId 업데이트
-		const last_request = current_data.expert_requests[current_data.expert_requests.length - 1];
+		const last_request =
+			current_data.expert_requests[current_data.expert_requests.length - 1];
 		current_infinite_scroll.lastId = last_request?.id || '';
 	};
 </script>

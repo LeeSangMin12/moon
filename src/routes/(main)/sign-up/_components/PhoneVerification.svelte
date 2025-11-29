@@ -127,11 +127,11 @@
 		try {
 			is_verifying = true;
 			const international_phone = api.auth.format_to_international(phone);
-			const session = await api.auth.verify_otp(international_phone, otp);
+			await api.auth.verify_otp(international_phone, otp);
 
 			is_verified = true;
 			show_toast('success', '전화번호 인증이 완료되었습니다');
-			on_verified?.(session, international_phone);
+			on_verified?.(international_phone);
 		} catch (err) {
 			console.error('OTP 검증 실패:', err);
 			retry_count++;

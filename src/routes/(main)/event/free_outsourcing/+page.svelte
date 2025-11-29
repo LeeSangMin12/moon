@@ -42,7 +42,11 @@
 <div class="relative mx-auto max-w-screen-md bg-white">
 	<!-- 이벤트 이미지 -->
 	<div class="relative">
-		<enhanced:img src="./event.png" alt="문 외주 무료 등록 쿠폰 이벤트" class="block w-full" />
+		<enhanced:img
+			src="./event.png"
+			alt="문 외주 무료 등록 쿠폰 이벤트"
+			class="block w-full"
+		/>
 
 		<!-- 쿠폰 코드 복사 버튼 (투명 오버레이) -->
 		<!-- WELCOME5000 텍스트 영역 위에 배치 -->

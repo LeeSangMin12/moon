@@ -454,13 +454,18 @@
 			}
 
 			const [likes, reviews, permission, user_review] = await Promise.all([
-				me?.id ? api.service_likes.select_by_user_id(me.id) : Promise.resolve([]),
+				me?.id
+					? api.service_likes.select_by_user_id(me.id)
+					: Promise.resolve([]),
 				api.service_reviews.select_by_service_id(service.id),
 				me?.id
 					? api.service_reviews.can_write_review(service.id, me.id)
 					: Promise.resolve({ can_write: false, order_id: null }),
 				me?.id
-					? api.service_reviews.select_by_service_and_reviewer(service.id, me.id)
+					? api.service_reviews.select_by_service_and_reviewer(
+							service.id,
+							me.id,
+						)
 					: Promise.resolve(null),
 			]);
 
@@ -932,7 +937,7 @@
 	bind:is_modal_open={is_service_config_modal_open}
 	modal_position="bottom"
 >
-	<div class="pb-6">
+	<div>
 		<!-- 드래그 핸들 -->
 		<div class="flex justify-center py-3">
 			<div class="h-1 w-10 rounded-full bg-gray-300"></div>

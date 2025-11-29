@@ -1,5 +1,11 @@
 <script>
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import colors from '$lib/config/colors';
+	import {
+		get_api_context,
+		get_user_context,
+	} from '$lib/contexts/app_context.svelte.js';
+	import { check_login, show_toast } from '$lib/utils/common';
 	import { smart_go_back } from '$lib/utils/navigation';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
@@ -7,9 +13,6 @@
 	import Header from '$lib/components/ui/Header.svelte';
 	import SimpleEditor from '$lib/components/tiptap-templates/simple/simple-editor.svelte';
 
-	import colors from '$lib/config/colors';
-	import { check_login, show_toast } from '$lib/utils/common';
-	import { get_user_context, get_api_context } from '$lib/contexts/app_context.svelte.js';
 	import { update_global_store } from '$lib/store/global_store.js';
 
 	const me = get_user_context();
@@ -81,7 +84,12 @@
 	const add_option = () => {
 		service_form_data.options = [
 			...service_form_data.options,
-			{ name: '', price_add: 0, description: '', display_order: service_form_data.options.length }
+			{
+				name: '',
+				price_add: 0,
+				description: '',
+				display_order: service_form_data.options.length,
+			},
 		];
 	};
 
@@ -91,7 +99,7 @@
 	const delete_option = (idx) => {
 		const updated_options = [...service_form_data.options];
 		updated_options.splice(idx, 1);
-		updated_options.forEach((opt, i) => opt.display_order = i);
+		updated_options.forEach((opt, i) => (opt.display_order = i));
 		service_form_data.options = updated_options;
 	};
 
@@ -127,8 +135,8 @@
 
 			if (service_form_data.options.length > 0) {
 				const options_to_insert = service_form_data.options
-					.filter(opt => opt.name.trim() && opt.price_add > 0)
-					.map(opt => ({
+					.filter((opt) => opt.name.trim() && opt.price_add > 0)
+					.map((opt) => ({
 						service_id: service.id,
 						name: opt.name.trim(),
 						price_add: opt.price_add,
@@ -290,7 +298,8 @@
 			{#each service_form_data.options as option, idx}
 				<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
 					<div class="mb-3 flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700">옵션 {idx + 1}</span>
+						<span class="text-sm font-medium text-gray-700">옵션 {idx + 1}</span
+						>
 						<button
 							onclick={() => delete_option(idx)}
 							class="text-sm text-gray-500 hover:text-gray-700"
@@ -306,7 +315,7 @@
 								bind:value={option.name}
 								type="text"
 								placeholder="옵션 이름 (예: 소스파일 제공)"
-								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+								class="input input-bordered h-11 w-full text-sm focus:border-gray-400 focus:outline-none"
 							/>
 						</div>
 
@@ -315,7 +324,7 @@
 								bind:value={option.price_add}
 								type="number"
 								placeholder="추가 금액 (원)"
-								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+								class="input input-bordered h-11 w-full text-sm focus:border-gray-400 focus:outline-none"
 							/>
 						</div>
 
@@ -324,7 +333,7 @@
 								bind:value={option.description}
 								type="text"
 								placeholder="설명 (선택)"
-								class="input input-bordered h-11 w-full text-sm focus:outline-none focus:border-gray-400"
+								class="input input-bordered h-11 w-full text-sm focus:border-gray-400 focus:outline-none"
 							/>
 						</div>
 					</div>

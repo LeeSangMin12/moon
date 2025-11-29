@@ -5,9 +5,9 @@
 		get_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
 	import { show_toast } from '$lib/utils/common';
+	import { fade, scale } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
-	import { scale, fade } from 'svelte/transition';
 
 	import Header from '$lib/components/ui/Header.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -34,7 +34,6 @@
 	let sign_up_form_data = $state({
 		phone: '',
 		phone_verified: false,
-		session: null,
 		gender: '',
 		handle: '',
 		name: '',
@@ -60,9 +59,8 @@
 	/**
 	 * 전화번호 인증 완료 핸들러
 	 */
-	const handle_phone_verified = (session, international_phone) => {
+	const handle_phone_verified = (international_phone) => {
 		sign_up_form_data.phone_verified = true;
-		sign_up_form_data.session = session;
 		sign_up_form_data.phone = international_phone;
 	};
 
@@ -70,14 +68,8 @@
 	 * 다음 버튼 disabled 검사
 	 */
 	const is_next_btn_disabled = () => {
-		const {
-			phone_verified,
-			name,
-			handle,
-			email,
-			gender,
-			birth_date,
-		} = sign_up_form_data;
+		const { phone_verified, name, handle, email, gender, birth_date } =
+			sign_up_form_data;
 
 		switch (page_count) {
 			case 1:
@@ -109,11 +101,12 @@
 			}
 		} else if (page_count === 2) {
 			// 아이디 중복 확인
-			const handle_exists =
-				await api.users.check_handle_exists(sign_up_form_data.handle);
+			const handle_exists = await api.users.check_handle_exists(
+				sign_up_form_data.handle,
+			);
 
 			if (handle_exists) {
-				show_toast('error', '중복된 사용자 이름입니다.');
+				show_toast('error', '중복된 아이디 입니다.');
 				return;
 			}
 		} else if (page_count === 4) {
@@ -128,8 +121,8 @@
 		update_global_store('loading', true);
 
 		try {
-			// 전화번호 인증으로 생성된 세션의 user.id 사용
-			const user_id = sign_up_form_data.session?.user?.id;
+			// 기존 카카오 로그인 세션의 user.id 사용
+			const user_id = session?.user?.id;
 
 			if (!user_id) {
 				throw new Error('세션 정보가 없습니다');
@@ -198,13 +191,17 @@
 			on_verified={handle_phone_verified}
 		/>
 	{:else if page_count === 2}
-		<SetBasic bind:data={sign_up_form_data} bind:handle_error bind:email_error />
+		<SetBasic
+			bind:data={sign_up_form_data}
+			bind:handle_error
+			bind:email_error
+		/>
 	{:else if page_count === 3}
 		<SetPersonal bind:data={sign_up_form_data} />
 	{:else if page_count === 4}
 		<SetAvatar
 			bind:avatar_url={sign_up_form_data.avatar_url}
-			user_id={sign_up_form_data.session?.user?.id}
+			user_id={session?.user?.id}
 		/>
 	{/if}
 
