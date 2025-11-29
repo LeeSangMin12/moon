@@ -6,7 +6,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(
+				expert_request_proposals!request_id(
 					id,
 					expert_id,
 					message,
@@ -14,6 +14,7 @@ export const create_expert_requests_api = (supabase) => ({
 					created_at,
 					contact_info,
 					is_secret,
+					proposed_amount,
 					users:expert_id(id, handle, name, avatar_url)
 				)
 			`,
@@ -33,7 +34,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(
+				expert_request_proposals!request_id(
 					id,
 					expert_id,
 					message,
@@ -41,6 +42,7 @@ export const create_expert_requests_api = (supabase) => ({
 					created_at,
 					contact_info,
 					is_secret,
+					proposed_amount,
 					users:expert_id(id, handle, name, avatar_url)
 				)
 			`,
@@ -63,7 +65,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(count)
+				expert_request_proposals!request_id(count)
 			`,
 			)
 			.eq('category', category)
@@ -88,7 +90,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(count)
+				expert_request_proposals!request_id(count)
 			`,
 			)
 			.or(
@@ -126,7 +128,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(count)
+				expert_request_proposals!request_id(count)
 			`,
 			)
 			.eq('status', 'open')
@@ -175,7 +177,7 @@ export const create_expert_requests_api = (supabase) => ({
 				`
 				*,
 				users:requester_id(id, handle, name, avatar_url),
-				expert_request_proposals(count)
+				expert_request_proposals!request_id(count)
 			`,
 			)
 			.eq('requester_id', requester_id)
@@ -318,7 +320,8 @@ export const create_expert_requests_api = (supabase) => ({
 			.from('expert_requests')
 			.select(`
 				*,
-				users:requester_id(id, handle, name, avatar_url)
+				users:requester_id(id, handle, name, avatar_url, email),
+				expert:selected_expert_id(id, handle, name, avatar_url)
 			`)
 			.eq('status', 'pending_payment')
 			.is('deleted_at', null)
@@ -450,6 +453,126 @@ export const create_expert_requests_api = (supabase) => ({
 		if (error) {
 			throw new Error(`프로젝트 완료 실패: ${error.message}`);
 		}
+	},
+
+	// 프로젝트 결제 정보 제출 (의뢰인이 제안 수락 후 결제 정보 입력)
+	submit_project_payment: async (request_id, payment_data) => {
+		// 1. 요청 정보 조회 및 검증
+		const { data: request, error: fetchError } = await supabase
+			.from('expert_requests')
+			.select('id, status, requester_id')
+			.eq('id', request_id)
+			.single();
+
+		if (fetchError || !request) {
+			throw new Error('외주 요청을 찾을 수 없습니다.');
+		}
+
+		if (request.status !== 'open') {
+			throw new Error('이미 처리된 요청입니다.');
+		}
+
+		// 2. 제안서 상태 업데이트 (수락)
+		const { error: proposalError } = await supabase
+			.from('expert_request_proposals')
+			.update({
+				status: 'accepted',
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', payment_data.proposal_id);
+
+		if (proposalError) {
+			throw new Error(`제안서 상태 업데이트 실패: ${proposalError.message}`);
+		}
+
+		// 3. 외주 요청 업데이트 (결제 정보 저장)
+		const { data, error } = await supabase
+			.from('expert_requests')
+			.update({
+				status: 'pending_payment',
+				accepted_proposal_id: payment_data.proposal_id,
+				selected_expert_id: payment_data.expert_id,
+				project_amount: payment_data.project_amount,
+				commission_amount: payment_data.commission_amount,
+				expert_payout: payment_data.expert_payout,
+				payment_info: {
+					depositor_name: payment_data.depositor_name,
+					bank: payment_data.bank,
+					account_number: payment_data.account_number,
+					buyer_contact: payment_data.buyer_contact,
+					special_request: payment_data.special_request || '',
+				},
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', request_id)
+			.select()
+			.single();
+
+		if (error) {
+			throw new Error(`결제 정보 저장 실패: ${error.message}`);
+		}
+
+		return data;
+	},
+
+	// 프로젝트 결제 승인 (관리자가 입금 확인 후)
+	approve_project_payment: async (request_id) => {
+		const { data, error } = await supabase
+			.from('expert_requests')
+			.update({
+				status: 'in_progress',
+				payment_confirmed_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', request_id)
+			.eq('status', 'pending_payment')
+			.select()
+			.single();
+
+		if (error) {
+			throw new Error(`결제 승인 실패: ${error.message}`);
+		}
+
+		return data;
+	},
+
+	// 프로젝트 결제 거절 (관리자)
+	reject_project_payment: async (request_id, reject_reason = null) => {
+		// 1. 외주 요청 상태 변경
+		const { data: request, error: requestError } = await supabase
+			.from('expert_requests')
+			.update({
+				status: 'open', // 다시 공고 상태로
+				payment_info: null,
+				project_amount: null,
+				commission_amount: null,
+				expert_payout: null,
+				selected_expert_id: null,
+				accepted_proposal_id: null,
+				reject_reason: reject_reason,
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', request_id)
+			.eq('status', 'pending_payment')
+			.select('accepted_proposal_id')
+			.single();
+
+		if (requestError) {
+			throw new Error(`결제 거절 실패: ${requestError.message}`);
+		}
+
+		// 2. 수락된 제안서가 있으면 상태 되돌리기
+		if (request?.accepted_proposal_id) {
+			await supabase
+				.from('expert_request_proposals')
+				.update({
+					status: 'pending',
+					updated_at: new Date().toISOString(),
+				})
+				.eq('id', request.accepted_proposal_id);
+		}
+
+		return request;
 	},
 
 	// 프로젝트 완료 및 수수료 계산 (무료 등록 + 매칭 수수료 모델)

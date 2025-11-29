@@ -9,7 +9,7 @@
 	const me = get_user_context();
 
 	let { data } = $props();
-	let { transactions, bank_account, pending_charges, pending_withdrawals } =
+	let { transactions, bank_account, pending_charges, pending_withdrawals, moon_cash } =
 		$derived(data);
 
 	const has_pending = $derived(
@@ -81,7 +81,7 @@
 	<section class="bg-white px-5 pt-6 pb-5">
 		<p class="text-[13px] text-gray-500">사용 가능한 캐시</p>
 		<p class="mt-1 text-[32px] font-bold tracking-tight text-gray-900">
-			{comma(me?.moon_cash || 0)}<span class="text-[24px] font-semibold"
+			{comma(moon_cash || 0)}<span class="text-[24px] font-semibold"
 				>원</span
 			>
 		</p>
