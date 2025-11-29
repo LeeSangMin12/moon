@@ -3,41 +3,38 @@
  */
 export const create_auth_api = (supabase) => ({
 	/**
-	 * SMS OTP 전송
+	 * Twilio Verify를 통해 OTP 전송
 	 *
 	 * @param {string} phone - 전화번호 (국제 형식: +821012345678)
 	 * @returns {Promise<Object>} OTP 전송 결과
 	 * @throws {Error} OTP 전송 실패 시
 	 */
 	send_otp: async (phone) => {
-		const { data, error } = await supabase.auth.signInWithOtp({
-			phone: phone,
+		const { data, error } = await supabase.functions.invoke('sms-otp', {
+			body: { action: 'send', phone },
 		});
 
 		if (error) throw new Error(`Failed to send_otp: ${error.message}`);
+		if (!data.success) throw new Error(data.error || 'Failed to send OTP');
 		return data;
 	},
 
 	/**
-	 * SMS OTP 검증
+	 * Twilio Verify를 통해 OTP 검증
 	 *
 	 * @param {string} phone - 전화번호 (국제 형식: +821012345678)
-	 * @param {string} token - 6자리 OTP 코드
-	 * @returns {Promise<Object>} 세션 정보 (access_token, refresh_token 포함)
+	 * @param {string} code - 6자리 OTP 코드
+	 * @returns {Promise<Object>} 검증 결과
 	 * @throws {Error} OTP 검증 실패 시
 	 */
-	verify_otp: async (phone, token) => {
-		const {
-			data: { session },
-			error,
-		} = await supabase.auth.verifyOtp({
-			phone: phone,
-			token: token,
-			type: 'sms',
+	verify_otp: async (phone, code) => {
+		const { data, error } = await supabase.functions.invoke('sms-otp', {
+			body: { action: 'verify', phone, code },
 		});
 
 		if (error) throw new Error(`Failed to verify_otp: ${error.message}`);
-		return session;
+		if (!data.success) throw new Error(data.error || 'Invalid code');
+		return data;
 	},
 
 	/**

@@ -34,7 +34,6 @@
 	let sign_up_form_data = $state({
 		phone: '',
 		phone_verified: false,
-		session: null,
 		gender: '',
 		handle: '',
 		name: '',
@@ -60,9 +59,8 @@
 	/**
 	 * 전화번호 인증 완료 핸들러
 	 */
-	const handle_phone_verified = (session, international_phone) => {
+	const handle_phone_verified = (international_phone) => {
 		sign_up_form_data.phone_verified = true;
-		sign_up_form_data.session = session;
 		sign_up_form_data.phone = international_phone;
 	};
 
@@ -123,8 +121,8 @@
 		update_global_store('loading', true);
 
 		try {
-			// 전화번호 인증으로 생성된 세션의 user.id 사용
-			const user_id = sign_up_form_data.session?.user?.id;
+			// 기존 카카오 로그인 세션의 user.id 사용
+			const user_id = session?.user?.id;
 
 			if (!user_id) {
 				throw new Error('세션 정보가 없습니다');
@@ -203,7 +201,7 @@
 	{:else if page_count === 4}
 		<SetAvatar
 			bind:avatar_url={sign_up_form_data.avatar_url}
-			user_id={sign_up_form_data.session?.user?.id}
+			user_id={session?.user?.id}
 		/>
 	{/if}
 
