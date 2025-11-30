@@ -38,6 +38,11 @@
 
 	// ===== Lifecycle =====
 	onMount(async () => {
+		// 가입 완료 파라미터 제거 (GTM 전환 추적 후 URL 정리)
+		if (window.location.search.includes('signup=complete')) {
+			history.replaceState({}, '', '/');
+		}
+
 		home_data.initialize_posts();
 
 		// 서버에서 스트리밍된 데이터 처리

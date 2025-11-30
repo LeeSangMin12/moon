@@ -149,7 +149,7 @@
 			});
 
 			show_toast('success', '가입이 완료되었어요!');
-			goto('/');
+			goto('/?signup=complete');
 		} catch (err) {
 			console.error('회원가입 저장 실패:', err);
 			show_toast('error', '회원가입에 실패했습니다');
