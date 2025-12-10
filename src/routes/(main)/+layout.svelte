@@ -7,10 +7,15 @@
 	import { register_fcm_token } from '$lib/firebase/messaging.js';
 	import { onMount } from 'svelte';
 
+	import Contact_required_modal from '$lib/components/ui/Contact_required_modal.svelte';
 	import CouponPopup from '$lib/components/ui/CouponPopup.svelte';
 	import Login_prompt_modal from '$lib/components/ui/Login_prompt_modal.svelte';
 
-	import { is_login_prompt_modal, loading } from '$lib/store/global_store';
+	import {
+		is_contact_required_modal,
+		is_login_prompt_modal,
+		loading,
+	} from '$lib/store/global_store';
 
 	let { data, children } = $props();
 
@@ -55,10 +60,13 @@
 	 */
 	async function load_authenticated_user(user_id) {
 		try {
-			const user_data = await api.users.select(user_id);
+			const [user_data, user_contact] = await Promise.all([
+				api.users.select(user_id),
+				api.user_contacts.select_by_user_id(user_id),
+			]);
 
 			if (user_data?.handle) {
-				Object.assign(me, user_data);
+				Object.assign(me, user_data, { user_contact });
 				load_follow_data(user_data.id);
 
 				// 로그인 후 FCM 토큰 등록 (네이티브 앱 전용)
@@ -109,5 +117,6 @@
 {/if}
 
 <Login_prompt_modal bind:is_modal_open={$is_login_prompt_modal} />
+<Contact_required_modal bind:is_modal_open={$is_contact_required_modal} />
 
 <CouponPopup />

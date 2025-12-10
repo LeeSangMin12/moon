@@ -36,53 +36,40 @@
 		selected_request = null;
 	};
 
-	// 프로젝트 결제인지 확인 (project_amount가 있으면 프로젝트 결제)
-	const is_project_payment = (request) => !!request.project_amount;
-
 	// 승인 처리
 	const approve_request = async (request_id) => {
 		const request = pending_requests.find((r) => r.id === request_id);
-		const is_project = is_project_payment(request);
 
-		const message = is_project
-			? '입금을 확인하고 프로젝트를 시작하시겠습니까?\n승인 시 전문가에게 알림이 발송됩니다.'
-			: '입금을 확인하고 이 공고를 승인하시겠습니까?';
-
-		if (!confirm(message)) {
+		if (!confirm('입금을 확인하고 프로젝트를 시작하시겠습니까?\n승인 시 전문가에게 알림이 발송됩니다.')) {
 			return;
 		}
 
 		try {
-			if (is_project) {
-				await api.expert_requests.approve_project_payment(request_id);
+			await api.expert_requests.approve_project_payment(request_id);
 
-				// 전문가에게 알림 발송
-				if (request.selected_expert_id) {
-					try {
-						await api.notifications.insert({
-							recipient_id: request.selected_expert_id,
-							actor_id: me.id,
-							type: 'project.payment_approved',
-							resource_type: 'expert_request',
-							resource_id: String(request_id),
-							payload: {
-								request_id: request_id,
-								request_title: request.title,
-								amount: request.project_amount,
-								expert_payout: request.expert_payout,
-							},
-							link_url: `/expert-request/${request_id}`,
-						});
-					} catch (e) {
-						console.error('알림 발송 실패:', e);
-					}
+			// 전문가에게 알림 발송
+			if (request.selected_expert_id) {
+				try {
+					await api.notifications.insert({
+						recipient_id: request.selected_expert_id,
+						actor_id: me.id,
+						type: 'project.payment_approved',
+						resource_type: 'expert_request',
+						resource_id: String(request_id),
+						payload: {
+							request_id: request_id,
+							request_title: request.title,
+							amount: request.project_amount,
+							expert_payout: request.expert_payout,
+						},
+						link_url: `/expert-request/${request_id}`,
+					});
+				} catch (e) {
+					console.error('알림 발송 실패:', e);
 				}
-
-				show_toast('success', '프로젝트가 승인되어 진행이 시작됩니다.');
-			} else {
-				await api.expert_requests.approve_payment(request_id);
-				show_toast('success', '공고가 승인되어 게시되었습니다.');
 			}
+
+			show_toast('success', '프로젝트가 승인되어 진행이 시작됩니다.');
 
 			// 목록에서 제거
 			pending_requests = pending_requests.filter((r) => r.id !== request_id);
@@ -94,31 +81,19 @@
 
 	// 거절 처리
 	const reject_request = async (request_id) => {
-		const request = pending_requests.find((r) => r.id === request_id);
-		const is_project = is_project_payment(request);
-
 		const reject_reason = prompt('거절 사유를 입력해주세요 (선택):');
 		if (reject_reason === null) {
 			// 취소 버튼을 누른 경우
 			return;
 		}
 
-		const message = is_project
-			? '이 결제를 거절하시겠습니까? 거절 시 공고가 다시 열립니다.'
-			: '이 공고를 거절하시겠습니까? 거절 후에는 취소할 수 없습니다.';
-
-		if (!confirm(message)) {
+		if (!confirm('이 결제를 거절하시겠습니까? 거절 시 공고가 다시 열립니다.')) {
 			return;
 		}
 
 		try {
-			if (is_project) {
-				await api.expert_requests.reject_project_payment(request_id, reject_reason.trim() || null);
-				show_toast('success', '결제가 거절되어 공고가 다시 열렸습니다.');
-			} else {
-				await api.expert_requests.reject_payment(request_id, reject_reason.trim() || null);
-				show_toast('success', '공고가 거절되었습니다.');
-			}
+			await api.expert_requests.reject_project_payment(request_id, reject_reason.trim() || null);
+			show_toast('success', '결제가 거절되어 공고가 다시 열렸습니다.');
 
 			// 목록에서 제거
 			pending_requests = pending_requests.filter((r) => r.id !== request_id);
@@ -173,19 +148,11 @@
 							<h3 class="flex-1 font-semibold text-gray-900">
 								{request.title}
 							</h3>
-							{#if is_project_payment(request)}
-								<span
-									class="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800"
-								>
-									프로젝트 결제
-								</span>
-							{:else}
-								<span
-									class="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800"
-								>
-									등록비 대기
-								</span>
-							{/if}
+							<span
+								class="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800"
+							>
+								프로젝트 결제
+							</span>
 						</div>
 						{#if request.category}
 							<p class="text-xs text-gray-500">{request.category}</p>
@@ -209,147 +176,82 @@
 						</div>
 					</div>
 
-					<!-- 프로젝트 결제인 경우 -->
-					{#if is_project_payment(request)}
-						<!-- 전문가 정보 -->
-						<div class="mb-3 rounded-lg bg-emerald-50 p-3">
-							<p class="mb-2 text-xs font-medium text-emerald-900">선택된 전문가</p>
-							<div class="space-y-1 text-sm">
-								<div class="flex justify-between">
-									<span class="text-emerald-700">전문가</span>
-									<span class="font-medium text-emerald-900">
-										{request.expert?.name || request.expert?.handle || '-'}
-									</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 입금 정보 -->
-						<div class="mb-3 rounded-lg bg-blue-50 p-3">
-							<p class="mb-2 text-xs font-medium text-blue-900">입금 정보</p>
-							<div class="space-y-1 text-sm">
-								<div class="flex justify-between">
-									<span class="text-blue-700">입금자명</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.depositor_name || '-'}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-blue-700">은행</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.bank || '-'}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-blue-700">계좌번호</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.account_number || '-'}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-blue-700">연락처</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.buyer_contact || '-'}
-									</span>
-								</div>
-								{#if request.payment_info?.special_request}
-									<div class="border-t border-blue-200 pt-2">
-										<span class="text-blue-700">특별 요청사항</span>
-										<p class="mt-1 text-blue-900">
-											{request.payment_info.special_request}
-										</p>
-									</div>
-								{/if}
-							</div>
-						</div>
-
-						<!-- 금액 정보 -->
-						<div class="mb-3 rounded-lg bg-purple-50 p-3">
-							<p class="mb-2 text-xs font-medium text-purple-900">금액 정보</p>
-							<div class="space-y-1 text-sm">
-								<div class="flex justify-between">
-									<span class="text-purple-700">프로젝트 금액</span>
-									<span class="font-bold text-purple-900">
-										₩{comma(request.project_amount)}
-									</span>
-								</div>
-								<div class="flex justify-between border-t border-purple-200 pt-1">
-									<span class="text-purple-700">플랫폼 수수료 (5%)</span>
-									<span class="text-purple-900">
-										₩{comma(request.commission_amount)}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-purple-700">전문가 정산</span>
-									<span class="text-purple-900">
-										₩{comma(request.expert_payout)}
-									</span>
-								</div>
-							</div>
-						</div>
-					{:else}
-						<!-- 기존 등록비 결제 (레거시) -->
-						<div class="mb-3 rounded-lg bg-blue-50 p-3">
-							<p class="mb-2 text-xs font-medium text-blue-900">입금 정보</p>
-							<div class="space-y-1 text-sm">
-								<div class="flex justify-between">
-									<span class="text-blue-700">입금자명</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.depositor_name || '-'}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-blue-700">은행</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.bank || '-'}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-blue-700">계좌번호</span>
-									<span class="font-medium text-blue-900">
-										{request.payment_info?.account_number || '-'}
-									</span>
-								</div>
-								{#if request.coupon_discount && request.coupon_discount > 0}
-									<div class="flex justify-between border-t border-blue-200 pt-2">
-										<span class="text-blue-700">등록비</span>
-										<span class="text-blue-900">
-											₩{comma(request.registration_amount || 4900)}
-										</span>
-									</div>
-									<div class="flex justify-between">
-										<span class="text-blue-700">쿠폰 할인</span>
-										<span class="text-blue-900">
-											-₩{comma(request.coupon_discount)}
-										</span>
-									</div>
-								{/if}
-								<div class="flex justify-between border-t border-blue-200 pt-2">
-									<span class="font-semibold text-blue-900">최종 입금 금액</span>
-									<span class="text-lg font-bold text-blue-600">
-										₩{comma(
-											(request.registration_amount || 4900) -
-												(request.coupon_discount || 0),
-										)}
-									</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 공고 세부 정보 -->
-						<div class="mb-3 space-y-1 text-sm">
+					<!-- 전문가 정보 -->
+					<div class="mb-3 rounded-lg bg-emerald-50 p-3">
+						<p class="mb-2 text-xs font-medium text-emerald-900">선택된 전문가</p>
+						<div class="space-y-1 text-sm">
 							<div class="flex justify-between">
-								<span class="text-gray-600">보상금</span>
-								<span class="font-medium">₩{comma(request.reward_amount)}</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-gray-600">입금 정보 제출</span>
-								<span class="text-xs text-gray-500">
-									{format_date(request.registration_paid_at)}
+								<span class="text-emerald-700">전문가</span>
+								<span class="font-medium text-emerald-900">
+									{request.expert?.name || request.expert?.handle || '-'}
 								</span>
 							</div>
 						</div>
-					{/if}
+					</div>
+
+					<!-- 입금 정보 -->
+					<div class="mb-3 rounded-lg bg-blue-50 p-3">
+						<p class="mb-2 text-xs font-medium text-blue-900">입금 정보</p>
+						<div class="space-y-1 text-sm">
+							<div class="flex justify-between">
+								<span class="text-blue-700">입금자명</span>
+								<span class="font-medium text-blue-900">
+									{request.payment_info?.depositor_name || '-'}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-blue-700">은행</span>
+								<span class="font-medium text-blue-900">
+									{request.payment_info?.bank || '-'}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-blue-700">계좌번호</span>
+								<span class="font-medium text-blue-900">
+									{request.payment_info?.account_number || '-'}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-blue-700">연락처</span>
+								<span class="font-medium text-blue-900">
+									{request.payment_info?.buyer_contact || '-'}
+								</span>
+							</div>
+							{#if request.payment_info?.special_request}
+								<div class="border-t border-blue-200 pt-2">
+									<span class="text-blue-700">특별 요청사항</span>
+									<p class="mt-1 text-blue-900">
+										{request.payment_info.special_request}
+									</p>
+								</div>
+							{/if}
+						</div>
+					</div>
+
+					<!-- 금액 정보 -->
+					<div class="mb-3 rounded-lg bg-purple-50 p-3">
+						<p class="mb-2 text-xs font-medium text-purple-900">금액 정보</p>
+						<div class="space-y-1 text-sm">
+							<div class="flex justify-between">
+								<span class="text-purple-700">프로젝트 금액</span>
+								<span class="font-bold text-purple-900">
+									₩{comma(request.project_amount)}
+								</span>
+							</div>
+							<div class="flex justify-between border-t border-purple-200 pt-1">
+								<span class="text-purple-700">플랫폼 수수료 (5%)</span>
+								<span class="text-purple-900">
+									₩{comma(request.commission_amount)}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-purple-700">전문가 정산</span>
+								<span class="text-purple-900">
+									₩{comma(request.expert_payout)}
+								</span>
+							</div>
+						</div>
+					</div>
 
 					<!-- 버튼 그룹 -->
 					<div class="flex gap-2">
@@ -508,41 +410,26 @@
 					</div>
 				{/if}
 
-				<!-- 등록비 정보 -->
-				<div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
-					<h4 class="mb-2 text-sm font-semibold text-blue-900">등록비 정보</h4>
+				<!-- 프로젝트 금액 정보 -->
+				<div class="rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
+					<h4 class="mb-2 text-sm font-semibold text-purple-900">프로젝트 금액</h4>
 					<div class="space-y-1 text-sm">
 						<div class="flex justify-between">
-							<span class="text-blue-700">등록비</span>
-							<span class="font-medium text-blue-900"
-								>₩{comma(selected_request.registration_amount || 4900)}</span
+							<span class="text-purple-700">프로젝트 금액</span>
+							<span class="font-bold text-purple-900"
+								>₩{comma(selected_request.project_amount)}</span
 							>
 						</div>
-						{#if selected_request.coupon_discount && selected_request.coupon_discount > 0}
-							<div class="flex justify-between">
-								<span class="text-blue-700">쿠폰 할인</span>
-								<span class="font-medium text-blue-900"
-									>-₩{comma(selected_request.coupon_discount)}</span
-								>
-							</div>
-							<div class="flex justify-between border-t border-blue-200 pt-1">
-								<span class="font-semibold text-blue-900">최종 입금 금액</span>
-								<span class="font-bold text-blue-600"
-									>₩{comma(
-										(selected_request.registration_amount || 4900) -
-											selected_request.coupon_discount,
-									)}</span
-								>
-							</div>
-						{/if}
-						<div
-							class="flex justify-between {selected_request.coupon_discount
-								? ''
-								: 'border-t border-blue-200 pt-1'}"
-						>
-							<span class="text-blue-700">입금 제출일</span>
-							<span class="font-medium text-blue-900"
-								>{format_date(selected_request.registration_paid_at)}</span
+						<div class="flex justify-between border-t border-purple-200 pt-1">
+							<span class="text-purple-700">플랫폼 수수료 (5%)</span>
+							<span class="font-medium text-purple-900"
+								>₩{comma(selected_request.commission_amount)}</span
+							>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-purple-700">전문가 정산</span>
+							<span class="font-medium text-purple-900"
+								>₩{comma(selected_request.expert_payout)}</span
 							>
 						</div>
 					</div>

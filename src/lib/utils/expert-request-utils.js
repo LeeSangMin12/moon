@@ -269,8 +269,6 @@ export const validateProposalData = (data) => {
 	// 메시지 검사
 	if (!data.message?.trim()) {
 		errors.push('제안 메시지는 필수입니다.');
-	} else if (data.message.trim().length < 50) {
-		errors.push('제안 메시지는 최소 50글자 이상이어야 합니다.');
 	} else if (data.message.trim().length > 1000) {
 		errors.push('제안 메시지는 최대 1000글자까지 가능합니다.');
 	}
@@ -291,12 +289,7 @@ export const validateProposalData = (data) => {
 		errors.push('예상 작업 기간은 최대 100글자까지 가능합니다.');
 	}
 
-	// 연락처 검사
-	if (!data.contact_info?.trim()) {
-		errors.push('연락처는 필수입니다.');
-	} else if (data.contact_info.trim().length > 200) {
-		errors.push('연락처는 최대 200글자까지 가능합니다.');
-	}
+	// 연락처는 user_contacts에서 자동으로 가져오므로 검사하지 않음
 
 	return errors;
 };

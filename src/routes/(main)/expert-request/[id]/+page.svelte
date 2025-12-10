@@ -5,7 +5,12 @@
 		get_api_context,
 		get_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
-	import { check_login, comma, show_toast } from '$lib/utils/common';
+	import {
+		check_contact,
+		check_login,
+		comma,
+		show_toast,
+	} from '$lib/utils/common';
 	import {
 		ERROR_MESSAGES,
 		formatBudget,
@@ -65,8 +70,6 @@
 	let show_proposal_modal = $state(false);
 	let proposal_form = $state({
 		message: '',
-		contact_info: '',
-		is_secret: false,
 		proposed_amount: '',
 	});
 	let attached_files = $state([]);
@@ -139,13 +142,19 @@
 		}
 
 		try {
+			// 연락처 정보 가져오기 (user_contacts에서)
+			const contact_phone = me.user_contact?.contact_phone || '';
+			const formatted_contact =
+				contact_phone.length === 11
+					? `${contact_phone.slice(0, 3)}-${contact_phone.slice(3, 7)}-${contact_phone.slice(7)}`
+					: contact_phone;
+
 			// 1. 제안서 생성
 			const new_proposal = await api.expert_request_proposals.insert(
 				{
 					request_id: expert_request.id,
 					message: proposal_form.message,
-					contact_info: proposal_form.contact_info || null,
-					is_secret: proposal_form.is_secret,
+					contact_info: formatted_contact || null,
 					proposed_amount: parseInt(proposal_form.proposed_amount) || 0,
 				},
 				user.id,
@@ -198,8 +207,6 @@
 			// 폼 초기화
 			proposal_form = {
 				message: '',
-				contact_info: '',
-				is_secret: false,
 				proposed_amount: '',
 			};
 			attached_files = [];
@@ -235,6 +242,7 @@
 
 	const handle_proposal_click = () => {
 		if (!check_login(me)) return;
+		if (!check_contact(me)) return;
 
 		// 나머지 조건 체크
 		if (expert_request.status !== 'open') {
@@ -304,6 +312,11 @@
 		return user && proposal.expert_id === user.id;
 	};
 
+	// 내가 제안한 적이 있는지 확인
+	const has_my_proposal = () => {
+		return user && proposals.some((p) => p.expert_id === user.id);
+	};
+
 	// 수락된 전문가인지 확인
 	const is_accepted_expert = () => {
 		if (!user) return false;
@@ -311,21 +324,10 @@
 		return accepted_proposal && accepted_proposal.expert_id === user.id;
 	};
 
-	// 비밀 제안 내용을 볼 수 있는지 확인
-	const can_view_secret_proposal = (proposal) => {
-		if (!proposal.is_secret) return true;
-		if (!user) return false; // 로그인하지 않은 경우 비밀 제안 볼 수 없음
-		const result = is_requester() || is_proposal_author(proposal);
-		console.log('can_view_secret_proposal:', {
-			proposal_id: proposal.id,
-			is_secret: proposal.is_secret,
-			expert_id: proposal.expert_id,
-			user_id: user?.id,
-			is_requester: is_requester(),
-			is_author: is_proposal_author(proposal),
-			result,
-		});
-		return result;
+	// 제안 내용을 볼 수 있는지 확인 (모든 제안이 비밀 - 의뢰인+제안자만 열람 가능)
+	const can_view_proposal = (proposal) => {
+		if (!user) return false;
+		return is_requester() || is_proposal_author(proposal);
 	};
 
 	// 제안 수락 - 결제 페이지로 이동
@@ -564,7 +566,7 @@
 	<h1 slot="center" class="font-semibold">전문가 요청</h1>
 </Header>
 
-<main class="min-h-screen bg-gray-50 pb-20">
+<main class="min-h-screen bg-gray-50 pb-32">
 	<!-- 요청 정보 -->
 	<div class="px-4 pt-4 pb-6">
 		<div
@@ -773,9 +775,7 @@
 						</svg>
 					</div>
 					<div class="flex-1">
-						<p class="text-sm font-medium text-gray-900">
-							입금 확인 대기 중
-						</p>
+						<p class="text-sm font-medium text-gray-900">입금 확인 대기 중</p>
 						<p class="text-xs text-gray-500">
 							입금 확인 후 프로젝트가 시작됩니다.
 						</p>
@@ -806,9 +806,7 @@
 						</svg>
 					</div>
 					<div class="flex-1">
-						<p class="text-sm font-medium text-gray-900">
-							프로젝트 진행 중
-						</p>
+						<p class="text-sm font-medium text-gray-900">프로젝트 진행 중</p>
 						<p class="text-xs text-gray-500">
 							선택된 전문가와 프로젝트를 진행해보세요.
 						</p>
@@ -884,246 +882,226 @@
 	<!-- 제안서 섹션 -->
 	<div class="px-4">
 		<div class="rounded-xl border border-gray-100/60 bg-white p-5">
-			<div class="mb-4 flex items-center justify-between">
-				<h2 class="font-semibold text-gray-900">
-					받은 제안 ({proposals.length}개)
-				</h2>
+			<!-- 의뢰인 또는 제안자 본인: 제안 목록 표시 -->
+			{#if is_requester() || has_my_proposal()}
+				<div class="mb-4">
+					<h2 class="font-semibold text-gray-900">
+						받은 제안 ({proposals.length}개)
+					</h2>
+				</div>
 
-				{#if !is_requester() && expert_request.status === 'open'}
-					<button
-						class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-						onclick={handle_proposal_click}
-						aria-label="전문가 제안서 작성하기"
-					>
-						제안하기
-					</button>
-				{/if}
-			</div>
-
-			{#if proposals.length > 0}
-				<div class="space-y-3">
-					{#each proposals as proposal}
-						<!-- Debug: {JSON.stringify({ is_secret: proposal.is_secret, expert_id: proposal.expert_id, user_id: user?.id, can_view: can_view_secret_proposal(proposal) })} -->
-						<div
-							class="rounded-xl border border-gray-100 p-4 transition-colors hover:bg-gray-50/50"
-						>
-							<div class="mb-3 flex items-start gap-3">
-								<button
-									class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 transition-opacity hover:opacity-80"
-									onclick={() =>
-										proposal.users?.handle &&
-										goto(`/@${proposal.users.handle}`)}
-									aria-label="{proposal.users?.name ||
-										proposal.users?.handle}님의 프로필 보기"
-								>
-									{#if proposal.users?.avatar_url}
-										<img
-											src={optimize_avatar(proposal.users.avatar_url)}
-											alt="{proposal.users.name ||
-												proposal.users.handle}님의 프로필 사진"
-											class="h-full w-full object-cover"
-											loading="lazy"
-											width="32"
-											height="32"
-										/>
-									{:else}
-										<span class="text-xs text-gray-500">
-											{(proposal.users?.name ||
-												proposal.users?.handle)?.[0]?.toUpperCase()}
-										</span>
-									{/if}
-								</button>
-								<div class="flex-1">
-									<div class="flex items-center gap-2">
+				{#if proposals.length > 0}
+					<div class="space-y-3">
+						{#each proposals.filter((p) => is_requester() || is_proposal_author(p)) as proposal}
+							<div class="overflow-hidden rounded-xl border border-gray-100">
+								<!-- 상단 정보 영역 -->
+								<div class="p-4">
+									<div class="flex items-start gap-3">
 										<button
-											class="text-sm font-medium text-gray-900 transition-colors hover:text-blue-600"
+											class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200 transition-opacity hover:opacity-80"
 											onclick={() =>
 												proposal.users?.handle &&
 												goto(`/@${proposal.users.handle}`)}
 											aria-label="{proposal.users?.name ||
 												proposal.users?.handle}님의 프로필 보기"
 										>
-											{proposal.users?.name || proposal.users?.handle}
+											{#if proposal.users?.avatar_url}
+												<img
+													src={optimize_avatar(proposal.users.avatar_url)}
+													alt="{proposal.users.name ||
+														proposal.users.handle}님의 프로필 사진"
+													class="h-full w-full object-cover"
+													loading="lazy"
+													width="40"
+													height="40"
+												/>
+											{:else}
+												<span class="text-sm text-gray-500">
+													{(proposal.users?.name ||
+														proposal.users?.handle)?.[0]?.toUpperCase()}
+												</span>
+											{/if}
 										</button>
-										{#if proposal.is_secret}
-											<span
-												class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"
-											>
-												<svg
-													class="mr-1 h-3 w-3"
-													fill="currentColor"
-													viewBox="0 0 20 20"
+										<div class="flex-1">
+											<div class="flex items-center gap-2">
+												<button
+													class="text-sm font-medium text-gray-900 transition-colors hover:text-blue-600"
+													onclick={() =>
+														proposal.users?.handle &&
+														goto(`/@${proposal.users.handle}`)}
+													aria-label="{proposal.users?.name ||
+														proposal.users?.handle}님의 프로필 보기"
 												>
-													<path
-														fill-rule="evenodd"
-														d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-														clip-rule="evenodd"
-													/>
-												</svg>
-												비밀
-											</span>
-										{/if}
+													{proposal.users?.name || proposal.users?.handle}
+												</button>
+												{#if proposal.status === 'accepted'}
+													<span
+														class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600"
+													>
+														수락됨
+													</span>
+												{:else if proposal.status === 'rejected'}
+													<span
+														class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500"
+													>
+														거절됨
+													</span>
+												{/if}
+											</div>
+											<div class="flex items-center gap-2">
+												<p class="text-xs text-gray-500">
+													{new Date(proposal.created_at).toLocaleDateString(
+														'ko-KR',
+														{
+															month: 'numeric',
+															day: 'numeric',
+														},
+													)}
+												</p>
+												{#if proposal.proposed_amount}
+													<span class="text-sm font-semibold text-blue-600">
+														₩{comma(proposal.proposed_amount)}
+													</span>
+												{/if}
+											</div>
+										</div>
 									</div>
-									<div class="flex items-center gap-2">
-										<p class="text-xs text-gray-500">
-											{new Date(proposal.created_at).toLocaleDateString(
-												'ko-KR',
-												{
-													month: 'short',
-													day: 'numeric',
-												},
-											)}
-										</p>
-										{#if proposal.proposed_amount}
-											<span class="text-xs font-semibold text-blue-600">
-												₩{comma(proposal.proposed_amount)}
-											</span>
-										{/if}
-									</div>
-								</div>
-								<div class="flex items-center gap-2">
-									<!-- 의뢰인에게는 항상 문의하기 버튼 표시 (연락처가 있는 경우) -->
-									{#if is_requester() && proposal.contact_info}
-										<button
-											onclick={() => {
-												copyContactInfo(proposal.contact_info);
-											}}
-											class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
-											aria-label="연락처 복사하기"
-										>
-											문의하기
-										</button>
+
+									<!-- 제안 내용 표시 -->
+									<p
+										class="overflow-wrap-anywhere mt-3 text-sm leading-relaxed break-words whitespace-pre-line text-gray-600"
+									>
+										{proposal.message}
+									</p>
+
+									<!-- 첨부파일 표시 -->
+									{#if proposal_attachments_map[proposal.id]?.length > 0}
+										<div class="mt-3">
+											<p class="mb-2 text-xs font-medium text-gray-600">
+												첨부파일
+											</p>
+											<div class="space-y-2">
+												{#each proposal_attachments_map[proposal.id] as attachment}
+													<a
+														href={api.proposal_attachments_bucket.get_public_url(
+															attachment.file_url,
+														)}
+														download={attachment.file_name}
+														target="_blank"
+														class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition-colors hover:bg-gray-100"
+													>
+														<span class="text-base">📄</span>
+														<div class="min-w-0 flex-1">
+															<p
+																class="truncate text-xs font-medium text-gray-700"
+															>
+																{attachment.file_name}
+															</p>
+															<p class="text-xs text-gray-500">
+																{format_file_size(attachment.file_size)}
+															</p>
+														</div>
+														<svg
+															class="h-4 w-4 text-gray-400"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+															/>
+														</svg>
+													</a>
+												{/each}
+											</div>
+										</div>
 									{/if}
 
-									{#if proposal.status === 'accepted'}
-										<span
-											class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-600"
+									<!-- 연락처 정보 -->
+									{#if proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
+										<div
+											class="mt-3 flex items-center gap-1 text-sm text-gray-600"
 										>
-											✓ 수락됨
-										</span>
-									{:else if proposal.status === 'rejected'}
-										<span
-											class="rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500"
-										>
-											거절됨
-										</span>
+											<span>📞</span>
+											<span>{proposal.contact_info}</span>
+										</div>
 									{/if}
 
-									<!-- 수락 버튼은 pending 상태일 때만 표시 -->
+									<!-- 하단 버튼 영역 (의뢰인에게만 표시) -->
 									{#if is_requester() && proposal.status === 'pending' && expert_request.status === 'open'}
-										<button
-											onclick={() => accept_proposal(proposal.id)}
-											class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-100"
-											aria-label="{proposal.users?.name ||
-												proposal.users?.handle}님의 제안 수락하기"
-										>
-											수락
-										</button>
+										<div class="mt-4 flex gap-2">
+											<button
+												onclick={() => copyContactInfo(proposal.contact_info)}
+												class="flex-1 rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+												aria-label="연락처 복사하기"
+											>
+												문의하기
+											</button>
+											<button
+												onclick={() => accept_proposal(proposal.id)}
+												class="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+												aria-label="{proposal.users?.name ||
+													proposal.users?.handle}님의 제안 수락하기"
+											>
+												수락하기
+											</button>
+										</div>
 									{/if}
 								</div>
 							</div>
-
-							<!-- 제안 내용 표시 (비밀제안 처리) -->
-							{#if proposal.is_secret && !can_view_secret_proposal(proposal)}
-								<div
-									class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
-								>
-									<div class="flex items-center gap-2">
-										<svg
-											class="h-4 w-4 text-gray-500"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fill-rule="evenodd"
-												d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-												clip-rule="evenodd"
-											/>
-										</svg>
-										<span class="text-sm font-medium text-gray-600"
-											>비밀제안</span
-										>
-									</div>
-									<p class="mt-2 text-xs text-gray-500">
-										이 제안은 의뢰인과 제안 작성자만 내용을 확인할 수 있습니다.
-									</p>
-								</div>
-							{:else}
-								<p
-									class="overflow-wrap-anywhere mb-3 text-sm leading-relaxed break-words whitespace-pre-line text-gray-600"
-								>
-									{proposal.message}
-								</p>
-							{/if}
-
-							<!-- 첨부파일 표시 -->
-							{#if can_view_secret_proposal(proposal) && proposal_attachments_map[proposal.id]?.length > 0}
-								<div class="mb-3">
-									<p class="mb-2 text-xs font-medium text-gray-600">첨부파일</p>
-									<div class="space-y-2">
-										{#each proposal_attachments_map[proposal.id] as attachment}
-											<a
-												href={api.proposal_attachments_bucket.get_public_url(
-													attachment.file_url,
-												)}
-												download={attachment.file_name}
-												target="_blank"
-												class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition-colors hover:bg-gray-100"
-											>
-												<span class="text-base">📄</span>
-												<div class="min-w-0 flex-1">
-													<p class="truncate text-xs font-medium text-gray-700">
-														{attachment.file_name}
-													</p>
-													<p class="text-xs text-gray-500">
-														{format_file_size(attachment.file_size)}
-													</p>
-												</div>
-												<svg
-													class="h-4 w-4 text-gray-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-													/>
-												</svg>
-											</a>
-										{/each}
-									</div>
-								</div>
-							{/if}
-
-							<!-- 제안 세부 정보 (비밀제안일 때 조건부 표시) -->
-							{#if can_view_secret_proposal(proposal) && proposal.contact_info && (is_requester() || proposal.status === 'accepted')}
-								<div class="flex items-center gap-4 text-xs text-gray-500">
-									<span class="flex items-center gap-1">
-										<span>📞</span>
-										<span class="font-medium">{proposal.contact_info}</span>
-									</span>
-								</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<div class="py-8 text-center">
-					<div
-						class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100"
-					>
-						<RiTimeLine size={20} color={colors.gray[400]} />
+						{/each}
 					</div>
-					<h3 class="mb-2 font-medium text-gray-900">아직 제안이 없어요</h3>
-					<p class="text-sm text-gray-500">첫 번째로 제안해보세요!</p>
+				{:else}
+					<div class="py-8 text-center">
+						<div
+							class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100"
+						>
+							<RiTimeLine size={20} color={colors.gray[400]} />
+						</div>
+						<h3 class="mb-2 font-medium text-gray-900">아직 제안이 없어요</h3>
+						<p class="text-sm text-gray-500">첫 번째로 제안해보세요!</p>
+					</div>
+				{/if}
+			{:else}
+				<!-- 일반 사용자: 제안 수만 표시 -->
+				<div class="py-6 text-center">
+					<div
+						class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50"
+					>
+						<RiUser3Line size={20} color={colors.primary} />
+					</div>
+					{#if proposals.length > 0}
+						<h3 class="mb-1 font-medium text-gray-900">
+							{proposals.length}명이 제안했어요
+						</h3>
+						<p class="text-sm text-gray-500">
+							제안 내용은 의뢰인만 확인할 수 있습니다
+						</p>
+					{:else}
+						<h3 class="mb-1 font-medium text-gray-900">아직 제안이 없어요</h3>
+						<p class="text-sm text-gray-500">첫 번째로 제안해보세요!</p>
+					{/if}
 				</div>
 			{/if}
 		</div>
 	</div>
 </main>
+
+<!-- 제안하기 버튼 (하단 고정) -->
+{#if !is_requester() && expert_request.status === 'open'}
+	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">
+		<button
+			class="btn btn-primary w-full"
+			onclick={handle_proposal_click}
+			aria-label="전문가 제안서 작성하기"
+		>
+			제안하기
+		</button>
+	</div>
+{/if}
 
 <!-- 제안서 작성 모달 -->
 {#if show_proposal_modal}
@@ -1157,26 +1135,10 @@
 						></textarea>
 					</div>
 
+					<!-- 총 제안 금액 -->
 					<div>
 						<label class="mb-2 block text-sm font-medium text-gray-700">
-							연락처 <span class="text-red-500">*</span>
-						</label>
-						<input
-							type="text"
-							bind:value={proposal_form.contact_info}
-							placeholder="카카오톡 ID, 이메일, 전화번호 등"
-							class="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm focus:outline-none"
-							required
-						/>
-						<p class="mt-1 text-xs text-gray-500">
-							제안이 수락되면 의뢰인이 이 연락처로 연락을 드릴 예정입니다.
-						</p>
-					</div>
-
-					<!-- 제안 금액 -->
-					<div>
-						<label class="mb-2 block text-sm font-medium text-gray-700">
-							제안 금액 <span class="text-red-500">*</span>
+							총 제안 금액 <span class="text-red-500">*</span>
 						</label>
 						<div class="relative">
 							<span
@@ -1196,6 +1158,9 @@
 								}}
 							/>
 						</div>
+						<p class="mt-1 text-xs text-gray-500">
+							이 프로젝트를 진행하는 총 금액을 입력해주세요.
+						</p>
 					</div>
 
 					<!-- 파일 첨부 -->
@@ -1264,39 +1229,19 @@
 							</div>
 						{/if}
 					</div>
-
-					<!-- 비밀제안 옵션 -->
-					<div class="rounded-lg border border-gray-200 p-4">
-						<div class="flex items-start gap-3">
-							<input
-								type="checkbox"
-								id="secret_proposal"
-								bind:checked={proposal_form.is_secret}
-								class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-							/>
-							<div class="flex-1">
-								<label
-									for="secret_proposal"
-									class="cursor-pointer text-sm font-medium text-gray-700"
-								>
-									비밀제안
-								</label>
-							</div>
-						</div>
-					</div>
 				</div>
 
 				<div class="mt-6 flex gap-3">
 					<button
 						type="button"
 						onclick={() => (show_proposal_modal = false)}
-						class="flex-1 rounded-lg bg-gray-100 py-3 font-medium text-gray-600 transition-colors hover:bg-gray-200"
+						class="btn btn-gray flex-1 rounded-lg py-3 font-medium text-gray-600 transition-colors hover:bg-gray-200"
 					>
 						취소
 					</button>
 					<button
 						type="submit"
-						class="flex-1 rounded-lg bg-gray-900 py-3 font-medium text-white transition-colors hover:bg-gray-800"
+						class="btn btn-primary flex-1 rounded-lg py-3 font-medium"
 					>
 						제안하기
 					</button>

@@ -1,7 +1,7 @@
 <script>
 	import colors from '$lib/config/colors';
 	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
-	import { check_login } from '$lib/utils/common';
+	import { check_contact, check_login } from '$lib/utils/common';
 	import { fade, scale } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { RiAddLine, RiCloseLine } from 'svelte-remixicon';
@@ -22,6 +22,7 @@
 
 	const handle_click = () => {
 		if (!check_login(me)) return;
+		if (!check_contact(me)) return;
 
 		if (actions && actions.length > 0) {
 			is_menu_open = !is_menu_open;

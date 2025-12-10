@@ -32,9 +32,9 @@
 	let { data } = $props();
 	let { expert_request, proposal, bank_accounts } = $state(data);
 
-	// 스텝 관리 (1: 요청사항, 2: 연락처, 3: 계좌정보/최종확인)
+	// 스텝 관리 (1: 요청사항, 2: 계좌정보/최종확인)
 	let step = $state(1);
-	const TOTAL_STEPS = 3;
+	const TOTAL_STEPS = 2;
 
 	// 뒤로가기 모달
 	let show_back_modal = $state(false);
@@ -52,7 +52,6 @@
 	// 폼 데이터
 	let form_data = $state({
 		special_request: '',
-		buyer_contact: '',
 	});
 
 	// 계좌 선택
@@ -116,8 +115,6 @@
 			case 1:
 				return true; // 요청사항은 선택
 			case 2:
-				return form_data.buyer_contact.trim().length >= 5;
-			case 3:
 				// 저장된 계좌 선택 or 새 계좌 입력
 				if (account_mode === 'saved') {
 					return !!selected_account;
@@ -176,6 +173,9 @@
 			const commission_amount = Math.floor(project_amount * 0.05);
 			const expert_payout = project_amount - commission_amount;
 
+			// 의뢰인 연락처 (user_contacts에서)
+			const buyer_contact = me.user_contact?.contact_phone || '';
+
 			const payment_data = {
 				proposal_id: proposal.id,
 				expert_id: proposal.expert_id,
@@ -185,7 +185,7 @@
 				depositor_name: bank_info.depositor_name,
 				bank: bank_info.bank,
 				account_number: bank_info.account_number,
-				buyer_contact: form_data.buyer_contact.trim(),
+				buyer_contact: buyer_contact,
 				special_request: form_data.special_request.trim(),
 			};
 
@@ -269,26 +269,8 @@
 			></textarea>
 		</div>
 
-		<!-- Step 2: 연락처 -->
+		<!-- Step 2: 계좌 정보 + 최종 확인 -->
 	{:else if step === 2}
-		<div class="mt-6">
-			<h2 class="text-[18px] font-semibold text-gray-900">
-				연락받으실 정보를 알려주세요
-			</h2>
-			<p class="mt-1 text-[14px] text-gray-500">
-				프로젝트 관련 안내를 받으실 연락처예요
-			</p>
-
-			<input
-				type="text"
-				bind:value={form_data.buyer_contact}
-				placeholder="전화번호 또는 카카오톡 ID"
-				class="mt-4 w-full rounded-xl border border-gray-200 px-4 py-4 text-[15px] text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
-			/>
-		</div>
-
-		<!-- Step 3: 계좌 정보 + 최종 확인 -->
-	{:else if step === 3}
 		<div class="mt-6">
 			<h2 class="text-[18px] font-semibold text-gray-900">
 				마지막으로 확인해주세요

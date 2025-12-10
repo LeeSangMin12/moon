@@ -298,3 +298,16 @@ export const check_login = (user) => {
 	}
 	return true;
 };
+
+/**
+ * 연락처 등록 여부 확인 (외주 등록 시 필요)
+ * @param {Object} user - 사용자 context (me)
+ * @returns {boolean} 연락처 등록 여부
+ */
+export const check_contact = (user) => {
+	if (!user?.user_contact) {
+		update_global_store('is_contact_required_modal', true);
+		return false;
+	}
+	return true;
+};

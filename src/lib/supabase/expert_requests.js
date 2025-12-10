@@ -13,7 +13,6 @@ export const create_expert_requests_api = (supabase) => ({
 					status,
 					created_at,
 					contact_info,
-					is_secret,
 					proposed_amount,
 					users:expert_id(id, handle, name, avatar_url)
 				)
@@ -41,7 +40,6 @@ export const create_expert_requests_api = (supabase) => ({
 					status,
 					created_at,
 					contact_info,
-					is_secret,
 					proposed_amount,
 					users:expert_id(id, handle, name, avatar_url)
 				)
@@ -120,7 +118,8 @@ export const create_expert_requests_api = (supabase) => ({
 			MAX_LIMIT,
 		);
 
-		const now = new Date().toISOString();
+		// 한국 시간 기준 오늘 날짜 (YYYY-MM-DD 형식)
+		const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
 		let query = supabase
 			.from('expert_requests')
@@ -133,8 +132,8 @@ export const create_expert_requests_api = (supabase) => ({
 			)
 			.eq('status', 'open')
 			.is('deleted_at', null)
-			.lte('posting_start_date', now) // 공고 시작일이 지났거나 오늘
-			.gte('application_deadline', now) // 공고 마감일이 아직 안 지남
+			.lte('posting_start_date', today) // 공고 시작일이 지났거나 오늘
+			.gte('application_deadline', today) // 공고 마감일이 아직 안 지남
 			.order('created_at', { ascending: false })
 			.limit(sanitizedLimit);
 
@@ -213,8 +212,6 @@ export const create_expert_requests_api = (supabase) => ({
 			job_type: request_data.job_type || 'sidejob',
 			requester_id: user_id,
 			status: 'open', // 무료 등록: 바로 공고 게시
-			is_paid: true, // 무료이므로 결제 완료 처리
-			registration_amount: 0, // 등록비 없음
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
 		};
@@ -239,100 +236,6 @@ export const create_expert_requests_api = (supabase) => ({
 		}
 
 		return data;
-	},
-
-	// 등록비 결제 완료 처리 (입금 대기 상태로 변경)
-	complete_registration_payment: async (request_id, payment_info, coupon_data = null) => {
-		const update_data = {
-			is_paid: false, // 아직 관리자 승인 전
-			registration_paid_at: new Date().toISOString(),
-			status: 'pending_payment', // 입금 대기 상태
-			payment_info: payment_info, // 입금 정보 저장 (JSONB)
-			updated_at: new Date().toISOString(),
-		};
-
-		// 쿠폰 정보가 있으면 추가
-		if (coupon_data) {
-			update_data.coupon_id = coupon_data.coupon_id;
-			update_data.coupon_discount = coupon_data.coupon_discount;
-		}
-
-		const { data, error } = await supabase
-			.from('expert_requests')
-			.update(update_data)
-			.eq('id', request_id)
-			.select()
-			.single();
-
-		if (error) {
-			throw new Error(`결제 처리 실패: ${error.message}`);
-		}
-
-		return data;
-	},
-
-	// 관리자 승인 (입금 확인 후)
-	approve_payment: async (request_id) => {
-		const { data, error } = await supabase
-			.from('expert_requests')
-			.update({
-				is_paid: true,
-				status: 'open', // 승인 후 공고 게시
-				updated_at: new Date().toISOString(),
-			})
-			.eq('id', request_id)
-			.eq('status', 'pending_payment') // pending_payment 상태인 것만 승인 가능
-			.select()
-			.single();
-
-		if (error) {
-			throw new Error(`승인 처리 실패: ${error.message}`);
-		}
-
-		return data;
-	},
-
-	// 관리자 거절 (입금 거절)
-	reject_payment: async (request_id, reject_reason = null) => {
-		const { data, error } = await supabase
-			.from('expert_requests')
-			.update({
-				is_paid: false,
-				status: 'cancelled', // 거절 시 취소 상태
-				reject_reason: reject_reason, // 거절 사유 (선택)
-				updated_at: new Date().toISOString(),
-			})
-			.eq('id', request_id)
-			.eq('status', 'pending_payment') // pending_payment 상태인 것만 거절 가능
-			.select()
-			.single();
-
-		if (error) {
-			throw new Error(`거절 처리 실패: ${error.message}`);
-		}
-
-		return data;
-	},
-
-	// 입금 대기 중인 공고 목록 조회 (관리자용)
-	select_pending_payments: async () => {
-		const { data, error } = await supabase
-			.from('expert_requests')
-			.select(`
-				*,
-				users:requester_id(id, handle, name, avatar_url, email),
-				expert:selected_expert_id(id, handle, name, avatar_url)
-			`)
-			.eq('status', 'pending_payment')
-			.is('deleted_at', null)
-			.order('created_at', { ascending: false });
-
-		if (error) {
-			console.error('Supabase error:', error);
-			throw new Error(`입금 대기 목록 조회 실패: ${error.message}`);
-		}
-
-		return data || [];
 	},
 
 	update: async (request_id, request_data, user_id) => {
