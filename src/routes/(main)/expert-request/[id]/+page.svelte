@@ -633,8 +633,12 @@
 				{:else}
 					<!-- 의뢰인 및 기타: 보상금만 표시 -->
 					<span class="text-lg font-medium text-blue-600">
-						{get_price_unit_label(expert_request.price_unit)}
-						{comma(expert_request.reward_amount)}원
+						{#if expert_request.price_unit === 'quote' || !expert_request.reward_amount}
+							제안 받기
+						{:else}
+							{get_price_unit_label(expert_request.price_unit)}
+							{comma(expert_request.reward_amount)}원
+						{/if}
 					</span>
 				{/if}
 			</div>

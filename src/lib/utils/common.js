@@ -35,6 +35,20 @@ export const format_date = (get_date) => {
 };
 
 /**
+ * 로컬 날짜를 YYYY-MM-DD 형식으로 변환 (timezone 문제 방지)
+ * toISOString()은 UTC로 변환되어 날짜가 하루 밀릴 수 있으므로 이 함수 사용 권장
+ * @param {Date} date - 변환할 Date 객체
+ * @return {string|null} 'YYYY-MM-DD' 형식 문자열 또는 null
+ */
+export const to_local_date_string = (date) => {
+	if (!date) return null;
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+};
+
+/**
  * toast popup 출력
  * @param {text} type - (success, warning)
  * @param {text} message

@@ -7,6 +7,7 @@
 	import StarterKit from '@tiptap/starter-kit';
 	import ImageResize from 'tiptap-extension-resize-image';
 	import { HardBreak } from '@tiptap/extension-hard-break';
+	import Placeholder from '@tiptap/extension-placeholder';
 	import { onDestroy, onMount } from 'svelte';
 
 	let editorElement;
@@ -42,6 +43,9 @@
 					HTMLAttributes: {
 						class: 'rounded-lg',
 					},
+				}),
+				Placeholder.configure({
+					placeholder: placeholder,
 				}),
 			],
 			content: content,
@@ -354,6 +358,7 @@
 		float: left;
 		height: 0;
 		pointer-events: none;
+		white-space: pre-line;
 	}
 
 	/* Image resize styles */
