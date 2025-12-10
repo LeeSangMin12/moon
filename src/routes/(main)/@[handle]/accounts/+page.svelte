@@ -9,6 +9,7 @@
 		RiArrowRightSLine,
 		RiBookmarkLine,
 		RiBriefcaseLine,
+		RiContactsLine,
 		RiCupLine,
 		RiCustomerService2Line,
 		RiGiftLine,
@@ -82,6 +83,17 @@
 		<span class="text-sm text-gray-500">활동 관리</span>
 	</div>
 	<div>
+		<a
+			href={`/@${me?.handle}/accounts/contact`}
+			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"
+		>
+			<div class="flex items-center">
+				<RiContactsLine size={22} color={colors.gray[600]} class="mr-3" />
+				<span>연락처 관리</span>
+			</div>
+			<RiArrowRightSLine size={20} color={colors.gray[400]} />
+		</a>
+
 		<a
 			href={`/@${me?.handle}/accounts/orders`}
 			class="flex items-center justify-between px-4 py-4 transition hover:bg-gray-50"

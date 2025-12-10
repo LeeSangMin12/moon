@@ -43,6 +43,7 @@ import { create_user_devices_api } from '$lib/supabase/user_devices';
 import { create_notification_settings_api } from '$lib/supabase/notification_settings';
 import { create_payments_api } from '$lib/supabase/payments';
 import { create_seller_settlements_api } from '$lib/supabase/seller_settlements';
+import { create_user_contacts_api } from '$lib/supabase/user_contacts';
 
 export const create_api = (supabase) => ({
 	auth: create_auth_api(supabase),
@@ -85,6 +86,7 @@ export const create_api = (supabase) => ({
 	notification_settings: create_notification_settings_api(supabase),
 	payments: create_payments_api(supabase),
 	seller_settlements: create_seller_settlements_api(supabase),
+	user_contacts: create_user_contacts_api(supabase),
 	//bucket
 	community_avatars: create_community_avatars_api(supabase),
 	user_avatars: create_user_avatars_api(supabase),

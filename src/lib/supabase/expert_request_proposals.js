@@ -3,7 +3,7 @@ export const create_expert_request_proposals_api = (supabase) => ({
 		const { data, error } = await supabase
 			.from('expert_request_proposals')
 			.select(`
-				id, message, proposed_amount, status, created_at, contact_info, is_secret, attachment_url,
+				id, expert_id, message, proposed_amount, status, created_at, contact_info, attachment_url,
 				users:expert_id(id, handle, name, avatar_url),
 				expert_requests:request_id(id, title)
 			`)

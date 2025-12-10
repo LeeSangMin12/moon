@@ -58,7 +58,7 @@
 	<LoadingSpinner isLoading={expert_request_data.is_infinite_loading} />
 </div>
 
-<FloatingActionButton
+<!-- <FloatingActionButton
 	actions={[
 		{
 			label: '견적 문의하기',
@@ -70,4 +70,6 @@
 			href: `/regi/expert-request?job_type=${job_type}`,
 		},
 	]}
-/>
+/> -->
+
+<FloatingActionButton href={`/regi/expert-request?job_type=${job_type}`} />

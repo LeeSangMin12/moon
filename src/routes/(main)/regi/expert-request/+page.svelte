@@ -4,7 +4,7 @@
 		get_api_context,
 		get_user_context,
 	} from '$lib/contexts/app_context.svelte.js';
-	import { check_login, show_toast } from '$lib/utils/common';
+	import { check_login, comma, show_toast, to_local_date_string } from '$lib/utils/common';
 	import { smart_go_back } from '$lib/utils/navigation';
 	import Select from 'svelte-select';
 	import { goto } from '$app/navigation';
@@ -56,18 +56,19 @@
 		{ value: 'per_year', label: '년' },
 	];
 
+	let selected_price_unit = $state(price_unit_options[0]);
+	let price_type = $state('direct'); // 'direct' | 'quote'
+
 	const categories = [
-		{ value: '웹개발/프로그래밍', label: '웹개발/프로그래밍' },
-		{ value: '모바일 앱 개발', label: '모바일 앱 개발' },
-		{ value: '디자인', label: '디자인' },
-		{ value: '마케팅/광고', label: '마케팅/광고' },
-		{ value: '번역/통역', label: '번역/통역' },
-		{ value: '글쓰기/콘텐츠', label: '글쓰기/콘텐츠' },
-		{ value: '영상/사진', label: '영상/사진' },
-		{ value: '음악/오디오', label: '음악/오디오' },
-		{ value: '비즈니스 컨설팅', label: '비즈니스 컨설팅' },
-		{ value: '교육/과외', label: '교육/과외' },
-		{ value: '기타', label: '기타' },
+		{ value: '제품/서비스 개발', label: '제품/서비스 개발' },
+		{ value: '브랜딩 & 디자인', label: '브랜딩 & 디자인' },
+		{ value: '마케팅', label: '마케팅' },
+		{ value: '리서치', label: '리서치' },
+		{ value: '데이터 & 자동화', label: '데이터 & 자동화' },
+		{ value: '컨실팅 & 강연', label: '컨실팅 & 강연' },
+		{ value: '문서 작성', label: '문서 작성' },
+		{ value: '미디어 (영상 & 음악)', label: '미디어 (영상 & 음악)' },
+		{ value: '번역', label: '번역' },
 	];
 
 	const job_types = [
@@ -130,17 +131,19 @@
 				}
 				return true;
 			case 2:
-				if (
-					!request_form_data.reward_amount ||
-					request_form_data.reward_amount === ''
-				) {
-					show_toast('error', '보상금을 입력해주세요.');
-					return false;
-				}
-				const reward = parseInt(request_form_data.reward_amount);
-				if (isNaN(reward) || reward < 10000) {
-					show_toast('error', '보상금은 10,000원 이상 입력해주세요.');
-					return false;
+				if (price_type === 'direct') {
+					if (
+						!request_form_data.reward_amount ||
+						request_form_data.reward_amount === ''
+					) {
+						show_toast('error', '보상금을 입력해주세요.');
+						return false;
+					}
+					const reward = parseInt(request_form_data.reward_amount);
+					if (isNaN(reward) || reward < 10000) {
+						show_toast('error', '보상금은 10,000원 이상 입력해주세요.');
+						return false;
+					}
 				}
 				if (
 					!request_form_data.max_applicants ||
@@ -200,20 +203,18 @@
 					title: request_form_data.title,
 					category: selected_category?.value,
 					description: request_form_data.description,
-					reward_amount: parseInt(request_form_data.reward_amount),
-					price_unit: request_form_data.price_unit,
-					posting_start_date: request_form_data.posting_start_date
-						? request_form_data.posting_start_date.toISOString().split('T')[0]
-						: null,
-					application_deadline: request_form_data.posting_end_date
-						? request_form_data.posting_end_date.toISOString().split('T')[0]
-						: null,
-					work_start_date: request_form_data.work_start_date
-						? request_form_data.work_start_date.toISOString().split('T')[0]
-						: null,
-					work_end_date: request_form_data.work_end_date
-						? request_form_data.work_end_date.toISOString().split('T')[0]
-						: null,
+					reward_amount:
+						price_type === 'quote'
+							? null
+							: parseInt(request_form_data.reward_amount),
+					price_unit:
+						price_type === 'quote'
+							? 'quote'
+							: selected_price_unit?.value || 'per_project',
+					posting_start_date: to_local_date_string(request_form_data.posting_start_date),
+					application_deadline: to_local_date_string(request_form_data.posting_end_date),
+					work_start_date: to_local_date_string(request_form_data.work_start_date),
+					work_end_date: to_local_date_string(request_form_data.work_end_date),
 					max_applicants: parseInt(request_form_data.max_applicants),
 					work_location: request_form_data.work_location,
 					job_type: selected_job_type?.value || 'sidejob',
@@ -288,6 +289,7 @@
 						placeholder="작업 유형을 선택해주세요"
 						clearable={false}
 						searchable={false}
+						showChevron={true}
 						--border="1px solid #d1d5db"
 						--border-radius="6px"
 						--border-focused="1px solid #3b82f6"
@@ -305,6 +307,7 @@
 						placeholder="분야를 선택해주세요"
 						clearable={false}
 						searchable={true}
+						showChevron={true}
 						--border="1px solid #d1d5db"
 						--border-radius="6px"
 						--border-focused="1px solid #3b82f6"
@@ -320,7 +323,7 @@
 						type="text"
 						bind:value={request_form_data.title}
 						placeholder="예: 회사 홈페이지 제작을 도와주실 개발자 찾습니다"
-						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						class="focus:border-primary w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none"
 						maxlength="100"
 					/>
 				</div>
@@ -331,7 +334,11 @@
 						상세 설명
 					</label>
 					<div class="mt-2">
-						<SimpleEditor bind:content={request_form_data.description} />
+						<SimpleEditor
+							placeholder={`어떤 작업이 필요한지 자세히 설명해주세요.
+					프로젝트의 목적, 요구사항, 원하는 결과물 등을 포함해주시면 더 정확한 제안을 받을 수 있습니다.`}
+							bind:content={request_form_data.description}
+						/>
 					</div>
 					<!-- <textarea
 						bind:value={request_form_data.description}
@@ -351,28 +358,69 @@
 				<!-- 보상금 -->
 				<div>
 					<label class="mb-2 block text-sm font-medium text-gray-700">
-						보상금 (원)
+						보상금
 					</label>
-					<div class="flex gap-2">
-						<input
-							type="number"
-							bind:value={request_form_data.reward_amount}
-							placeholder="예: 500000"
-							class="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
-							min="10000"
-						/>
-						<select
-							bind:value={request_form_data.price_unit}
-							class="w-28 rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
-						>
-							{#each price_unit_options as option}
-								<option value={option.value}>{option.label}</option>
-							{/each}
-						</select>
+					<div class="mb-3 flex gap-3">
+						<label class="flex cursor-pointer items-center gap-2">
+							<input
+								type="radio"
+								name="price_type"
+								value="direct"
+								checked={price_type === 'direct'}
+								onchange={() => (price_type = 'direct')}
+								class="h-4 w-4 text-blue-600"
+							/>
+							<span class="text-sm text-gray-700">직접 입력</span>
+						</label>
+						<label class="flex cursor-pointer items-center gap-2">
+							<input
+								type="radio"
+								name="price_type"
+								value="quote"
+								checked={price_type === 'quote'}
+								onchange={() => (price_type = 'quote')}
+								class="h-4 w-4 text-blue-600"
+							/>
+							<span class="text-sm text-gray-700">제안 받기</span>
+						</label>
 					</div>
-					<p class="mt-1 text-xs text-gray-500">
-						최소 10,000원 이상 입력해주세요
-					</p>
+					{#if price_type === 'direct'}
+						<div class="flex gap-2">
+							<input
+								type="text"
+								inputmode="numeric"
+								value={request_form_data.reward_amount
+									? comma(request_form_data.reward_amount)
+									: ''}
+								oninput={(e) => {
+									request_form_data.reward_amount = e.target.value.replace(
+										/,/g,
+										'',
+									);
+								}}
+								placeholder="예: 500,000"
+								class="focus:border-primary min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none"
+							/>
+							<div class="w-32 shrink-0">
+								<Select
+									items={price_unit_options}
+									bind:value={selected_price_unit}
+									placeholder="단위"
+									clearable={false}
+									searchable={false}
+									showChevron={true}
+									--border="1px solid #d1d5db"
+									--border-radius="6px"
+									--border-focused="1px solid #3b82f6"
+								/>
+							</div>
+						</div>
+					{:else}
+						<p class="rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">
+							전문가들의 금액 제안을 받습니다. 제안받은 금액을 검토 후 선택할 수
+							있습니다.
+						</p>
+					{/if}
 				</div>
 
 				<!-- 모집인원 -->
@@ -384,7 +432,7 @@
 						type="number"
 						bind:value={request_form_data.max_applicants}
 						placeholder="예: 1"
-						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						class="focus:border-primary w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none"
 						min="1"
 						max="100"
 					/>
@@ -399,7 +447,7 @@
 						type="text"
 						bind:value={request_form_data.work_location}
 						placeholder="예: 서울시 강남구, 원격근무, 온라인"
-						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-blue-500"
+						class="focus:border-primary w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none"
 						maxlength="100"
 					/>
 				</div>
@@ -512,7 +560,9 @@
 		{/if}
 	</form>
 
-	<div class="fixed bottom-0 w-full max-w-screen-md bg-white p-4">
+	<div
+		class="fixed right-0 bottom-0 left-0 mx-auto w-full max-w-screen-md bg-white p-4"
+	>
 		<div class="pb-safe">
 			{#if current_step === total_steps}
 				<button

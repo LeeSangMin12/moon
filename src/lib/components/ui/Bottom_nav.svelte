@@ -7,10 +7,6 @@
 
 	const me = get_user_context();
 
-	onMount(() => {
-		console.log(me);
-	});
-
 	// Preload data on hover/mouseenter for faster navigation
 	const handlePreload = (path) => {
 		preloadData(path);
