@@ -2,11 +2,11 @@
 	import colors from '$lib/config/colors';
 	import { get_user_context } from '$lib/contexts/app_context.svelte.js';
 	import { comma } from '$lib/utils/common';
-	import { smart_go_back } from '$lib/utils/navigation.js';
 	import {
 		getProposalStatusDisplay,
 		getRequestStatusDisplay,
 	} from '$lib/utils/expert-request-utils';
+	import { goto } from '$app/navigation';
 	import { RiArrowLeftSLine } from 'svelte-remixicon';
 
 	import Bottom_nav from '$lib/components/ui/Bottom_nav.svelte';
@@ -67,7 +67,7 @@
 </svelte:head>
 
 <Header>
-	<button slot="left" onclick={() => smart_go_back(me)}>
+	<button slot="left" onclick={() => goto(`/@${me?.handle}/accounts`)}>
 		<RiArrowLeftSLine size={24} color={colors.gray[600]} />
 	</button>
 	<h1 slot="center" class="font-semibold">{TITLE}</h1>
@@ -88,10 +88,16 @@
 				</div>
 			{:else}
 				{#each my_requests as request}
-					{@const has_transaction = request.project_amount || request.status === 'pending_payment' || request.status === 'in_progress' || request.status === 'completed'}
+					{@const has_transaction =
+						request.project_amount ||
+						request.status === 'pending_payment' ||
+						request.status === 'in_progress' ||
+						request.status === 'completed'}
 					<ExpertRequestCard
 						{request}
-						href={has_transaction ? `/expert/accounts/${request.id}` : `/expert-request/${request.id}`}
+						href={has_transaction
+							? `/expert/accounts/${request.id}`
+							: `/expert-request/${request.id}`}
 					>
 						{#snippet status()}
 							{@const statusDisplay = getRequestStatusDisplay(request.status)}
@@ -117,11 +123,18 @@
 			{:else}
 				{#each my_proposals as proposal}
 					{@const request = proposal.expert_requests}
-					{@const has_transaction = proposal.status === 'accepted' && (request?.project_amount || request?.status === 'pending_payment' || request?.status === 'in_progress' || request?.status === 'completed')}
+					{@const has_transaction =
+						proposal.status === 'accepted' &&
+						(request?.project_amount ||
+							request?.status === 'pending_payment' ||
+							request?.status === 'in_progress' ||
+							request?.status === 'completed')}
 					<div class="mb-4">
 						<ExpertRequestCard
 							{request}
-							href={has_transaction ? `/expert/accounts/${request?.id}` : `/expert-request/${request?.id}`}
+							href={has_transaction
+								? `/expert/accounts/${request?.id}`
+								: `/expert-request/${request?.id}`}
 							class="mb-0"
 						>
 							{#snippet status()}
@@ -148,12 +161,16 @@
 
 						<!-- 수락된 제안: 주문 정보 표시 -->
 						{#if proposal.status === 'accepted' && request?.order_status}
-							{@const orderStatus = get_order_status_display(request.order_status)}
+							{@const orderStatus = get_order_status_display(
+								request.order_status,
+							)}
 							<div
 								class="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3"
 							>
 								<div class="mb-2 flex items-center justify-between">
-									<span class="text-sm font-medium text-blue-900">주문 정보</span>
+									<span class="text-sm font-medium text-blue-900"
+										>주문 정보</span
+									>
 									<span
 										class={`rounded-md px-2 py-0.5 text-xs font-medium ${orderStatus.bgColor} ${orderStatus.textColor}`}
 									>
@@ -177,7 +194,8 @@
 										<span>정산 금액</span>
 										<span
 											>₩{comma(
-												request.total_with_commission - request.commission_amount,
+												request.total_with_commission -
+													request.commission_amount,
 											)}</span
 										>
 									</div>

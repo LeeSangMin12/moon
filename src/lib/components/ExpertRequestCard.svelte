@@ -36,16 +36,19 @@
 	/** @type {Props} */
 	let {
 		request,
-		href = `/expert-request/${request.id}`,
+		href,
 		class: className = 'mb-4',
 		status: statusSnippet
 	} = $props();
+
+	// href 기본값 설정 (request가 null일 수 있으므로 분리)
+	const resolved_href = $derived(href ?? `/expert-request/${request?.id}`);
 
 	/**
 	 * 요청 상태 표시 정보
 	 * @type {{text: string, bgColor: string, textColor: string}}
 	 */
-	const status = $derived(getRequestStatusDisplay(request.status));
+	const status = $derived(getRequestStatusDisplay(request?.status));
 
 	/**
 	 * 제안 개수
@@ -58,9 +61,10 @@
 	/**
 	 * 카드 클릭 핸들러
 	 */
-	const handle_click = () => goto(href);
+	const handle_click = () => goto(resolved_href);
 </script>
 
+{#if request}
 <div
 	class="cursor-pointer transition-all {className}"
 	onclick={handle_click}
@@ -116,3 +120,4 @@
 	</div>
 	<div class="h-0.5 w-full bg-gray-200" />
 </div>
+{/if}
